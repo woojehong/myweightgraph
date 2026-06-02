@@ -81,10 +81,10 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
   const barMax = weeklyData.length ? Math.max(...weeklyData.map(d => Math.abs(d.y)), 0.1) : 1;
 
   // ── 레이아웃 상수 ────────────────────────────────────────────────────
-  const CELL_H       = 14;
+  const CELL_H       = 18;   // 동적 셀 높이 최대값 (레이아웃 여백 할당용)
   const WEEKLY_BAR_H = 104;
   const SUB_GAP      = 6;
-  const X_AXIS_H     = 28;  // x축 레이블 영역 높이 (여유분 포함)
+  const X_AXIS_H     = 28;
   const BOTTOM_PAD   = 10;
 
   let BAR_AREA_H = BOTTOM_PAD + X_AXIS_H;
@@ -174,12 +174,11 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
   const weeklyBarPlugin = { id: 'weeklyBar', afterDraw(chart) {
     if (!hasWeeklyBar) return;
     const { ctx, chartArea, scales: { x } } = chart;
-    const xBottom = x.bottom; // x축 레이블 하단 (chartArea.bottom 아래)
-
-    const top  = xBottom + SUB_GAP;
-    const bot  = top + WEEKLY_BAR_H - 8;
-    const midY = (top + bot) / 2;
-    const maxH = (bot - top) / 2 - 2;
+    const xBottom  = x.bottom;
+    const top      = xBottom + SUB_GAP;
+    const baseline = top + WEEKLY_BAR_H - 8; // 바 하단 기준선
+    const maxBarH  = baseline - top - 2;
+    const midY     = (top + baseline) / 2;
 
     const xPos = weeklyData.map(d => x.getPixelForValue(d.x));
     let barW = 14;
@@ -189,27 +188,27 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
     }
 
     ctx.save();
-    // 구분선 (x축 레이블 하단)
+    // 구분선
     ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(chartArea.left, xBottom); ctx.lineTo(chartArea.right, xBottom); ctx.stroke();
 
     ctx.beginPath();
-    ctx.rect(chartArea.left, top - 2, chartArea.right - chartArea.left, bot - top + 6);
+    ctx.rect(chartArea.left, top - 2, chartArea.right - chartArea.left, baseline - top + 6);
     ctx.clip();
 
-    ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(chartArea.left, midY); ctx.lineTo(chartArea.right, midY); ctx.stroke();
+    // 바닥 기준선
+    ctx.strokeStyle = 'rgba(255,255,255,0.10)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(chartArea.left, baseline); ctx.lineTo(chartArea.right, baseline); ctx.stroke();
 
+    // 모든 막대 위로 확장 — 감량(초록), 증량(빨강)
     weeklyData.forEach((d, i) => {
       const cx = xPos[i];
       if (cx < chartArea.left - barW || cx > chartArea.right + barW) return;
-      const h = Math.max(2, Math.abs(d.y) / barMax * maxH);
-      const isLoss = d.y >= 0;
+      const h       = Math.max(2, Math.abs(d.y) / barMax * maxBarH);
+      const isLoss  = d.y >= 0;
       ctx.fillStyle = isLoss ? 'rgba(102,187,106,.82)' : 'rgba(239,83,80,.82)';
       ctx.beginPath();
-      const rx = cx - barW/2, rw = barW, rr = 2;
-      if (isLoss) ctx.roundRect(rx, midY - h, rw, h, [rr, rr, 0, 0]);
-      else        ctx.roundRect(rx, midY,     rw, h, [0, 0, rr, rr]);
+      ctx.roundRect(cx - barW/2, baseline - h, barW, h, [2, 2, 0, 0]);
       ctx.fill();
     });
     ctx.restore();
@@ -250,11 +249,11 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
       if (!hasWeeklyBar || _barTooltipIdx < 0) return;
       const d = weeklyData[_barTooltipIdx]; if (!d) return;
       const { ctx, chartArea, scales: { x } } = chart;
-      const cx      = x.getPixelForValue(d.x);
-      const xBottom = x.bottom;
-      const top  = xBottom + SUB_GAP;
-      const bot  = top + WEEKLY_BAR_H - 8;
-      const midY = (top + bot) / 2;
+      const cx       = x.getPixelForValue(d.x);
+      const xBottom  = x.bottom;
+      const top      = xBottom + SUB_GAP;
+      const baseline = top + WEEKLY_BAR_H - 8;
+      const midY     = (top + baseline) / 2;
       const text1 = d.label;
       const text2 = d.raw < 0 ? `감량  ${Math.abs(d.raw).toFixed(1)} kg` : `증량  +${d.raw.toFixed(1)} kg`;
       ctx.save();
@@ -320,25 +319,31 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
     const cellL = visible.map((_, i) => i === 0     ? chartArea.left  : (pixels[i-1] + pixels[i]) / 2);
     const cellR = visible.map((_, i) => i === n - 1 ? chartArea.right : (pixels[i] + pixels[i+1]) / 2);
 
-    // Y 시작점: x축 레이블 하단 기준 (날짜 레이블 침범 방지)
+    // ── 동적 셀 높이 (날짜 수에 따라 정사각형 유지) ─────────────────
+    const avgCellW = n > 1
+      ? Math.abs(cellR[n-1] - cellL[0]) / n
+      : CELL_H;
+    const dynH = Math.max(6, Math.min(CELL_H, Math.round(avgCellW)));
+
+    // Y 시작점: x축 하단 + 주간막대 섹션 바로 아래
     const xBottom = x.bottom;
     let sY = xBottom + SUB_GAP;
-    if (hasWeeklyBar) sY += WEEKLY_BAR_H + SUB_GAP;
+    if (hasWeeklyBar) sY += WEEKLY_BAR_H + 2; // 주간막대에 바짝 붙임
 
     // ── 식단 ──────────────────────────────────────────────────────────
     if (showDietGraph) {
       const dietTop = sY;
       ctx.save();
       ctx.beginPath();
-      ctx.rect(chartArea.left, dietTop, chartArea.right - chartArea.left, 3 * CELL_H);
+      ctx.rect(chartArea.left, dietTop, chartArea.right - chartArea.left, 3 * dynH);
       ctx.clip();
       ['morning', 'lunch', 'dinner'].forEach((meal, ri) => {
-        const rowY = dietTop + ri * CELL_H;
+        const rowY = dietTop + ri * dynH;
         visible.forEach((r, i) => {
           const l  = Math.round(cellL[i]);
           const rr = Math.round(cellR[i]);
           ctx.fillStyle = MEAL_CLR[r.meal?.[meal]] || EMPTY_CLR;
-          ctx.fillRect(l, rowY, Math.max(1, rr - l), CELL_H);
+          ctx.fillRect(l, rowY, Math.max(1, rr - l), dynH);
         });
       });
       ctx.restore();
@@ -347,10 +352,10 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
       ctx.font = '9px sans-serif'; ctx.textAlign = 'right'; ctx.fillStyle = 'rgba(255,255,255,.3)';
       ['아침', '점심', '저녁'].forEach((lbl, ri) => {
         ctx.textBaseline = 'middle';
-        ctx.fillText(lbl, chartArea.left - 3, dietTop + ri * CELL_H + CELL_H / 2);
+        ctx.fillText(lbl, chartArea.left - 3, dietTop + ri * dynH + dynH / 2);
       });
       ctx.restore();
-      sY += 3 * CELL_H + SUB_GAP;
+      sY += 3 * dynH + 2;
     }
 
     // ── 운동 ──────────────────────────────────────────────────────────
@@ -358,20 +363,20 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
       const exTop = sY;
       ctx.save();
       ctx.beginPath();
-      ctx.rect(chartArea.left, exTop, chartArea.right - chartArea.left, CELL_H);
+      ctx.rect(chartArea.left, exTop, chartArea.right - chartArea.left, dynH);
       ctx.clip();
       visible.forEach((r, i) => {
         const l  = Math.round(cellL[i]);
         const rr = Math.round(cellR[i]);
         ctx.fillStyle = r.exercise === true  ? EX_CLR.yes :
                         r.exercise === false ? EX_CLR.no  : EMPTY_CLR;
-        ctx.fillRect(l, exTop, Math.max(1, rr - l), CELL_H);
+        ctx.fillRect(l, exTop, Math.max(1, rr - l), dynH);
       });
       ctx.restore();
       ctx.save();
       ctx.font = '9px sans-serif'; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
       ctx.fillStyle = 'rgba(255,255,255,.3)';
-      ctx.fillText('운동', chartArea.left - 3, exTop + CELL_H / 2);
+      ctx.fillText('운동', chartArea.left - 3, exTop + dynH / 2);
       ctx.restore();
     }
   }};
