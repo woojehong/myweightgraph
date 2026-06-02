@@ -21,6 +21,7 @@
     #barWrap{position:relative;height:110px;width:100%;margin-top:1px;}
     #barWrap canvas{background:#0d1117;border-radius:0 0 10px 10px;}
     #mainC{border-radius:10px 10px 0 0;background:#0d1117;display:block;}
+    @media(min-width:768px){ .page { max-width: min(1180px, 96vw); } }
     .opt-panel{
       display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;
       padding:8px 12px;background:rgba(255,255,255,.03);
@@ -105,7 +106,7 @@
 <div class="toast" id="toast"></div>
 
 <script type="module">
-import { getUser, getWeights, getSettings, updateSettings, setWeight, toDateStr, parseWeight, updateUser, setUserPassword } from './js/db.js';
+import { getUser, getWeights, getSettings, updateSettings, toDateStr, updateUser, setUserPassword } from './js/db.js';
 import { isAuthed, clearAuth, saveAuth } from './js/auth.js';
 import { renderChart, calcStats } from './js/chart-render.js';
 
@@ -167,9 +168,6 @@ async function render() {
     return;
   }
 
-  const todayStr = toDateStr(new Date());
-  const todayRecord = records.find(r => r.date === todayStr);
-
   content.innerHTML=`
     <div class="chart-wrap">
       <canvas id="mainC"></canvas>
@@ -217,16 +215,7 @@ async function render() {
 
     <div class="stats-grid mt-12" id="statsGrid"></div>
 
-    <!-- 오늘 체중 입력 -->
-    <div class="card mt-12" style="display:flex;align-items:center;justify-content:center;gap:10px;padding:12px 16px;flex-wrap:wrap">
-      <span style="font-size:13px;color:var(--muted);font-weight:600">📅 오늘</span>
-      <input type="number" step="0.1" id="todayWeightInput" class="input-field"
-        style="width:90px;padding:6px 10px;font-size:16px;font-weight:700;text-align:center;margin-bottom:0"
-        placeholder="--.-"
-        value="${todayRecord?.weight != null ? todayRecord.weight.toFixed(1) : ''}">
-      <span style="color:var(--muted);font-size:13px">kg</span>
-      <button class="btn btn-primary btn-sm" onclick="saveTodayWeight()">저장</button>
-    </div>`;
+    `;
 
   doRender();
   renderStats(stats);
@@ -336,49 +325,6 @@ window.removeProfilePw = async () => {
   showToast('비밀번호가 제거됐어요', 'ok');
 };
 
-function validateWeightDash(dateStr, newW) {
-  const sorted = records.filter(r=>r.weight!=null&&r.date!==dateStr)
-    .sort((a,b)=>a.date.localeCompare(b.date));
-  if (!sorted.length) return null;
-  const targetTime = new Date(dateStr).getTime();
-  let nearest=null, nearestDays=Infinity;
-  sorted.forEach(r=>{
-    const days=Math.abs((new Date(r.date).getTime()-targetTime)/86400000);
-    if(days<nearestDays){nearestDays=days;nearest={w:r.weight,days};}
-  });
-  if(!nearest)return null;
-  const maxAllowed=Math.min(Math.max(nearest.days,1)*3,20);
-  const diff=Math.abs(newW-nearest.w);
-  if(diff>maxAllowed)return `전후 기록(${nearest.w.toFixed(1)}kg)과 ${diff.toFixed(1)}kg 차이입니다. 정상적인 수치를 입력해주세요. 이게 맞다면 관리자에게 문의하세요.`;
-  return null;
-}
-function showDashErr(msg){
-  let el=document.getElementById('dashWeightErr');
-  if(!el){
-    document.body.insertAdjacentHTML('beforeend',`<div id="dashWeightErr" style="position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:600;opacity:0;pointer-events:none;transition:opacity .2s"><div style="background:var(--surface);border:1px solid var(--red);border-radius:12px;padding:20px;max-width:88vw;width:320px;text-align:center" onclick="event.stopPropagation()"><div style="font-size:24px;margin-bottom:10px">⚠️</div><div id="dashErrMsg" style="font-size:13px;line-height:1.6;margin-bottom:16px"></div><button class="btn btn-ghost btn-sm btn-full" onclick="closeDashErr()">확인</button></div></div>`);
-    el=document.getElementById('dashWeightErr');
-    el.addEventListener('click',()=>closeDashErr());
-  }
-  document.getElementById('dashErrMsg').textContent=msg;
-  el.style.opacity='1';el.style.pointerEvents='all';
-}
-window.closeDashErr=()=>{const el=document.getElementById('dashWeightErr');if(el){el.style.opacity='0';el.style.pointerEvents='none';}};
-
-window.saveTodayWeight = async () => {
-  const input = document.getElementById('todayWeightInput');
-  const val = parseWeight(input.value);
-  if (val === null) { showToast('체중을 입력해주세요', 'err'); return; }
-  const todayStr = toDateStr(new Date());
-  const err = validateWeightDash(todayStr, val);
-  if (err) { showDashErr(err); return; }
-  await setWeight(uid, todayStr, val);
-  input.value = val.toFixed(1);
-  records = await getWeights(uid);
-  const newStats = calcStats(records, user);
-  doRender();
-  if (newStats) renderStats(newStats);
-  showToast('저장됐어요 ✓', 'ok');
-};
 
 window.resetZoom = () => {
   const mc = document.getElementById('mainC');

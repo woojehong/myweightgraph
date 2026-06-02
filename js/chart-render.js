@@ -83,10 +83,11 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
   // ── 레이아웃 상수 ────────────────────────────────────────────────────
   const CELL_H       = 14;
   const WEEKLY_BAR_H = 104;
-  const SUB_GAP      = 5;
-  const BOTTOM_PAD   = 8;
+  const SUB_GAP      = 6;
+  const X_AXIS_H     = 28;  // x축 레이블 영역 높이 (여유분 포함)
+  const BOTTOM_PAD   = 10;
 
-  let BAR_AREA_H = BOTTOM_PAD;
+  let BAR_AREA_H = BOTTOM_PAD + X_AXIS_H;
   if (hasWeeklyBar)      BAR_AREA_H += WEEKLY_BAR_H + SUB_GAP;
   if (showDietGraph)     BAR_AREA_H += 3 * CELL_H + SUB_GAP;
   if (showExerciseGraph) BAR_AREA_H += CELL_H + SUB_GAP;
@@ -173,8 +174,9 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
   const weeklyBarPlugin = { id: 'weeklyBar', afterDraw(chart) {
     if (!hasWeeklyBar) return;
     const { ctx, chartArea, scales: { x } } = chart;
+    const xBottom = x.bottom; // x축 레이블 하단 (chartArea.bottom 아래)
 
-    const top  = chartArea.bottom + SUB_GAP + 2;
+    const top  = xBottom + SUB_GAP;
     const bot  = top + WEEKLY_BAR_H - 8;
     const midY = (top + bot) / 2;
     const maxH = (bot - top) / 2 - 2;
@@ -187,9 +189,9 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
     }
 
     ctx.save();
-    // 구분선
+    // 구분선 (x축 레이블 하단)
     ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(chartArea.left, chartArea.bottom + 1); ctx.lineTo(chartArea.right, chartArea.bottom + 1); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(chartArea.left, xBottom); ctx.lineTo(chartArea.right, xBottom); ctx.stroke();
 
     ctx.beginPath();
     ctx.rect(chartArea.left, top - 2, chartArea.right - chartArea.left, bot - top + 6);
@@ -227,7 +229,8 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
       const { event } = args;
       if (!['mousemove','touchstart','click'].includes(event.type)) return;
       const { chartArea, scales: { x } } = chart;
-      const top = chartArea.bottom + SUB_GAP + 2;
+      const xBottom = x.bottom;
+      const top = xBottom + SUB_GAP;
       const bot = top + WEEKLY_BAR_H - 8;
       const ey = event.y, ex = event.x;
       if (ey < top || ey > bot) {
@@ -247,8 +250,9 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
       if (!hasWeeklyBar || _barTooltipIdx < 0) return;
       const d = weeklyData[_barTooltipIdx]; if (!d) return;
       const { ctx, chartArea, scales: { x } } = chart;
-      const cx   = x.getPixelForValue(d.x);
-      const top  = chartArea.bottom + SUB_GAP + 2;
+      const cx      = x.getPixelForValue(d.x);
+      const xBottom = x.bottom;
+      const top  = xBottom + SUB_GAP;
       const bot  = top + WEEKLY_BAR_H - 8;
       const midY = (top + bot) / 2;
       const text1 = d.label;
@@ -316,8 +320,9 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
     const cellL = visible.map((_, i) => i === 0     ? chartArea.left  : (pixels[i-1] + pixels[i]) / 2);
     const cellR = visible.map((_, i) => i === n - 1 ? chartArea.right : (pixels[i] + pixels[i+1]) / 2);
 
-    // Y 시작점: 주간막대 아래
-    let sY = chartArea.bottom + SUB_GAP;
+    // Y 시작점: x축 레이블 하단 기준 (날짜 레이블 침범 방지)
+    const xBottom = x.bottom;
+    let sY = xBottom + SUB_GAP;
     if (hasWeeklyBar) sY += WEEKLY_BAR_H + SUB_GAP;
 
     // ── 식단 ──────────────────────────────────────────────────────────
