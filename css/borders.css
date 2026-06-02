@@ -1,0 +1,212 @@
+/* ── 아바타 프레임 ───────────────────────────────────────────────── */
+.avatar-frame {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  padding: 3px;
+  background: transparent;
+  position: relative;
+  flex-shrink: 0;
+}
+.avatar-frame .avatar {
+  background: #0d1117 !important;
+  border: none !important;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── 티어 컬러 (기본 border-color) ──────────────────────────────── */
+.avatar-frame { background: var(--tier-color, rgba(255,255,255,.1)); }
+
+/* ── 1. 펄스 글로우 ─────────────────────────────────────────────── */
+.border-pulse-glow {
+  background: var(--tier-color, #00e5aa);
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+@keyframes pulse-glow {
+  0%,100% { box-shadow: 0 0 4px 2px var(--tier-color, #00e5aa); }
+  50%      { box-shadow: 0 0 14px 6px var(--tier-color, #00e5aa); }
+}
+
+/* ── 2. 회전 그라데이션 ─────────────────────────────────────────── */
+.border-rotating-gradient {
+  background: conic-gradient(var(--tier-color,#00e5aa), #ffffff, var(--tier-color,#00e5aa));
+  animation: spin-border 3s linear infinite;
+}
+@keyframes spin-border { to { transform: rotate(360deg); } }
+.border-rotating-gradient .avatar { transform: rotate(0deg); }
+
+/* ── 3. 레인보우 ────────────────────────────────────────────────── */
+.border-rainbow {
+  background: conic-gradient(#ff0000,#ff8800,#ffff00,#00ff00,#0088ff,#8800ff,#ff0000);
+  animation: spin-border 4s linear infinite;
+}
+
+/* ── 4. 샤이머 ──────────────────────────────────────────────────── */
+.border-shimmer {
+  background: var(--tier-color, #00e5aa);
+  overflow: hidden;
+}
+.border-shimmer::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,.6) 50%, transparent 60%);
+  animation: shimmer-sweep 2.5s ease-in-out infinite;
+  z-index: 2;
+}
+@keyframes shimmer-sweep {
+  0%   { transform: translateX(-150%); }
+  100% { transform: translateX(150%); }
+}
+
+/* ── 5. 화염 ────────────────────────────────────────────────────── */
+.border-flame {
+  background: conic-gradient(#ff4400, #ff8800, #ffcc00, #ff4400);
+  animation: spin-border 2s linear infinite, flame-pulse 0.8s ease-in-out infinite alternate;
+}
+@keyframes flame-pulse {
+  0%   { box-shadow: 0 0 8px 2px #ff4400aa; }
+  100% { box-shadow: 0 0 16px 6px #ff8800aa; }
+}
+
+/* ── 6. 얼음 ────────────────────────────────────────────────────── */
+.border-ice {
+  background: conic-gradient(#89CFF0, #ffffff, #c8e8ff, #89CFF0);
+  animation: spin-border 5s linear infinite;
+  box-shadow: 0 0 8px 2px rgba(137,207,240,.5);
+}
+
+/* ── 7. 번개 ────────────────────────────────────────────────────── */
+.border-lightning {
+  background: var(--tier-color, #4fc3f7);
+  animation: lightning-flicker 0.15s step-end infinite;
+}
+@keyframes lightning-flicker {
+  0%,100% { box-shadow: 0 0 6px 2px #4fc3f7; opacity:1; }
+  50%     { box-shadow: 0 0 20px 8px #ffffff; opacity:.85; }
+}
+
+/* ── 8. 네온 ────────────────────────────────────────────────────── */
+.border-neon {
+  background: var(--tier-color, #00ff88);
+  animation: neon-flicker 2s linear infinite;
+}
+@keyframes neon-flicker {
+  0%,19%,21%,23%,25%,54%,56%,100% { box-shadow: 0 0 6px 2px var(--tier-color,#00ff88), 0 0 20px 6px var(--tier-color,#00ff88); }
+  20%,22%,24%,55%                  { box-shadow: none; }
+}
+
+/* ── 9. 에너지 파동 ─────────────────────────────────────────────── */
+.border-energy-wave {
+  background: var(--tier-color, #a855f7);
+  animation: energy-pulse 1.5s ease-out infinite;
+}
+@keyframes energy-pulse {
+  0%   { box-shadow: 0 0 0 0 var(--tier-color, #a855f7); }
+  70%  { box-shadow: 0 0 0 10px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+/* ── 10. 골드 샤인 ──────────────────────────────────────────────── */
+.border-gold-shine {
+  background: linear-gradient(135deg, #b8860b, #ffd700, #b8860b, #ffd700);
+  background-size: 200% 200%;
+  animation: gold-shift 3s ease-in-out infinite;
+  box-shadow: 0 0 8px 2px rgba(255,215,0,.4);
+}
+@keyframes gold-shift {
+  0%,100% { background-position: 0% 50%; }
+  50%     { background-position: 100% 50%; }
+}
+
+/* ── 11. 플래티넘 ───────────────────────────────────────────────── */
+.border-platinum {
+  background: linear-gradient(135deg, #9b9b9b, #e8e8e8, #c0c0c0, #e8e8e8);
+  background-size: 200% 200%;
+  animation: gold-shift 4s ease-in-out infinite;
+  box-shadow: 0 0 8px 2px rgba(200,200,200,.4);
+}
+
+/* ── 12. 오로라 ─────────────────────────────────────────────────── */
+.border-aurora {
+  background: conic-gradient(#00e5aa, #4fc3f7, #9b59b6, #00e5aa);
+  animation: spin-border 6s linear infinite;
+  box-shadow: 0 0 10px 3px rgba(0,229,170,.3);
+}
+
+/* ── 13. 더블 링 ────────────────────────────────────────────────── */
+.border-double-ring {
+  background: var(--tier-color, #00e5aa);
+  box-shadow: 0 0 0 2px #0d1117, 0 0 0 4px var(--tier-color, #00e5aa);
+}
+
+/* ── 14. 대시 회전 ──────────────────────────────────────────────── */
+.border-dashed-spin {
+  background: transparent;
+  border: 3px dashed var(--tier-color, #00e5aa) !important;
+  animation: spin-border 4s linear infinite;
+}
+.border-dashed-spin .avatar { background: var(--bg, #0d1117) !important; }
+
+/* ── 15. 코로나 ─────────────────────────────────────────────────── */
+.border-corona {
+  background: var(--tier-color, #FFD700);
+  animation: corona-ray 2s ease-in-out infinite;
+}
+@keyframes corona-ray {
+  0%,100% { box-shadow: 0 0 0 2px var(--tier-color,#FFD700), 0 -6px 0 0 var(--tier-color,#FFD700), 4px -4px 0 0 var(--tier-color,#FFD700), 6px 0 0 0 var(--tier-color,#FFD700); }
+  50%     { box-shadow: 0 0 0 2px var(--tier-color,#FFD700), 0 -8px 0 0 var(--tier-color,#FFD700), 6px -6px 0 0 var(--tier-color,#FFD700), 8px 0 0 0 var(--tier-color,#FFD700); }
+}
+
+/* ── 16. 그라데이션 시프트 ──────────────────────────────────────── */
+.border-gradient-shift {
+  background: linear-gradient(270deg, #ff6b6b, #ffd93d, #6bcb77, #4d96ff, #ff6b6b);
+  background-size: 300% 300%;
+  animation: gradient-flow 4s ease infinite;
+}
+@keyframes gradient-flow {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* ── 17. 별빛 ───────────────────────────────────────────────────── */
+.border-starlight {
+  background: var(--tier-color, #9B59B6);
+  animation: starlight-pulse 1.5s ease-in-out infinite alternate;
+}
+@keyframes starlight-pulse {
+  0%   { box-shadow: 0 0 4px 2px #9B59B6, 2px -10px 0 1px #ffffff88, -8px 4px 0 1px #ffffff88, 8px 4px 0 1px #ffffff88; }
+  100% { box-shadow: 0 0 8px 4px #9B59B6, 4px -12px 0 2px #ffffffcc, -10px 6px 0 2px #ffffffcc, 10px 6px 0 2px #ffffffcc; }
+}
+
+/* ── 18. 홀로그램 ───────────────────────────────────────────────── */
+.border-hologram {
+  background: conic-gradient(#ff0080, #ff8c00, #40e0d0, #ff0080, #8b00ff, #ff0080);
+  animation: spin-border 3s linear infinite, holo-brightness 2s ease-in-out infinite alternate;
+}
+@keyframes holo-brightness {
+  0%   { filter: brightness(1) saturate(1.5); }
+  100% { filter: brightness(1.4) saturate(2); }
+}
+
+/* ── 19. 다이아몬드 ─────────────────────────────────────────────── */
+.border-diamond {
+  background: linear-gradient(135deg, #89CFF0, #ffffff, #89CFF0, #c8f0ff);
+  background-size: 200% 200%;
+  animation: gold-shift 2s ease-in-out infinite;
+  box-shadow: 0 0 12px 4px rgba(137,207,240,.6), 0 0 24px 8px rgba(137,207,240,.2);
+}
+
+/* ── 20. 챌린저 ─────────────────────────────────────────────────── */
+.border-challenger {
+  background: conic-gradient(#F39C12, #ff0000, #F39C12, #ffffff, #F39C12);
+  animation: spin-border 2s linear infinite, challenger-glow 1s ease-in-out infinite alternate;
+}
+@keyframes challenger-glow {
+  0%   { box-shadow: 0 0 8px 3px #F39C12aa; }
+  100% { box-shadow: 0 0 20px 8px #F39C12cc, 0 0 40px 15px #ff000044; }
+}

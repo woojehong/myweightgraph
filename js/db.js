@@ -1,0 +1,135 @@
+import { initializeApp }                              from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, doc, setDoc,
+         getDoc, getDocs, deleteDoc, query,
+         orderBy, writeBatch, serverTimestamp }        from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword,
+         signOut, onAuthStateChanged }                 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { firebaseConfig, DEFAULT_GOAL }               from "./firebase-config.js";
+import { sha256 }                                     from "./auth.js";
+
+const app  = initializeApp(firebaseConfig);
+const db   = getFirestore(app);
+export const auth = getAuth(app);
+
+export function toDateStr(date) {
+  return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+}
+export function parseWeight(raw) {
+  if (raw == null) return null;
+  const s = String(raw).trim().replace(',', '.');
+  if (!s || s === '-') return null;
+  const n = parseFloat(s);
+  return isNaN(n) ? null : Math.round(n * 10) / 10;
+}
+
+// ── 관리자 인증 ──────────────────────────────────────────────────────
+export const ADMIN_UID = 'X2kTDfOGWKbqLkv0AYAVRLpzHvy2';
+export async function adminSignIn(email, password) {
+  return signInWithEmailAndPassword(auth, email, password);
+}
+export async function adminSignOut() { return signOut(auth); }
+export function onAuthChange(cb) { return onAuthStateChanged(auth, cb); }
+
+// ── 사용자 ──────────────────────────────────────────────────────────
+export async function getUsers() {
+  const snap = await getDocs(collection(db, 'users'));
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+export async function getUser(userId) {
+  const snap = await getDoc(doc(db, 'users', userId));
+  return snap.exists() ? { id: snap.id, ...snap.data() } : null;
+}
+export async function createUser({ id, name, emoji='⚖️', goal=DEFAULT_GOAL,
+                                   height=null, birthYear=null, password=null }) {
+  const passwordHash = password ? await sha256(password) : null;
+  await setDoc(doc(db, 'users', id), {
+    name, emoji, goal,
+    height:    height    ? Number(height)    : null,
+    birthYear: birthYear ? Number(birthYear) : null,
+    passwordHash,
+    createdAt: serverTimestamp()
+  });
+  return passwordHash;
+}
+export async function setUserPassword(userId, newPassword) {
+  const hash = newPassword ? await sha256(newPassword) : null;
+  await setDoc(doc(db, 'users', userId), { passwordHash: hash }, { merge: true });
+  return hash;
+}
+export async function updateUser(userId, data) {
+  await setDoc(doc(db, 'users', userId), data, { merge: true });
+}
+export async function deleteUser(userId) {
+  const records = await getWeights(userId);
+  const batch = writeBatch(db);
+  records.forEach(r => batch.delete(doc(db, 'weights', userId, 'records', r.date)));
+  batch.delete(doc(db, 'users', userId));
+  await batch.commit();
+}
+
+// ── 체중 기록 ────────────────────────────────────────────────────────
+function recordsRef(uid) { return collection(db, 'weights', uid, 'records'); }
+export async function getWeights(userId) {
+  const snap = await getDocs(query(recordsRef(userId), orderBy('date','asc')));
+  return snap.docs.map(d => d.data());
+}
+export async function setWeight(userId, dateStr, weight) {
+  if (weight === null) {
+    await deleteDoc(doc(db, 'weights', userId, 'records', dateStr)); return;
+  }
+  await setDoc(doc(db, 'weights', userId, 'records', dateStr),
+    { date: dateStr, weight, updatedAt: serverTimestamp() });
+}
+export async function batchSetWeights(userId, records) {
+  for (let i=0; i<records.length; i+=499) {
+    const batch = writeBatch(db);
+    records.slice(i, i+499).forEach(r =>
+      batch.set(doc(db,'weights',userId,'records',r.date),
+        { date:r.date, weight:r.weight, updatedAt:serverTimestamp() }));
+    await batch.commit();
+  }
+}
+export async function deleteWeight(userId, dateStr) {
+  await deleteDoc(doc(db, 'weights', userId, 'records', dateStr));
+}
+
+// ── 업적 ──────────────────────────────────────────────────────────────
+export async function getEarnedAchievements(userId) {
+  const snap = await getDocs(collection(db, 'achievements', userId, 'earned'));
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+export async function saveEarnedAchievement(userId, achievementId, data) {
+  await setDoc(doc(db, 'achievements', userId, 'earned', achievementId),
+    { ...data, earnedAt: data.earnedAt || serverTimestamp() }, { merge: true });
+}
+export async function invalidateAchievement(userId, achievementId, invalidated) {
+  await setDoc(doc(db, 'achievements', userId, 'earned', achievementId),
+    { invalidated }, { merge: true });
+}
+
+// ── 티어 설정 ─────────────────────────────────────────────────────────
+export async function getTierSettings() {
+  const snap = await getDoc(doc(db, 'settings', 'tiers'));
+  return snap.exists() ? snap.data() : null;
+}
+export async function saveTierSettings(data) {
+  await setDoc(doc(db, 'settings', 'tiers'), data, { merge: true });
+}
+
+// ── 앱 설정 ──────────────────────────────────────────────────────────
+export const DEFAULT_SETTINGS = {
+  show7dayMA:true, showWeeklyBar:true, showPrediction:false,
+  showMaxMarker:true, showMinMarker:true, showCurMarker:true,
+  annotOpacity:0.88,
+  showStatPeriod:true, showStatStart:true, showStatCurrent:true,
+  showStatLoss:true, showStatRatio:true, showStatDaily:true,
+  showStatWeekly:true, showStatGoal:true, showStatETA:true,
+  showStatBMI:true, showStatStreak:true,
+};
+export async function getSettings() {
+  const snap = await getDoc(doc(db,'settings','chart'));
+  return snap.exists() ? { ...DEFAULT_SETTINGS, ...snap.data() } : { ...DEFAULT_SETTINGS };
+}
+export async function updateSettings(data) {
+  await setDoc(doc(db,'settings','chart'), data, { merge:true });
+}

@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>관리자 | 마웨그</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .admin-grid{display:grid;grid-template-columns:280px 1fr;gap:16px;}
+    @media(max-width:767px){.admin-grid{grid-template-columns:1fr;}}
+    .user-list-item{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:8px;cursor:pointer;transition:background .15s;}
+    .user-list-item:hover,.user-list-item.active{background:rgba(0,229,170,.08);}
+    .user-list-item .av{width:34px;height:34px;border-radius:50%;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+    .toggle-section-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;padding:10px 0 6px;border-bottom:1px solid var(--border);margin-bottom:2px;}
+    .toggle-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);}
+    .toggle-row:last-child{border-bottom:none;}
+    .switch{position:relative;display:inline-block;width:40px;height:22px;flex-shrink:0;}
+    .switch input{opacity:0;width:0;height:0;}
+    .slider{position:absolute;cursor:pointer;inset:0;background:rgba(255,255,255,.15);border-radius:24px;transition:.3s;}
+    .slider:before{position:absolute;content:"";height:16px;width:16px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s;}
+    input:checked+.slider{background:var(--teal);}
+    input:checked+.slider:before{transform:translateX(18px);}
+    .range-row{display:flex;align-items:center;gap:10px;padding:8px 0;}
+    input[type=range]{flex:1;accent-color:var(--teal);}
+    .rec-table{width:100%;border-collapse:collapse;font-size:13px;}
+    .rec-table th{text-align:left;padding:6px 8px;color:var(--muted);border-bottom:1px solid var(--border);font-size:11px;font-weight:600;}
+    .rec-table td{padding:6px 8px;border-bottom:1px solid rgba(255,255,255,.04);}
+    .rec-table tr:last-child td{border-bottom:none;}
+    .w-edit{background:transparent;border:none;border-bottom:1px solid transparent;color:var(--text);font-size:13px;width:64px;text-align:right;padding:2px 4px;transition:border-color .2s;}
+    .w-edit:focus{outline:none;border-bottom-color:var(--teal);background:rgba(0,229,170,.05);}
+    .del-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;padding:2px 6px;}
+    .del-btn:hover{color:var(--red);}
+    .saved-flash{color:var(--teal);font-size:11px;animation:fadeout 1.5s forwards;}
+    @keyframes fadeout{0%{opacity:1;}80%{opacity:1;}100%{opacity:0;}}
+    .pw-dots{display:flex;gap:6px;}
+    .pw-dot{width:10px;height:10px;border-radius:50%;border:2px solid var(--border);}
+    .pw-dot.filled{background:var(--teal);border-color:var(--teal);}
+    /* 탭 */
+    .admin-tabs{display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:0;}
+    .admin-tab{padding:8px 18px;border-radius:8px 8px 0 0;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;background:transparent;border:none;border-bottom:2px solid transparent;transition:all .15s;}
+    .admin-tab.active{color:var(--teal);border-bottom-color:var(--teal);}
+    .admin-tab:hover{color:var(--text);}
+    /* 데이터실 */
+    .border-gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:12px;margin-top:12px;}
+    .border-demo-wrap{display:flex;flex-direction:column;align-items:center;gap:8px;cursor:default;}
+    .border-demo{width:60px;height:60px;border-radius:50%;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;font-size:24px;position:relative;}
+    .border-demo-name{font-size:11px;color:var(--muted);text-align:center;}
+    .tier-table{width:100%;border-collapse:collapse;font-size:13px;}
+    .tier-table th{text-align:left;padding:8px 10px;color:var(--muted);border-bottom:1px solid var(--border);font-size:11px;}
+    .tier-table td{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.04);}
+    .tier-table tr:last-child td{border-bottom:none;}
+    .tier-color-swatch{width:28px;height:28px;border-radius:50%;border:2px solid rgba(255,255,255,.15);cursor:pointer;}
+    .ach-admin-list{display:flex;flex-direction:column;gap:4px;margin-top:8px;max-height:360px;overflow-y:auto;}
+    .ach-admin-row{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;background:var(--surface2);font-size:12px;}
+    .ach-admin-row.invalidated{opacity:.45;}
+    .ach-admin-row .ar-icon{font-size:16px;flex-shrink:0;}
+    .ach-admin-row .ar-info{flex:1;min-width:0;}
+    .ach-admin-row .ar-date{font-size:10px;color:var(--muted);}
+    .invalid-btn{font-size:11px;padding:3px 8px;border-radius:6px;cursor:pointer;background:rgba(239,83,80,.12);border:1px solid rgba(239,83,80,.25);color:var(--red);}
+    .invalid-btn.restore{background:rgba(0,229,170,.08);border-color:rgba(0,229,170,.25);color:var(--teal);}
+  </style>
+  <link rel="stylesheet" href="css/borders.css">
+</head>
+<body>
+<header class="top-bar">
+  <span class="title">🔐 관리자</span>
+  <div style="display:flex;align-items:center;gap:8px">
+    <a href="index.html" class="btn btn-ghost btn-sm">메인</a>
+    <button class="btn btn-ghost btn-sm" onclick="doLogout()">로그아웃</button>
+  </div>
+</header>
+
+<div class="page" id="app">
+  <div class="loading"><div class="spinner"></div> 인증 확인 중...</div>
+</div>
+<div class="page" id="dataroomPage" style="display:none"></div>
+<div class="toast" id="toast"></div>
+
+<div class="modal-bg" id="delModal">
+  <div class="modal">
+    <h3>⚠️ 사용자 삭제</h3>
+    <p style="font-size:14px;color:var(--muted);margin:10px 0 16px"><b id="delName"></b>의 모든 데이터가 삭제됩니다.</p>
+    <div class="flex-row gap-8">
+      <button class="btn btn-ghost btn-full" onclick="document.getElementById('delModal').classList.remove('open')">취소</button>
+      <button class="btn btn-danger btn-full" id="delConfirmBtn">삭제</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { onAuthChange, adminSignOut, ADMIN_UID,
+         getUsers, getUser, updateUser, deleteUser,
+         getWeights, setWeight, deleteWeight,
+         getSettings, updateSettings,
+         setUserPassword, parseWeight, DEFAULT_SETTINGS,
+         getEarnedAchievements, invalidateAchievement,
+         getTierSettings, saveTierSettings } from './js/db.js';
+import { ACHIEVEMENTS, DEFAULT_TIERS, getTierForScore } from './js/achievements.js';
+
+let allUsers=[], selectedUid=null, settings={};
+
+onAuthChange(async user => {
+  if (!user || user.uid !== ADMIN_UID) { location.href='admin-login.html'; return; }
+  await init();
+});
+window.doLogout = async () => { await adminSignOut(); location.href='admin-login.html'; };
+
+let tierSettings = null;
+
+async function init() {
+  [allUsers, settings, tierSettings] = await Promise.all([getUsers(), getSettings(), getTierSettings()]);
+  if (!tierSettings) tierSettings = { tiers: DEFAULT_TIERS };
+  renderTabBar();
+  renderApp();
+}
+
+function renderTabBar() {
+  const tabBar = document.createElement('div');
+  tabBar.className = 'admin-tabs';
+  tabBar.id = 'adminTabBar';
+  tabBar.innerHTML = `
+    <button class="admin-tab active" onclick="switchTab('users')">👥 사용자 관리</button>
+    <button class="admin-tab" onclick="switchTab('dataroom')">🗃️ 데이터실</button>`;
+  document.getElementById('app').before(tabBar);
+}
+
+window.switchTab = tab => {
+  document.querySelectorAll('.admin-tab').forEach((b,i) => b.classList.toggle('active', (i===0&&tab==='users')||(i===1&&tab==='dataroom')));
+  document.getElementById('app').style.display = tab === 'users' ? '' : 'none';
+  document.getElementById('dataroomPage').style.display = tab === 'dataroom' ? '' : 'none';
+  if (tab === 'dataroom') renderDataroom();
+};
+
+function renderApp() {
+  document.getElementById('app').innerHTML = `
+    <div class="admin-grid">
+      <div>
+        <div class="card">
+          <div class="section-title">👥 사용자</div>
+          <div id="userList"></div>
+        </div>
+        <div class="card mt-12">
+          <div class="section-title">⚙️ 기능 설정</div>
+          <div id="featurePanel"></div>
+        </div>
+      </div>
+      <div id="userDetail">
+        <div class="card" style="padding:40px;text-align:center;color:var(--muted)">왼쪽에서 사용자를 선택하세요</div>
+      </div>
+    </div>`;
+  renderUserList();
+  renderFeaturePanel();
+}
+
+function renderUserList() {
+  const el = document.getElementById('userList');
+  if (!allUsers.length) { el.innerHTML='<p class="text-muted" style="padding:10px 0;font-size:13px">사용자 없음</p>'; return; }
+  el.innerHTML = allUsers.map(u => `
+    <div class="user-list-item ${u.id===selectedUid?'active':''}" onclick="selectUser('${u.id}')">
+      <div class="av">${u.emoji||'⚖️'}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;font-size:13px">${u.name}</div>
+        <div style="font-size:11px;color:var(--muted)">${[u.goal?`목표 ${u.goal}kg`:'',u.height?`${u.height}cm`:'',u.birthYear?`${u.birthYear}년생`:''].filter(Boolean).join(' · ')}</div>
+      </div>
+      <button class="del-btn" onclick="event.stopPropagation();confirmDelete('${u.id}','${u.name}')">✕</button>
+    </div>`).join('');
+}
+
+// ── 기능 토글 ─────────────────────────────────────────────────────────
+const FEATURE_GROUPS = [
+  { title:'📈 그래프', items:[
+    {key:'show7dayMA',label:'7일 이동평균',desc:''},
+    {key:'showWeeklyBar',label:'주간 막대',desc:''},
+    {key:'showPrediction',label:'예상 그래프',desc:'기본 미체크'},
+  ]},
+  { title:'💬 말풍선', items:[
+    {key:'showMaxMarker',label:'최고 체중',desc:''},
+    {key:'showMinMarker',label:'최저 체중',desc:''},
+    {key:'showCurMarker',label:'현재 체중',desc:''},
+  ]},
+  { title:'📋 스탯 카드', items:[
+    {key:'showStatPeriod',label:'기간',desc:''},{key:'showStatStart',label:'시작 체중',desc:''},
+    {key:'showStatCurrent',label:'현재 체중',desc:''},{key:'showStatLoss',label:'총 감량',desc:''},
+    {key:'showStatRatio',label:'감량 비율',desc:''},{key:'showStatDaily',label:'일 평균',desc:''},
+    {key:'showStatWeekly',label:'주 평균',desc:''},{key:'showStatGoal',label:'목표까지',desc:''},
+    {key:'showStatETA',label:'달성 예상일',desc:''},{key:'showStatBMI',label:'BMI',desc:'키 필요'},
+    {key:'showStatStreak',label:'연속 감량',desc:'주 단위'},
+  ]},
+];
+function isOn(key) {
+  if (key==='showPrediction') return !!settings[key];
+  return settings[key]!==false;
+}
+function renderFeaturePanel() {
+  let html='';
+  FEATURE_GROUPS.forEach(g=>{
+    html+=`<div class="toggle-section-title">${g.title}</div>`;
+    g.items.forEach(f=>{
+      html+=`<div class="toggle-row">
+        <div><div style="font-size:13px">${f.label}</div>${f.desc?`<div style="font-size:11px;color:var(--muted)">${f.desc}</div>`:''}</div>
+        <label class="switch"><input type="checkbox" ${isOn(f.key)?'checked':''}
+          onchange="onToggle('${f.key}',this.checked)"><span class="slider"></span></label>
+      </div>`;
+    });
+  });
+  const opVal=Math.round((settings.annotOpacity??0.88)*100);
+  html+=`<div class="toggle-section-title">🎨 말풍선 투명도</div>
+    <div class="range-row">
+      <input type="range" id="opR" min="0" max="100" value="${opVal}" oninput="onOp(this.value)">
+      <span id="opV" style="font-size:13px;width:36px;text-align:right">${opVal}%</span>
+    </div>`;
+  document.getElementById('featurePanel').innerHTML=html;
+}
+window.onToggle=async(key,val)=>{settings[key]=val;await updateSettings({[key]:val});showToast('저장됨','ok');};
+window.onOp=async val=>{document.getElementById('opV').textContent=val+'%';await updateSettings({annotOpacity:val/100});};
+
+// ── 사용자 상세 ───────────────────────────────────────────────────────
+window.selectUser = async uid => {
+  selectedUid=uid; renderUserList();
+  document.getElementById('userDetail').innerHTML='<div class="loading"><div class="spinner"></div></div>';
+  const [user,records,earned]=await Promise.all([getUser(uid),getWeights(uid),getEarnedAchievements(uid)]);
+  renderDetail(user,records,earned);
+};
+
+function fmtTs(ts) {
+  if (!ts) return '-';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
+function renderDetail(user, records, earned=[]) {
+  const sorted=[...records].sort((a,b)=>b.date.localeCompare(a.date));
+  document.getElementById('userDetail').innerHTML=`
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:14px">
+        <div>
+          <div style="font-size:17px;font-weight:800">${user.emoji||'⚖️'} ${user.name}</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">
+            ${[user.height?`${user.height}cm`:'',user.birthYear?`${user.birthYear}년생`:'',`목표 ${user.goal||80}kg`].filter(Boolean).join(' · ')}
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn btn-primary btn-sm" onclick="window.open('dashboard.html?user=${user.id}&admin_view=1','_blank')">📊 그래프 보기</button>
+          <button class="btn btn-ghost btn-sm" onclick="openEditUser('${user.id}')">✏️ 수정</button>
+          <button class="btn btn-ghost btn-sm" onclick="openPwEdit('${user.id}','${user.name}')">🔑 비번</button>
+        </div>
+      </div>
+      <div class="section-title">${records.length}개 기록</div>
+      <div style="max-height:280px;overflow-y:auto;margin-top:6px">
+        <table class="rec-table">
+          <thead><tr><th>날짜</th><th style="text-align:right">체중</th><th></th><th></th></tr></thead>
+          <tbody id="recBody">${sorted.map(r=>recRow(user.id,r)).join('')}</tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 업적 -->
+    <div class="card mt-12">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div class="section-title" style="margin:0">🏆 업적 현황 (${earned.filter(a=>!a.invalidated).length}/${ACHIEVEMENTS.length})</div>
+        <span style="font-size:12px;color:var(--teal)">${earned.filter(a=>!a.invalidated).reduce((s,a)=>{const ac=ACHIEVEMENTS.find(x=>x.id===a.id);return s+(ac?.score||0);},0)}점</span>
+      </div>
+      ${earned.length ? `
+        <div class="ach-admin-list">
+          ${earned.sort((a,b)=>{const ta=a.earnedAt?.toDate?a.earnedAt.toDate():new Date(0);const tb=b.earnedAt?.toDate?b.earnedAt.toDate():new Date(0);return tb-ta;}).map(a=>{
+            const ac=ACHIEVEMENTS.find(x=>x.id===a.id);
+            if(!ac)return '';
+            return `<div class="ach-admin-row ${a.invalidated?'invalidated':''}" id="arow-${user.id}-${a.id}">
+              <div class="ar-icon">${ac.icon}</div>
+              <div class="ar-info">
+                <div style="font-weight:700">${ac.name} <span style="color:var(--teal);font-size:10px">+${ac.score}점</span>${a.invalidated?'<span style="color:var(--red);font-size:10px;margin-left:4px">무효</span>':''}</div>
+                <div class="ar-date">${fmtTs(a.earnedAt)}</div>
+              </div>
+              <button class="invalid-btn ${a.invalidated?'restore':''}" onclick="toggleInvalid('${user.id}','${a.id}',${!a.invalidated})">
+                ${a.invalidated?'복원':'무효화'}
+              </button>
+            </div>`;
+          }).join('')}
+        </div>
+      ` : '<p style="font-size:12px;color:var(--muted);padding:8px 0">달성한 업적이 없어요</p>'}
+    </div>`;
+}
+
+function recRow(uid,r){
+  return `<tr id="row-${r.date}">
+    <td style="color:var(--muted);font-size:12px">${r.date}</td>
+    <td style="text-align:right">
+      <input class="w-edit" type="number" step="0.1"
+        value="${r.weight!=null?r.weight.toFixed(1):''}"
+        onblur="saveW('${uid}','${r.date}',this)"
+        onkeydown="if(event.key==='Enter')this.blur()">
+      <span style="font-size:11px;color:var(--muted)">kg</span>
+    </td>
+    <td id="saved-${r.date}" style="width:24px"></td>
+    <td><button class="del-btn" onclick="removeW('${uid}','${r.date}')">🗑</button></td>
+  </tr>`;
+}
+window.saveW=async(uid,date,input)=>{
+  const w=parseWeight(input.value); if(w===null)return;
+  input.value=w.toFixed(1); await setWeight(uid,date,w);
+  const s=document.getElementById(`saved-${date}`);
+  if(s)s.innerHTML='<span class="saved-flash">✓</span>';
+};
+window.removeW=async(uid,date)=>{
+  await deleteWeight(uid,date);
+  document.getElementById(`row-${date}`)?.remove();
+  showToast('삭제됨','ok');
+};
+
+// ── 정보 수정 ─────────────────────────────────────────────────────────
+window.openEditUser=uid=>{
+  const u=allUsers.find(x=>x.id===uid); if(!u)return;
+  addModal(`
+    <h3>✏️ ${u.name} 정보 수정</h3>
+    <div class="input-group"><label class="input-label">목표 체중 (kg)</label>
+      <input class="input-field" id="eGoal" type="number" value="${u.goal||80}"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="input-group"><label class="input-label">키 (cm)</label>
+        <input class="input-field" id="eHeight" type="number" value="${u.height||''}"></div>
+      <div class="input-group"><label class="input-label">출생연도</label>
+        <input class="input-field" id="eBirthYear" type="number" value="${u.birthYear||''}"></div>
+    </div>
+    <div class="flex-row gap-8 mt-12">
+      <button class="btn btn-ghost btn-full" onclick="rmModal()">취소</button>
+      <button class="btn btn-primary btn-full" onclick="saveEdit('${uid}')">저장</button>
+    </div>`);
+};
+window.saveEdit=async uid=>{
+  const goal=parseFloat(document.getElementById('eGoal').value)||80;
+  const height=parseInt(document.getElementById('eHeight').value)||null;
+  const birthYear=parseInt(document.getElementById('eBirthYear').value)||null;
+  await updateUser(uid,{goal,height,birthYear});
+  allUsers=await getUsers(); rmModal();
+  selectUser(uid); renderUserList(); showToast('저장됨','ok');
+};
+
+// ── 비밀번호 관리 ─────────────────────────────────────────────────────
+window.openPwEdit=(uid,name)=>{
+  addModal(`
+    <h3>🔑 ${name} 비밀번호</h3>
+    <div class="input-group"><label class="input-label">새 비밀번호 (4자리 숫자)</label>
+      <input class="input-field" id="newPw" type="password" inputmode="numeric" maxlength="4" placeholder="0000"></div>
+    <div class="input-group"><label class="input-label">확인</label>
+      <input class="input-field" id="newPwC" type="password" inputmode="numeric" maxlength="4" placeholder="0000"></div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:12px">비워두면 비밀번호 제거</p>
+    <div class="flex-row gap-8">
+      <button class="btn btn-ghost btn-full" onclick="rmModal()">취소</button>
+      <button class="btn btn-primary btn-full" onclick="savePw('${uid}')">저장</button>
+    </div>`);
+};
+window.savePw=async uid=>{
+  const pw=document.getElementById('newPw').value;
+  const pwC=document.getElementById('newPwC').value;
+  if(pw && pw!==pwC){showToast('비밀번호 불일치','err');return;}
+  if(pw && !/^\d{4}$/.test(pw)){showToast('숫자 4자리로 입력해주세요','err');return;}
+  await setUserPassword(uid, pw||null);
+  allUsers=await getUsers(); rmModal();
+  selectUser(uid); showToast('비밀번호 변경됨','ok');
+};
+
+// ── 삭제 ─────────────────────────────────────────────────────────────
+window.confirmDelete=(uid,name)=>{
+  document.getElementById('delName').textContent=name;
+  document.getElementById('delModal').classList.add('open');
+  document.getElementById('delConfirmBtn').onclick=async()=>{
+    await deleteUser(uid); allUsers=await getUsers();
+    if(selectedUid===uid){selectedUid=null;document.getElementById('userDetail').innerHTML='<div class="card" style="padding:40px;text-align:center;color:var(--muted)">선택하세요</div>';}
+    document.getElementById('delModal').classList.remove('open');
+    renderUserList(); showToast(`${name} 삭제 완료`,'ok');
+  };
+};
+
+// ── 업적 무효화 ───────────────────────────────────────────────────────
+window.toggleInvalid = async (uid, achId, invalidate) => {
+  await invalidateAchievement(uid, achId, invalidate);
+  // Update UI in place
+  const row = document.getElementById(`arow-${uid}-${achId}`);
+  if (row) {
+    row.classList.toggle('invalidated', invalidate);
+    const btn = row.querySelector('.invalid-btn');
+    if (btn) { btn.textContent = invalidate ? '복원' : '무효화'; btn.classList.toggle('restore', invalidate); }
+    const nameDiv = row.querySelector('.ar-info > div');
+    const existing = nameDiv?.querySelector('span[style*="red"]');
+    if (invalidate && nameDiv && !existing) nameDiv.insertAdjacentHTML('beforeend','<span style="color:var(--red);font-size:10px;margin-left:4px">무효</span>');
+    if (!invalidate && existing) existing.remove();
+  }
+  showToast(invalidate ? '업적 무효화됨' : '업적 복원됨', 'ok');
+};
+
+// ── 데이터실 ─────────────────────────────────────────────────────────
+const BORDER_LIST = [
+  { id:'pulse-glow',        name:'펄스 글로우' },
+  { id:'rotating-gradient', name:'회전 그라데이션' },
+  { id:'rainbow',           name:'레인보우' },
+  { id:'shimmer',           name:'샤이머' },
+  { id:'flame',             name:'화염' },
+  { id:'ice',               name:'얼음' },
+  { id:'lightning',         name:'번개' },
+  { id:'neon',              name:'네온' },
+  { id:'energy-wave',       name:'에너지 파동' },
+  { id:'gold-shine',        name:'골드 샤인' },
+  { id:'platinum',          name:'플래티넘' },
+  { id:'aurora',            name:'오로라' },
+  { id:'double-ring',       name:'더블 링' },
+  { id:'dashed-spin',       name:'대시 회전' },
+  { id:'corona',            name:'코로나' },
+  { id:'gradient-shift',    name:'그라데이션 시프트' },
+  { id:'starlight',         name:'별빛' },
+  { id:'hologram',          name:'홀로그램' },
+  { id:'diamond',           name:'다이아몬드' },
+  { id:'challenger',        name:'챌린저' },
+];
+
+const LEGENDARY_ACHIEVEMENTS = ACHIEVEMENTS.filter(a => a.legendary);
+
+// 칭호 목록을 Firebase settings/titles에서 관리
+let titleList = []; // [{ id, name, achId }]
+let borderAssign = {}; // { borderId: achId }
+
+// titles & border assignments are stored as extra fields in tierSettings
+
+function collapsibleSection(id, title, content) {
+  return `
+    <div class="card mt-12">
+      <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:2px 0"
+           onclick="toggleDR('${id}')">
+        <div class="section-title" style="margin:0">${title}</div>
+        <span id="dr-arrow-${id}" style="color:var(--muted);font-size:13px">▼ 펼치기</span>
+      </div>
+      <div id="dr-body-${id}" style="display:none;margin-top:14px">${content}</div>
+    </div>`;
+}
+
+window.toggleDR = id => {
+  const body  = document.getElementById(`dr-body-${id}`);
+  const arrow = document.getElementById(`dr-arrow-${id}`);
+  if (!body) return;
+  const open = body.style.display === 'none';
+  body.style.display = open ? '' : 'none';
+  arrow.textContent  = open ? '▲ 접기' : '▼ 펼치기';
+};
+
+function achOptions(selected='') {
+  return `<option value="">없음</option>` +
+    LEGENDARY_ACHIEVEMENTS.map(a =>
+      `<option value="${a.id}" ${selected===a.id?'selected':''}>${a.name}</option>`
+    ).join('');
+}
+
+function renderDataroom() {
+  titleList    = tierSettings?.titles    || [];
+  borderAssign = tierSettings?.borderAssign || {};
+  const tiers  = tierSettings?.tiers || DEFAULT_TIERS;
+  const sorted = [...tiers].sort((a,b) => b.minScore - a.minScore);
+
+  // 티어 관리
+  const tierContent = `
+    <p style="font-size:12px;color:var(--muted);margin-bottom:12px">점수 컷·색상 수정 후 저장하세요. 변경 즉시 적용됩니다.</p>
+    <table class="tier-table">
+      <thead><tr><th>티어</th><th>이름</th><th>최소 점수</th><th>색상</th></tr></thead>
+      <tbody>${sorted.map(t=>`
+        <tr>
+          <td><div style="display:flex;align-items:center;gap:6px"><div style="width:12px;height:12px;border-radius:50%;background:${t.color}"></div><span style="font-size:11px;color:var(--muted)">${t.id}</span></div></td>
+          <td><input class="input-field" style="padding:4px 8px;font-size:12px;width:110px" value="${t.name}" data-tier="${t.id}" data-field="name"></td>
+          <td><input class="input-field" type="number" style="padding:4px 8px;font-size:12px;width:72px" value="${t.minScore}" data-tier="${t.id}" data-field="minScore"></td>
+          <td><div style="display:flex;align-items:center;gap:6px">
+            <input type="color" value="${t.color}" data-tier="${t.id}" data-field="color" onchange="updateTierColor(this)" style="width:32px;height:26px;border:none;background:none;cursor:pointer;border-radius:4px">
+            <span style="font-size:11px;font-weight:700;color:${t.color}" id="tc-${t.id}">${t.color}</span>
+          </div></td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+    <button class="btn btn-primary btn-sm mt-12" onclick="saveTiers()">💾 저장</button>`;
+
+  // 테두리 관리
+  const borderContent = `
+    <p style="font-size:12px;color:var(--muted);margin-bottom:10px">테두리 미리보기. 각 테두리에 위업을 연결하면 그 위업 달성 시 잠금해제됩니다.</p>
+    <div class="border-gallery">
+      ${BORDER_LIST.map(b=>`
+        <div class="border-demo-wrap" title="${b.name}">
+          <div class="avatar-frame border-${b.id}" style="--tier-color:#CD7F32">
+            <div class="border-demo">😊</div>
+          </div>
+          <div class="border-demo-name">${b.name}</div>
+          <select class="input-field" style="padding:3px 6px;font-size:10px;margin-top:4px;width:100%"
+            data-border="${b.id}" onchange="saveBorderAssign()">
+            ${achOptions(borderAssign[b.id]||'')}
+          </select>
+        </div>`).join('')}
+    </div>`;
+
+  // 칭호 관리
+  const titleContent = `
+    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+      <input class="input-field" id="newTitleName" placeholder="칭호 이름" style="flex:1;min-width:120px">
+      <select class="input-field" id="newTitleAch" style="flex:1;min-width:140px">${achOptions()}</select>
+      <button class="btn btn-primary btn-sm" onclick="addTitle()">추가</button>
+    </div>
+    <div id="titleListEl">${renderTitleList()}</div>`;
+
+  document.getElementById('dataroomPage').innerHTML =
+    collapsibleSection('tier',   '🏅 티어 관리',   tierContent) +
+    collapsibleSection('border', '🖼️ 테두리 관리', borderContent) +
+    collapsibleSection('title',  '🏷️ 칭호 관리',   titleContent);
+}
+
+function renderTitleList() {
+  if (!titleList.length) return '<p style="font-size:12px;color:var(--muted)">칭호가 없어요. 위에서 추가하세요.</p>';
+  return titleList.map((t,i) => `
+    <div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border)">
+      <input class="input-field" style="flex:1;padding:4px 8px;font-size:12px" value="${t.name}"
+        onblur="updateTitleName(${i},this.value)">
+      <select class="input-field" style="flex:1;padding:4px 8px;font-size:11px"
+        onchange="updateTitleAch(${i},this.value)">${achOptions(t.achId||'')}</select>
+      <button class="del-btn" onclick="removeTitle(${i})">✕</button>
+    </div>`).join('');
+}
+
+window.addTitle = async () => {
+  const name = document.getElementById('newTitleName').value.trim();
+  const achId= document.getElementById('newTitleAch').value;
+  if (!name) { showToast('칭호 이름을 입력해주세요','err'); return; }
+  titleList.push({ id: Date.now().toString(36), name, achId });
+  await saveDrSettings();
+  document.getElementById('titleListEl').innerHTML = renderTitleList();
+  document.getElementById('newTitleName').value = '';
+  showToast('칭호 추가됨','ok');
+};
+window.removeTitle = async i => {
+  titleList.splice(i,1);
+  await saveDrSettings();
+  document.getElementById('titleListEl').innerHTML = renderTitleList();
+  showToast('칭호 삭제됨','ok');
+};
+window.updateTitleName = async (i,v) => { titleList[i].name=v; await saveDrSettings(); };
+window.updateTitleAch  = async (i,v) => { titleList[i].achId=v; await saveDrSettings(); showToast('저장됨','ok'); };
+
+window.saveBorderAssign = async () => {
+  borderAssign={};
+  document.querySelectorAll('select[data-border]').forEach(s=>{
+    if(s.value) borderAssign[s.dataset.border]=s.value;
+  });
+  await saveDrSettings();
+  showToast('테두리 연결 저장됨','ok');
+};
+
+async function saveDrSettings() {
+  await saveTierSettings({ titles: titleList, borderAssign });
+  tierSettings = { ...tierSettings, titles: titleList, borderAssign };
+}
+
+window.updateTierColor = (input) => {
+  const id = input.dataset.tier;
+  const el = document.getElementById(`tc-${id}`);
+  if(el){el.textContent=input.value;el.style.color=input.value;}
+};
+
+window.saveTiers = async () => {
+  const tiers = (tierSettings?.tiers || DEFAULT_TIERS).map(t => {
+    const nameEl  = document.querySelector(`input[data-tier="${t.id}"][data-field="name"]`);
+    const scoreEl = document.querySelector(`input[data-tier="${t.id}"][data-field="minScore"]`);
+    const colorEl = document.querySelector(`input[data-tier="${t.id}"][data-field="color"]`);
+    return { ...t,
+      name:     nameEl  ? nameEl.value.trim()       : t.name,
+      minScore: scoreEl ? parseInt(scoreEl.value)||0 : t.minScore,
+      color:    colorEl ? colorEl.value              : t.color,
+    };
+  });
+  await saveTierSettings({ tiers });
+  tierSettings = { ...tierSettings, tiers };
+  showToast('티어 설정 저장됨 ✓', 'ok');
+};
+
+// ── 모달 헬퍼 ─────────────────────────────────────────────────────────
+function addModal(html){
+  document.getElementById('delModal').insertAdjacentHTML('beforebegin',
+    `<div class="modal-bg open" id="dynModal"><div class="modal">${html}</div></div>`);
+  document.getElementById('dynModal').addEventListener('click', e=>{
+    if(e.target===document.getElementById('dynModal')) rmModal();
+  });
+}
+window.rmModal=()=>document.getElementById('dynModal')?.remove();
+
+// delModal 바깥 클릭 닫기
+document.getElementById('delModal').addEventListener('click', e=>{
+  if(e.target===document.getElementById('delModal'))
+    document.getElementById('delModal').classList.remove('open');
+});
+
+function showToast(msg,type='ok'){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className=`toast show ${type}`;
+  setTimeout(()=>t.className='toast',2000);
+}
+</script>
+</body>
+</html>

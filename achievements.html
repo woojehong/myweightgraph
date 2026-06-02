@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0d1117">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="favicon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
+  <title>업적 | 마웨그</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/borders.css">
+  <style>
+    /* ── 게임 프로필 카드 ─────────────────────────────────────────── */
+    .profile-card {
+      position: relative; overflow: hidden;
+      border-radius: 16px; padding: 28px 20px 22px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: var(--surface);
+      text-align: center;
+    }
+    .profile-card::after {
+      content:''; position:absolute; inset:0; border-radius:16px;
+      background: radial-gradient(ellipse 90% 55% at 50% -5%, var(--tc-a18,rgba(0,229,170,.18)) 0%, transparent 70%);
+      pointer-events:none;
+    }
+    /* 배경 장식선 */
+    .profile-card::before {
+      content:'';
+      position:absolute; inset:0;
+      background: repeating-linear-gradient(
+        -55deg,
+        transparent, transparent 40px,
+        rgba(255,255,255,.015) 40px,
+        rgba(255,255,255,.015) 41px
+      );
+      pointer-events:none;
+    }
+    .profile-card-inner { position:relative; z-index:1; }
+
+    /* 칭호 */
+    .profile-title-badge {
+      display: inline-block;
+      font-size: 11px; font-weight: 800; letter-spacing: .1em;
+      color: var(--tc);
+      border: 1px solid rgba(255,255,255,.2);
+      background: rgba(255,255,255,.06);
+      border-radius: 20px; padding: 3px 12px; margin-bottom: 10px;
+    }
+
+    /* 이름 */
+    .profile-name {
+      font-size: 30px; font-weight: 900; letter-spacing: -1px;
+      color: var(--tc);
+      text-shadow: 0 0 24px color-mix(in srgb, var(--tc) 50%, transparent);
+      margin-bottom: 8px; line-height: 1.1;
+    }
+
+    /* 티어 뱃지 */
+    .profile-tier {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 12px; font-weight: 700; letter-spacing: .08em;
+      color: var(--tc); margin-bottom: 22px;
+    }
+    .profile-tier-dot { width:6px; height:6px; border-radius:50%; background:var(--tc); }
+
+    /* 스탯 행 */
+    .profile-stats {
+      display: flex; align-items: center; justify-content: center; gap: 0;
+      margin-bottom: 20px;
+    }
+    .profile-stat { flex:1; }
+    .profile-stat-divider {
+      width: 1px; height: 52px;
+      background: rgba(255,255,255,.1);
+      flex-shrink: 0;
+    }
+    .profile-score-num {
+      font-size: 42px; font-weight: 900; line-height: 1;
+      color: var(--tc);
+      text-shadow: 0 0 16px color-mix(in srgb, var(--tc) 40%, transparent);
+    }
+    .profile-score-pt { font-size: 13px; font-weight: 600; color: var(--tc); opacity:.7; margin-left:2px; }
+    .profile-stat-label { font-size: 10px; color: var(--muted); margin-top: 3px; letter-spacing:.05em; text-transform:uppercase; }
+
+    /* 도넛 */
+    .donut-wrap { position:relative; width:64px; height:64px; margin:0 auto; }
+    .donut-wrap svg { transform: rotate(-90deg); }
+    .donut-center {
+      position:absolute; inset:0;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+    }
+    .donut-num { font-size:14px; font-weight:900; color:var(--tc); line-height:1; }
+    .donut-denom { font-size:9px; color:var(--muted); }
+
+    /* 진행 바 */
+    .profile-progress-section { margin: 0 4px; }
+    .profile-progress-labels {
+      display:flex; justify-content:space-between;
+      font-size:10px; color:var(--muted); margin-bottom:5px; font-weight:600;
+    }
+    .profile-progress-bar {
+      height: 16px; border-radius: 8px;
+      background: rgba(255,255,255,.06); overflow: hidden;
+      position: relative; border: 1px solid rgba(255,255,255,.1);
+    }
+    .profile-progress-fill {
+      height: 100%; border-radius: 8px;
+      background: linear-gradient(90deg, rgba(0,0,0,.3), transparent), var(--tc);
+      position: relative; transition: width .8s cubic-bezier(.22,1,.36,1);
+      overflow: hidden;
+    }
+    .profile-progress-fill::after {
+      content:'';
+      position:absolute; top:0; left:-100%; width:60%; height:100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.35), transparent);
+      animation: shimmer-prog 2.5s ease-in-out infinite;
+    }
+    @keyframes shimmer-prog { to { left: 200%; } }
+    .profile-progress-text {
+      position:absolute; inset:0;
+      display:flex; align-items:center; justify-content:center;
+      font-size:10px; font-weight:700; color:rgba(255,255,255,.85);
+      text-shadow: 0 1px 2px rgba(0,0,0,.5);
+    }
+    .profile-max { font-size:13px; color:var(--tc); font-weight:700; margin-top:4px; }
+
+    /* 최근 달성 */
+    .recent-wrap { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; padding: 4px 0; }
+    .recent-card {
+      width: 130px; background: var(--surface); border: 1px solid rgba(0,229,170,.3);
+      border-radius: 12px; padding: 14px 10px; text-align: center;
+      box-shadow: 0 2px 12px rgba(0,229,170,.08);
+    }
+    .recent-card.legendary {
+      border-color: rgba(255,215,0,.5); background: rgba(255,215,0,.07);
+      box-shadow: 0 2px 16px rgba(255,215,0,.12);
+    }
+    .recent-card .rc-icon { font-size: 30px; margin-bottom: 7px; }
+    .recent-card .rc-name { font-size: 11px; font-weight: 700; color: var(--text); line-height: 1.3; }
+    .recent-card .rc-score { font-size: 11px; color: var(--teal); font-weight: 700; margin-top: 4px; }
+    .recent-card.legendary .rc-score { color: #FFD700; }
+    .recent-card .rc-date { font-size: 10px; color: var(--muted); margin-top: 2px; }
+
+    /* 레이아웃 */
+    .ach-layout { display: flex; gap: 16px; margin-top: 16px; }
+    .ach-sidebar { width: 140px; flex-shrink: 0; }
+    .ach-main { flex: 1; min-width: 0; }
+    @media (max-width: 767px) {
+      .ach-layout { flex-direction: column; }
+      .ach-sidebar { width: 100%; }
+    }
+
+    /* 카테고리 */
+    .cat-list { display: flex; flex-direction: column; gap: 4px; }
+    @media (max-width: 767px) {
+      .cat-list { flex-direction: row; overflow-x: auto; gap: 6px; padding-bottom: 4px; }
+    }
+    .cat-btn {
+      display: flex; align-items: center; gap: 8px;
+      padding: 9px 12px; border-radius: 8px; font-size: 13px;
+      background: transparent; border: 1px solid transparent;
+      color: var(--muted); cursor: pointer; transition: all .15s;
+      white-space: nowrap; text-align: left; width: 100%;
+    }
+    .cat-btn:hover { background: var(--surface2); color: var(--text); }
+    .cat-btn.active { background: rgba(0,229,170,.1); border-color: rgba(0,229,170,.3); color: var(--teal); }
+    .cat-count { margin-left: auto; font-size: 10px; }
+    @media (max-width: 767px) { .cat-btn { padding: 7px 10px; } .cat-count { display: none; } }
+
+    /* 업적 카드 */
+    .ach-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+    .ach-card {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 10px; padding: 14px 12px;
+      position: relative; transition: all .2s;
+    }
+    .ach-card.earned { background: rgba(0,229,170,.04); border-color: rgba(0,229,170,.2); }
+    .ach-card.legendary.earned {
+      background: rgba(255,215,0,.06); border-color: rgba(255,215,0,.35);
+      box-shadow: 0 0 12px rgba(255,215,0,.1);
+    }
+    .ach-card.locked { opacity: .38; }
+    .ach-card .ac-icon { font-size: 26px; margin-bottom: 7px; }
+    .ach-card .ac-name { font-size: 13px; font-weight: 700; margin-bottom: 3px; }
+    .ach-card .ac-desc { font-size: 11px; color: var(--muted); line-height: 1.4; }
+    .ach-card .ac-score {
+      position: absolute; top: 10px; right: 10px;
+      font-size: 11px; font-weight: 700; color: var(--teal);
+      background: rgba(0,229,170,.1); border-radius: 10px; padding: 2px 7px;
+    }
+    .ach-card.legendary .ac-score { color: #FFD700; background: rgba(255,215,0,.1); }
+    .ach-card .ac-date { font-size: 10px; color: var(--muted); margin-top: 5px; }
+    .legendary-badge {
+      display: inline-block; font-size: 9px; font-weight: 800;
+      background: linear-gradient(90deg,#FFD700,#FFA500); color: #0d1117;
+      border-radius: 4px; padding: 1px 5px; margin-bottom: 4px; letter-spacing:.04em;
+    }
+    .lock-icon { position: absolute; bottom: 10px; right: 10px; font-size: 14px; opacity:.5; }
+
+    /* 진행 바 */
+    .prog-bar-wrap { margin-top: 8px; }
+    .prog-bar {
+      height: 14px; border-radius: 7px;
+      background: rgba(255,255,255,.07); overflow: hidden; position: relative;
+    }
+    .prog-fill {
+      height: 100%; border-radius: 7px;
+      background: linear-gradient(90deg, rgba(0,229,170,.5), rgba(79,195,247,.5));
+      transition: width .4s;
+    }
+    .ach-card.legendary .prog-fill { background: linear-gradient(90deg, rgba(255,215,0,.5), rgba(255,165,0,.5)); }
+    .prog-text {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      font-size: 9px; font-weight: 700; color: rgba(255,255,255,.75);
+    }
+
+    /* 프로필 모달 이모지 그리드 */
+    .p-emoji-btn {
+      font-size:22px;padding:4px;border-radius:7px;cursor:pointer;
+      background:transparent;border:2px solid transparent;transition:all .15s;
+    }
+    .p-emoji-btn.sel { border-color:var(--teal);background:rgba(0,229,170,.15); }
+  </style>
+</head>
+<body>
+<header class="top-bar">
+  <a href="index.html?select=1" class="title" style="text-decoration:none;color:inherit">🏆 업적</a>
+  <nav class="side-nav" id="sideNav"></nav>
+  <div style="display:flex;align-items:center;gap:8px">
+    <div class="user-chip" onclick="openProfileEdit()" style="cursor:pointer">
+      <span id="chipEmoji">⚖️</span><span id="chipName">-</span>
+      <span style="font-size:10px;color:var(--muted);margin-left:2px">✏️</span>
+    </div>
+    <button class="btn btn-ghost btn-sm" onclick="doLogout()">로그아웃</button>
+  </div>
+</header>
+
+<!-- 프로필 수정 모달 -->
+<div class="modal-bg" id="profileModal">
+  <div class="modal" style="max-height:90vh;overflow-y:auto">
+    <h3>✏️ 프로필 수정</h3>
+    <div class="input-group">
+      <label class="input-label">이모지</label>
+      <div id="pEmojiGrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:8px"></div>
+      <input class="input-field" id="pCustomEmoji" placeholder="직접 입력 (예: 🦁)" maxlength="4">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="input-group">
+        <label class="input-label">키 (cm) *</label>
+        <input class="input-field" id="pHeight" type="number" placeholder="175" min="100" max="250">
+      </div>
+      <div class="input-group">
+        <label class="input-label">출생연도 *</label>
+        <input class="input-field" id="pBirthYear" type="number" placeholder="1990" min="1930" max="2010">
+      </div>
+    </div>
+    <div class="input-group mt-8" id="pTitleGroup" style="display:none">
+      <label class="input-label">칭호</label>
+      <div id="pTitleSection"></div>
+    </div>
+    <div class="input-group mt-8">
+      <label class="input-label" id="pPwLabel">비밀번호 변경</label>
+      <div id="pPwSection"></div>
+    </div>
+    <div class="flex-row gap-8 mt-12">
+      <button class="btn btn-ghost btn-full" onclick="closeProfileEdit()">취소</button>
+      <button class="btn btn-primary btn-full" onclick="saveProfileEdit()">저장</button>
+    </div>
+  </div>
+</div>
+
+<div class="page">
+  <div id="content">
+    <div class="loading"><div class="spinner"></div> 업적 계산 중...</div>
+  </div>
+</div>
+
+<nav class="bottom-nav" id="bottomNav"></nav>
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { getUser, getWeights, getEarnedAchievements, saveEarnedAchievement, updateUser,
+         getTierSettings, setUserPassword } from './js/db.js';
+import { isAuthed, clearAuth, saveAuth } from './js/auth.js';
+import { ACHIEVEMENTS, ACHIEVEMENT_CATEGORIES, calculateEarnedIds, calcTotalScore,
+         getTierForScore, DEFAULT_TIERS, calculateProgress } from './js/achievements.js';
+
+const uid = new URLSearchParams(location.search).get('user') || localStorage.getItem('uid');
+if (!uid) location.href = 'index.html';
+
+let currentCat = 'all';
+let _user = null, _validEarned, _storedMap, _progress;
+
+const EMOJIS = ['⚖️','💪','🔥','👑','🏃','🌟','🎯','😤','🦁','🐯','🐻','🐺','🦊','🐸','🐼','🦋','🍎','🥗','🥑','🎽','🏋️','🚴','🧘','💎','🌈','⚡','🎖️','🏆','🌙','☀️','💫','✨'];
+let selEmoji = '';
+
+window.doLogout = () => { clearAuth(); localStorage.removeItem('uid'); location.href = 'index.html'; };
+
+function buildNav() {
+  const links = [
+    { href:`dashboard.html?user=${uid}`,   icon:'📊', label:'그래프',   id:'dashboard' },
+    { href:`input.html?user=${uid}`,        icon:'✏️',  label:'체중 입력', id:'input' },
+    { href:`achievements.html?user=${uid}`, icon:'🏆', label:'업적',     id:'achievements' },
+  ];
+  [document.getElementById('bottomNav'), document.getElementById('sideNav')].forEach((nav, ni) => {
+    links.forEach(l => {
+      const a = document.createElement('a');
+      a.href = l.href; a.className = l.id === 'achievements' ? 'active' : '';
+      a.innerHTML = ni === 0 ? `<span class="icon">${l.icon}</span>${l.label}` : `${l.icon} ${l.label}`;
+      nav.appendChild(a);
+    });
+  });
+}
+
+function fmtDate(ts) {
+  if (!ts) return '';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+}
+
+async function render() {
+  buildNav();
+  const [user, records] = await Promise.all([getUser(uid), getWeights(uid)]);
+  if (!user) { location.href = 'index.html'; return; }
+
+  // Firebase 권한 오류 시 빈 배열로 fallback
+  const [storedRaw, tierData] = await Promise.all([
+    getEarnedAchievements(uid).catch(() => []),
+    getTierSettings().catch(() => null)
+  ]);
+  _user = user;
+
+  document.getElementById('chipName').textContent  = user.name;
+  document.getElementById('chipEmoji').textContent = user.emoji || '⚖️';
+  document.title = `${user.name} 업적 | 마웨그`;
+
+  const tiers = tierData?.tiers || DEFAULT_TIERS;
+  const storedMap = Object.fromEntries(storedRaw.map(a => [a.id, a]));
+  const alreadyInDb = new Set(storedRaw.map(a => a.id));
+  const shouldEarn = calculateEarnedIds(records, user);
+  const newlyEarned = [...shouldEarn].filter(id => !alreadyInDb.has(id));
+  await Promise.all(newlyEarned.map(id => {
+    const ach = ACHIEVEMENTS.find(a => a.id === id);
+    return saveEarnedAchievement(uid, id, { score: ach?.score || 0, invalidated: false });
+  }));
+
+  const validEarned = new Set([
+    ...storedRaw.filter(a => !a.invalidated && shouldEarn.has(a.id)).map(a => a.id),
+    ...newlyEarned
+  ]);
+
+  const totalScore = calcTotalScore(validEarned);
+  const tier = getTierForScore(totalScore, tiers);
+  const nextTier = [...tiers].sort((a,b)=>a.minScore-b.minScore).find(t=>t.minScore>totalScore);
+  if (user.totalScore !== totalScore) await updateUser(uid, { totalScore });
+
+  _validEarned = validEarned;
+  _storedMap   = storedMap;
+  _progress    = calculateProgress(records, user);
+
+  // 최근 달성 업적 5개
+  const earnedWithDate = [...validEarned].map(id => {
+    const ach = ACHIEVEMENTS.find(a => a.id === id);
+    return { ...ach, earnedAt: storedMap[id]?.earnedAt };
+  }).filter(Boolean).sort((a,b) => {
+    const da = a.earnedAt?.toDate ? a.earnedAt.toDate() : new Date(0);
+    const db = b.earnedAt?.toDate ? b.earnedAt.toDate() : new Date(0);
+    return db - da;
+  });
+  const recentFive = earnedWithDate.slice(0, 5);
+
+  const tierProg = nextTier
+    ? Math.round((totalScore - tier.minScore) / (nextTier.minScore - tier.minScore) * 100)
+    : 100;
+
+  // 도넛 계산
+  const donutR   = 27;
+  const donutC   = 2 * Math.PI * donutR; // ~169.6
+  const donutPct = validEarned.size / ACHIEVEMENTS.length;
+  const donutFill = (donutPct * donutC).toFixed(1);
+
+  document.getElementById('content').innerHTML = `
+    <div class="profile-card" style="--tc:${tier.color};border-color:${tier.color}55">
+      <div class="profile-card-inner">
+
+        ${user.selectedTitle ? `<div class="profile-title-badge">${user.selectedTitle}</div>` : ''}
+
+        <div class="profile-name" id="profileName">${user.name}</div>
+
+        <div class="profile-tier">
+          <div class="profile-tier-dot"></div>
+          ${tier.name}
+          <div class="profile-tier-dot"></div>
+        </div>
+
+        <div class="profile-stats">
+          <!-- 점수 -->
+          <div class="profile-stat">
+            <div class="profile-stat-label">업적 점수</div>
+            <div>
+              <span class="profile-score-num" id="scoreCountup">0</span>
+              <span class="profile-score-pt">PT</span>
+            </div>
+          </div>
+
+          <div class="profile-stat-divider"></div>
+
+          <!-- 도넛 -->
+          <div class="profile-stat">
+            <div class="profile-stat-label">달성 업적</div>
+            <div class="donut-wrap">
+              <svg viewBox="0 0 64 64" width="64" height="64">
+                <circle cx="32" cy="32" r="${donutR}" fill="none"
+                  stroke="rgba(255,255,255,.07)" stroke-width="5"/>
+                <circle cx="32" cy="32" r="${donutR}" fill="none"
+                  stroke="${tier.color}" stroke-width="5"
+                  stroke-dasharray="${donutFill} ${donutC.toFixed(1)}"
+                  stroke-dashoffset="${(donutC * 0.25).toFixed(1)}"
+                  stroke-linecap="round"
+                  style="transition:stroke-dasharray .8s cubic-bezier(.22,1,.36,1)"/>
+              </svg>
+              <div class="donut-center">
+                <div class="donut-num">${validEarned.size}</div>
+                <div class="donut-denom">/ ${ACHIEVEMENTS.length}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 다음 티어 진행 바 -->
+        ${nextTier ? `
+          <div class="profile-progress-section">
+            <div class="profile-progress-labels">
+              <span>${tier.name}</span>
+              <span style="color:rgba(255,255,255,.35)">${nextTier.name}까지 ${nextTier.minScore - totalScore}점</span>
+              <span>${nextTier.name}</span>
+            </div>
+            <div class="profile-progress-bar">
+              <div class="profile-progress-fill" id="tierProgFill" style="width:0%"></div>
+              <div class="profile-progress-text">${totalScore} / ${nextTier.minScore} PT</div>
+            </div>
+          </div>
+        ` : `<div class="profile-max">🏆 최고 티어 달성!</div>`}
+
+      </div>
+    </div>`;
+
+    ${recentFive.length ? `
+    <div class="mt-12">
+      <div class="section-title" style="text-align:center">최근 달성 업적</div>
+      <div class="recent-wrap">
+        ${recentFive.map(a => `
+          <div class="recent-card ${a.legendary?'legendary':''}">
+            <div class="rc-icon">${a.icon}</div>
+            <div class="rc-name">${a.name}</div>
+            <div class="rc-score">+${a.score}점</div>
+            <div class="rc-date">${fmtDate(a.earnedAt)}</div>
+          </div>`).join('')}
+      </div>
+    </div>` : ''}
+
+    <div class="ach-layout">
+      <div class="ach-sidebar">
+        <div class="card" style="padding:8px">
+          <div class="cat-list" id="catList"></div>
+        </div>
+      </div>
+      <div class="ach-main" id="achMain"></div>
+    </div>`;
+
+  // 카운트업 + 진행 바 딜레이 애니메이션
+  requestAnimationFrame(() => {
+    // 점수 카운트업
+    const scoreEl = document.getElementById('scoreCountup');
+    if (scoreEl) countUp(scoreEl, totalScore, 900);
+    // 진행 바
+    const fill = document.getElementById('tierProgFill');
+    if (fill) setTimeout(() => fill.style.width = tierProg + '%', 80);
+  });
+
+  buildCatList(validEarned);
+  renderAchievements(currentCat);
+}
+
+function buildCatList(validEarned) {
+  const cats = [{ id:'all', label:'전체', icon:'🎖️' }, ...ACHIEVEMENT_CATEGORIES];
+  document.getElementById('catList').innerHTML = cats.map(c => {
+    const achs = c.id === 'all' ? ACHIEVEMENTS : ACHIEVEMENTS.filter(a => a.cat === c.id);
+    const cnt = achs.filter(a => validEarned.has(a.id)).length;
+    return `<button class="cat-btn ${currentCat===c.id?'active':''}" onclick="setCat('${c.id}')">
+      <span>${c.icon}</span><span>${c.label}</span>
+      <span class="cat-count">${cnt}/${achs.length}</span>
+    </button>`;
+  }).join('');
+}
+
+window.setCat = cat => {
+  currentCat = cat;
+  document.querySelectorAll('.cat-btn').forEach(b =>
+    b.classList.toggle('active', b.getAttribute('onclick') === `setCat('${cat}')`));
+  renderAchievements(cat);
+};
+
+function renderAchievements(cat) {
+  const el = document.getElementById('achMain');
+  if (!el) return;
+  const list = cat === 'all' ? ACHIEVEMENTS : ACHIEVEMENTS.filter(a => a.cat === cat);
+  const earned    = list.filter(a => _validEarned.has(a.id)).sort((a,b) => {
+    const da = _storedMap[a.id]?.earnedAt?.toDate ? _storedMap[a.id].earnedAt.toDate() : new Date(0);
+    const db = _storedMap[b.id]?.earnedAt?.toDate ? _storedMap[b.id].earnedAt.toDate() : new Date(0);
+    return db - da;
+  });
+  const notEarned = list.filter(a => !_validEarned.has(a.id));
+
+  el.innerHTML = `<div class="ach-grid">${[...earned, ...notEarned].map(a => {
+    const isEarned = _validEarned.has(a.id);
+    const stored   = _storedMap[a.id];
+    const prog     = _progress?.[a.id];
+    const pct      = prog ? Math.round(prog.current / prog.target * 100) : 0;
+    const progHtml = !isEarned && prog ? `
+      <div class="prog-bar-wrap">
+        <div class="prog-bar">
+          <div class="prog-fill" style="width:${pct}%"></div>
+          <div class="prog-text">${
+            a.cat === 'loss' && prog.target <= 30
+              ? `${prog.current.toFixed(1)}% / ${prog.target}%`
+              : `${Math.floor(prog.current)} / ${prog.target}`
+          }</div>
+        </div>
+      </div>` : '';
+
+    return `<div class="ach-card ${isEarned?'earned':''} ${a.legendary?'legendary':''} ${isEarned?'':'locked'}">
+      ${a.legendary ? '<div class="legendary-badge">⭐ 위업</div>' : ''}
+      <div class="ac-score">+${a.score}</div>
+      <div class="ac-icon">${a.icon}</div>
+      <div class="ac-name">${a.name}</div>
+      <div class="ac-desc">${a.desc}</div>
+      ${isEarned && stored?.earnedAt ? `<div class="ac-date">${fmtDate(stored.earnedAt)} 달성</div>` : ''}
+      ${progHtml}
+      ${!isEarned ? '<div class="lock-icon">🔒</div>' : ''}
+    </div>`;
+  }).join('')}</div>`;
+}
+
+// ── 프로필 수정 ──────────────────────────────────────────────────────
+window.openProfileEdit = () => {
+  selEmoji = _user.emoji || '⚖️';
+  const grid = document.getElementById('pEmojiGrid');
+  grid.innerHTML = EMOJIS.map(e =>
+    `<button class="p-emoji-btn ${e===selEmoji?'sel':''}" onclick="pickPEmoji('${e}')">${e}</button>`
+  ).join('');
+  document.getElementById('pCustomEmoji').value  = '';
+  document.getElementById('pHeight').value       = _user.height    || '';
+  document.getElementById('pBirthYear').value    = _user.birthYear || '';
+
+  const titles = _user.earnedTitles || [];
+  const tg = document.getElementById('pTitleGroup');
+  if (titles.length) {
+    tg.style.display = '';
+    document.getElementById('pTitleSection').innerHTML = `
+      <select class="input-field" id="pTitleSelect">
+        <option value="">칭호 없음</option>
+        ${titles.map(t=>`<option value="${t}" ${t===_user.selectedTitle?'selected':''}>${t}</option>`).join('')}
+      </select>`;
+  } else { tg.style.display = 'none'; }
+
+  const hasPw = !!_user.passwordHash;
+  document.getElementById('pPwLabel').textContent = hasPw ? '비밀번호 변경' : '비밀번호 설정 (선택)';
+  document.getElementById('pPwSection').innerHTML = `
+    <input class="input-field" id="pNewPw" type="password" inputmode="numeric"
+      maxlength="4" placeholder="${hasPw?'새 비밀번호 4자리':'비워두면 공개'}" style="margin-bottom:8px">
+    <input class="input-field" id="pNewPwC" type="password" inputmode="numeric"
+      maxlength="4" placeholder="확인">`;
+
+  document.getElementById('profileModal').classList.add('open');
+};
+window.closeProfileEdit = () => document.getElementById('profileModal').classList.remove('open');
+document.getElementById('profileModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('profileModal')) closeProfileEdit();
+});
+window.pickPEmoji = e => {
+  selEmoji = e;
+  document.getElementById('pCustomEmoji').value = '';
+  document.querySelectorAll('.p-emoji-btn').forEach(b => b.classList.toggle('sel', b.textContent === e));
+};
+window.saveProfileEdit = async () => {
+  const custom    = document.getElementById('pCustomEmoji').value.trim();
+  const emoji     = custom || selEmoji;
+  const height    = parseInt(document.getElementById('pHeight').value)    || null;
+  const birthYear = parseInt(document.getElementById('pBirthYear').value) || null;
+  if (!height)    { showToast('키를 입력해주세요','err'); return; }
+  if (!birthYear) { showToast('출생연도를 입력해주세요','err'); return; }
+  const pw  = document.getElementById('pNewPw')?.value  || '';
+  const pwC = document.getElementById('pNewPwC')?.value || '';
+  if (pw && pw !== pwC) { showToast('비밀번호가 일치하지 않아요','err'); return; }
+  if (pw && !/^\d{4}$/.test(pw)) { showToast('숫자 4자리로 입력해주세요','err'); return; }
+  const selectedTitle = document.getElementById('pTitleSelect')?.value || _user.selectedTitle || null;
+  await updateUser(uid, { emoji, height, birthYear, selectedTitle });
+  _user = { ..._user, emoji, height, birthYear, selectedTitle };
+  document.getElementById('chipEmoji').textContent = emoji;
+  if (pw) { const h = await setUserPassword(uid, pw); saveAuth(uid, h); _user.passwordHash = h; }
+  closeProfileEdit();
+  showToast('프로필 변경됨 ✓');
+};
+
+function countUp(el, target, duration=900) {
+  const start = performance.now();
+  const tick = now => {
+    const t = Math.min((now - start) / duration, 1);
+    const eased = 1 - Math.pow(1 - t, 3);
+    el.textContent = Math.round(eased * target);
+    if (t < 1) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+
+function showToast(msg, type='ok') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = `toast show ${type}`;
+  setTimeout(() => t.className = 'toast', 2500);
+}
+
+render().catch(e => {
+  document.getElementById('content').innerHTML =
+    `<div class="card"><p class="text-muted">오류: ${e.message}</p></div>`;
+});
+</script>
+<script src="register-sw.js"></script>
+</body>
+</html>

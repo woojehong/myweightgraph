@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0d1117">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="favicon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
+  <title>가져오기 | 마웨그</title>
+  <link rel="stylesheet" href="css/style.css">
+  <!-- SheetJS (Excel 파싱) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+
+<header class="top-bar">
+  <span class="title">📥 데이터 가져오기</span>
+  <nav class="side-nav" id="sideNav"></nav>
+  <div class="user-chip" onclick="doLogout()">
+    <span id="chipEmoji">⚖️</span><span id="chipName">-</span>
+  </div>
+</header>
+
+<div class="page">
+
+  <!-- 방법 1: 붙여넣기 -->
+  <div class="card">
+    <div class="section-title">방법 1 — 엑셀에서 복사 → 붙여넣기</div>
+    <p class="text-muted" style="font-size:13px;margin-bottom:10px">
+      엑셀/구글시트에서 날짜·체중 두 열을 드래그해서 복사한 뒤 아래에 붙여넣으세요.<br>
+      날짜 형식은 자유롭게 (12/10, 2025-12-10, 25.12.10 등)
+    </p>
+    <textarea class="paste-area" id="pasteArea"
+      placeholder="2025-12-10&#9;124.0
+2026-01-07&#9;117.4
+2026-01-25&#9;112.4
+..."></textarea>
+    <div class="flex-row gap-8 mt-8">
+      <button class="btn btn-ghost btn-sm" onclick="clearPaste()">지우기</button>
+      <button class="btn btn-primary" onclick="parsePaste()">미리보기</button>
+    </div>
+  </div>
+
+  <!-- 방법 2: 파일 업로드 -->
+  <div class="card mt-12">
+    <div class="section-title">방법 2 — 파일 업로드 (.xlsx / .csv)</div>
+    <div class="dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()">
+      <div class="dz-icon">📂</div>
+      <p>클릭하거나 파일을 여기에 드롭하세요</p>
+      <small>.xlsx, .xls, .csv 지원</small>
+    </div>
+    <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleFile(event)">
+  </div>
+
+  <!-- 미리보기 + 가져오기 -->
+  <div class="card mt-12" id="previewCard" style="display:none">
+    <div class="section-title" id="previewTitle">미리보기</div>
+    <div id="previewTableWrap" style="overflow-x:auto;max-height:300px;overflow-y:auto"></div>
+    <div class="flex-row gap-8 mt-12">
+      <button class="btn btn-ghost" onclick="cancelPreview()">취소</button>
+      <button class="btn btn-primary" id="importBtn" onclick="doImport()">
+        📥 <span id="importCount">0</span>개 가져오기
+      </button>
+    </div>
+  </div>
+
+  <a href="dashboard.html?user=" id="dashLink" class="btn btn-ghost btn-full mt-12">
+    📊 그래프로 돌아가기
+  </a>
+</div>
+
+<nav class="bottom-nav" id="bottomNav"></nav>
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { getUser, batchSetWeights, parseWeight, toDateStr } from './js/db.js';
+
+const uid = new URLSearchParams(location.search).get('user') || localStorage.getItem('uid');
+if (!uid) location.href = 'index.html';
+document.getElementById('dashLink').href = `dashboard.html?user=${uid}`;
+
+// 네비
+function buildNav() {
+  const links = [
+    { href:`dashboard.html?user=${uid}`, icon:'📊', label:'그래프', id:'dashboard' },
+    { href:`input.html?user=${uid}`,     icon:'✏️',  label:'입력',   id:'input' },
+    { href:`import.html?user=${uid}`,    icon:'📥',  label:'가져오기', id:'import' },
+  ];
+  [document.getElementById('bottomNav'), document.getElementById('sideNav')].forEach((nav, ni) => {
+    links.forEach(l => {
+      const a = document.createElement('a');
+      a.href = l.href; a.className = l.id === 'import' ? 'active' : '';
+      a.innerHTML = ni === 0 ? `<span class="icon">${l.icon}</span>${l.label}` : `${l.icon} ${l.label}`;
+      nav.appendChild(a);
+    });
+  });
+}
+
+getUser(uid).then(u => {
+  if (u) {
+    document.getElementById('chipName').textContent  = u.name;
+    document.getElementById('chipEmoji').textContent = u.emoji || '⚖️';
+  }
+});
+buildNav();
+
+// ── 날짜 파싱 ─────────────────────────────────────────────────────
+function parseDate(raw) {
+  if (!raw) return null;
+  const s = String(raw).trim();
+  if (!s || s === '-') return null;
+
+  // Excel 숫자 날짜 처리
+  if (/^\d{5}$/.test(s)) {
+    const d = new Date((parseInt(s)-25569)*86400000);
+    return toDateStr(d);
+  }
+
+  // 다양한 형식 처리
+  const cleaned = s.replace(/[./년월]/g, '-').replace(/일/g,'').replace(/\s+/g,'');
+  const patterns = [
+    /^(\d{4})-(\d{1,2})-(\d{1,2})$/,   // 2025-12-10
+    /^(\d{2})-(\d{1,2})-(\d{1,2})$/,   // 25-12-10
+    /^(\d{1,2})-(\d{1,2})$/,           // 12-10 (현재 연도)
+  ];
+  for (const p of patterns) {
+    const m = cleaned.match(p);
+    if (m) {
+      let year, month, day;
+      if (m.length === 4) {
+        year  = m[1].length === 2 ? 2000 + parseInt(m[1]) : parseInt(m[1]);
+        month = parseInt(m[2]); day = parseInt(m[3]);
+      } else {
+        year = new Date().getFullYear(); month = parseInt(m[1]); day = parseInt(m[2]);
+      }
+      if (month < 1||month>12||day<1||day>31) return null;
+      return `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    }
+  }
+  // Date 파싱 시도
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? null : toDateStr(d);
+}
+
+// ── 행 배열 → 파싱된 레코드 ──────────────────────────────────────
+function parseRows(rows) {
+  const result = [];
+  for (const row of rows) {
+    if (!row || row.length < 2) continue;
+    // 날짜, 체중 열 찾기 (탭·쉼표 구분, 중간 열 건너뛰기)
+    let dateVal = null, weightVal = null;
+    for (let i = 0; i < row.length; i++) {
+      const cell = String(row[i]).trim();
+      if (!dateVal) {
+        const d = parseDate(cell);
+        if (d) { dateVal = d; continue; }
+      }
+      if (!weightVal && dateVal) {
+        const w = parseWeight(cell);
+        if (w !== null) { weightVal = w; break; }
+      }
+    }
+    if (!dateVal) continue;
+    result.push({ date: dateVal, weight: weightVal, ok: weightVal !== null });
+  }
+  return result;
+}
+
+// ── 미리보기 렌더링 ───────────────────────────────────────────────
+let pendingRecords = [];
+
+function showPreview(records) {
+  pendingRecords = records.filter(r => r.ok);
+  const card = document.getElementById('previewCard');
+  const wrap = document.getElementById('previewTableWrap');
+  const total = records.length;
+  const ok    = pendingRecords.length;
+  const skip  = total - ok;
+
+  document.getElementById('previewTitle').textContent =
+    `미리보기  —  ${ok}개 가져올 수 있음 (${skip}개 건너뜀)`;
+  document.getElementById('importCount').textContent = ok;
+
+  let html = `<table class="preview-table">
+    <thead><tr><th>날짜</th><th>체중</th><th>상태</th></tr></thead><tbody>`;
+  records.slice(0, 100).forEach(r => {
+    html += `<tr>
+      <td>${r.date}</td>
+      <td>${r.weight != null ? r.weight.toFixed(1) + ' kg' : '-'}</td>
+      <td>${r.ok ? '<span class="badge-ok">✓ 가져오기</span>' : '<span class="badge-skip">건너뜀</span>'}</td>
+    </tr>`;
+  });
+  if (records.length > 100) html += `<tr><td colspan="3" class="text-muted" style="text-align:center">...외 ${records.length-100}개</td></tr>`;
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+  card.style.display = '';
+}
+
+window.cancelPreview = () => {
+  document.getElementById('previewCard').style.display = 'none';
+  pendingRecords = [];
+};
+
+window.parsePaste = function() {
+  const text = document.getElementById('pasteArea').value.trim();
+  if (!text) { showToast('붙여넣을 데이터가 없어요', 'err'); return; }
+  const rows = text.split('\n').map(l => l.split(/\t|,/));
+  showPreview(parseRows(rows));
+};
+
+window.clearPaste = () => { document.getElementById('pasteArea').value = ''; };
+
+// ── 파일 업로드 ────────────────────────────────────────────────────
+window.handleFile = function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const wb = XLSX.read(ev.target.result, { type:'array', cellDates:true });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const raw = XLSX.utils.sheet_to_json(ws, { header:1, raw:false, dateNF:'YYYY-MM-DD' });
+      showPreview(parseRows(raw.filter(r => r.some(c => c))));
+    } catch(err) {
+      showToast('파일 파싱 오류: ' + err.message, 'err');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+};
+
+// 드래그 앤 드롭
+const dz = document.getElementById('dropzone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+dz.addEventListener('drop', e => {
+  e.preventDefault(); dz.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) { document.getElementById('fileInput').files = e.dataTransfer.files; handleFile({ target: { files: [file] } }); }
+});
+
+// ── 실제 가져오기 ──────────────────────────────────────────────────
+window.doImport = async function() {
+  if (pendingRecords.length === 0) { showToast('가져올 데이터가 없어요', 'err'); return; }
+  const btn = document.getElementById('importBtn');
+  btn.disabled = true; btn.textContent = '저장 중...';
+  try {
+    await batchSetWeights(uid, pendingRecords);
+    showToast(`${pendingRecords.length}개 저장 완료 ✓`, 'ok');
+    cancelPreview();
+    setTimeout(() => location.href = `dashboard.html?user=${uid}`, 1200);
+  } catch(e) {
+    showToast('오류: ' + e.message, 'err');
+  } finally {
+    btn.disabled = false;
+  }
+};
+
+function showToast(msg, type='ok') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = `toast show ${type}`;
+  setTimeout(() => t.className = 'toast', 2500);
+}
+</script>
+<script src="register-sw.js"></script>
+</body>
+</html>

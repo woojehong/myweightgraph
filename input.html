@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0d1117">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="favicon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
+  <title>체중 입력 | 마웨그</title>
+  <link rel="stylesheet" href="css/style.css">
+  <!-- SheetJS (Excel 파싱) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    .rec-table{width:100%;border-collapse:collapse;font-size:13px;}
+    .rec-table th{text-align:left;padding:6px 8px;color:var(--muted);border-bottom:1px solid var(--border);font-size:11px;font-weight:600;}
+    .rec-table td{padding:6px 8px;border-bottom:1px solid rgba(255,255,255,.04);}
+    .rec-table tr:last-child td{border-bottom:none;}
+    .w-edit{
+      background:transparent;border:none;border-bottom:1px solid transparent;
+      color:var(--text);font-size:13px;width:64px;text-align:right;
+      padding:2px 4px;transition:border-color .2s;
+    }
+    .w-edit:focus{outline:none;border-bottom-color:var(--teal);background:rgba(0,229,170,.05);}
+    .del-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;padding:2px 6px;}
+    .del-btn:hover{color:var(--red);}
+    .saved-flash{color:var(--teal);font-size:11px;animation:fadeout 1.5s forwards;}
+    @keyframes fadeout{0%{opacity:1;}80%{opacity:1;}100%{opacity:0;}}
+  </style>
+</head>
+<body>
+
+<header class="top-bar">
+  <span class="title">✏️ 체중 입력</span>
+  <nav class="side-nav" id="sideNav"></nav>
+  <div style="display:flex;align-items:center;gap:8px">
+    <div class="user-chip" onclick="openProfileEdit()" style="cursor:pointer">
+      <span id="chipEmoji">⚖️</span><span id="chipName">-</span>
+      <span style="font-size:10px;color:var(--muted);margin-left:2px">✏️</span>
+    </div>
+    <button class="btn btn-ghost btn-sm" onclick="doLogout()">로그아웃</button>
+  </div>
+</header>
+
+<div class="page">
+  <div id="content">
+    <div class="loading"><div class="spinner"></div></div>
+  </div>
+</div>
+
+<nav class="bottom-nav" id="bottomNav"></nav>
+
+<!-- 프로필 수정 모달 -->
+<div class="modal-bg" id="profileModal">
+  <div class="modal" style="max-height:90vh;overflow-y:auto">
+    <h3>✏️ 프로필 수정</h3>
+    <div class="input-group">
+      <label class="input-label">이모지</label>
+      <div id="pEmojiGrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:8px"></div>
+      <input class="input-field" id="pCustomEmoji" placeholder="직접 입력 (예: 🦁)" maxlength="4">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="input-group"><label class="input-label">키 (cm) *</label>
+        <input class="input-field" id="pHeight" type="number" placeholder="175" min="100" max="250"></div>
+      <div class="input-group"><label class="input-label">출생연도 *</label>
+        <input class="input-field" id="pBirthYear" type="number" placeholder="1990" min="1930" max="2010"></div>
+    </div>
+    <div class="input-group mt-8" id="pTitleGroup" style="display:none">
+      <label class="input-label">칭호</label><div id="pTitleSection"></div>
+    </div>
+    <div class="input-group mt-8">
+      <label class="input-label" id="pPwLabel">비밀번호 변경</label>
+      <div id="pPwSection"></div>
+    </div>
+    <div class="flex-row gap-8 mt-12">
+      <button class="btn btn-ghost btn-full" onclick="closeProfileEdit()">취소</button>
+      <button class="btn btn-primary btn-full" onclick="saveProfileEdit()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 날짜 추가 모달 -->
+<div class="modal-bg" id="addDateModal">
+  <div class="modal">
+    <h3>📅 날짜 직접 추가</h3>
+    <div class="input-group">
+      <label class="input-label">날짜</label>
+      <input class="input-field" id="extraDate" type="date">
+    </div>
+    <div class="input-group">
+      <label class="input-label">체중 (kg)</label>
+      <input class="input-field" id="extraWeight" type="number" step="0.1" placeholder="90.0">
+    </div>
+    <div class="flex-row gap-8 mt-12">
+      <button class="btn btn-ghost btn-full" onclick="closeDateModal()">취소</button>
+      <button class="btn btn-primary btn-full" onclick="submitExtra()">저장</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { getUser, getWeights, setWeight, deleteWeight, parseWeight, toDateStr, batchSetWeights, updateUser, setUserPassword } from './js/db.js';
+import { clearAuth, saveAuth } from './js/auth.js';
+const uid = new URLSearchParams(location.search).get('user') || localStorage.getItem('uid');
+if (!uid) location.href='index.html';
+window.doLogout = () => { clearAuth(); localStorage.removeItem('uid'); location.href='index.html'; };
+
+const EMOJIS=['⚖️','💪','🔥','👑','🏃','🌟','🎯','😤','🦁','🐯','🐻','🐺','🦊','🐸','🐼','🦋','🍎','🥗','🥑','🎽','🏋️','🚴','🧘','💎','🌈','⚡','🎖️','🏆','🌙','☀️','💫','✨'];
+let selEmoji='';
+const DAY_KO=['일','월','화','수','목','금','토'];
+let existingMap={}, allRecords=[], user=null;
+
+function buildNav() {
+  const links=[
+    {href:`dashboard.html?user=${uid}`,   icon:'📊', label:'그래프',   id:'dashboard'},
+    {href:`input.html?user=${uid}`,        icon:'✏️',  label:'체중 입력', id:'input'},
+    {href:`achievements.html?user=${uid}`, icon:'🏆', label:'업적',     id:'achievements'},
+  ];
+  [document.getElementById('bottomNav'),document.getElementById('sideNav')].forEach((nav,ni)=>{
+    links.forEach(l=>{
+      const a=document.createElement('a');
+      a.href=l.href; a.className=l.id==='input'?'active':'';
+      a.innerHTML=ni===0?`<span class="icon">${l.icon}</span>${l.label}`:`${l.icon} ${l.label}`;
+      nav.appendChild(a);
+    });
+  });
+}
+
+function fmtDate(d){
+  return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function recentRow(dateStr, label, isToday) {
+  const val = existingMap[dateStr];
+  const d   = new Date(dateStr);
+  return `
+    <div class="weight-row ${isToday?'is-today':''} ${val!=null?'has-value':''}" data-date="${dateStr}">
+      <div class="date-lbl">
+        <div>${label}</div>
+        <div class="day-sub">${fmtDate(d)} (${DAY_KO[d.getDay()]})</div>
+      </div>
+      <input class="w-input" type="number" step="0.1" placeholder="--.-"
+        value="${val!=null?val.toFixed(1):''}"
+        data-date="${dateStr}"
+        onchange="saveRecent(this)"
+        onblur="fmtInput(this)">
+      <div class="w-unit">kg</div>
+    </div>`;
+}
+
+async function render() {
+  buildNav();
+  const res = await Promise.all([getUser(uid), getWeights(uid)]);
+  user = res[0]; allRecords = res[1];
+  existingMap = Object.fromEntries(allRecords.map(r=>[r.date, r.weight]));
+
+  document.getElementById('chipName').textContent  = user?.name??'-';
+  document.getElementById('chipEmoji').textContent = user?.emoji??'⚖️';
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  const labels=['오늘','어제','2일 전','3일 전','4일 전','5일 전'];
+  let rows='';
+  for(let i=0;i<=5;i++){
+    const d=new Date(today); d.setDate(d.getDate()-i);
+    rows+=recentRow(toDateStr(d), labels[i], i===0);
+  }
+
+  // 전체 기록 (수정 가능한 테이블)
+  const sorted=[...allRecords].sort((a,b)=>b.date.localeCompare(a.date));
+  const histRows = sorted.map(r=>`
+    <tr id="hrow-${r.date}">
+      <td style="color:var(--muted);font-size:12px">${r.date}</td>
+      <td style="text-align:right">
+        <input class="w-edit" type="number" step="0.1"
+          value="${r.weight!=null?r.weight.toFixed(1):''}"
+          onblur="saveHist('${r.date}',this)"
+          onkeydown="if(event.key==='Enter')this.blur()">
+        <span style="font-size:11px;color:var(--muted)">kg</span>
+      </td>
+      <td id="hs-${r.date}" style="width:24px"></td>
+      <td><button class="del-btn" onclick="delHist('${r.date}')" title="삭제">🗑</button></td>
+    </tr>`).join('');
+
+  document.getElementById('content').innerHTML=`
+    <div class="card">
+      <div class="section-title">최근 6일</div>
+      ${rows}
+    </div>
+
+    <button class="btn btn-ghost btn-full mt-12" onclick="openDateModal()">
+      ➕ 날짜 직접 추가하기
+    </button>
+
+    <div class="card mt-12">
+      <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer"
+           onclick="toggleHistory()">
+        <div class="section-title" style="margin:0">📋 전체 기록 수정 (${allRecords.length}개)</div>
+        <span id="histArrow" style="color:var(--muted);font-size:13px">▼ 펼치기</span>
+      </div>
+      <div id="histSection" style="display:none;margin-top:12px;max-height:360px;overflow-y:auto">
+        <table class="rec-table">
+          <thead><tr><th>날짜</th><th style="text-align:right">체중</th><th></th><th></th></tr></thead>
+          <tbody>${histRows}</tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── 데이터 가져오기 ────────────────────────────────────────── -->
+    <div class="card mt-12">
+      <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer"
+           onclick="toggleImport()">
+        <div class="section-title" style="margin:0">📥 데이터 가져오기</div>
+        <span id="importArrow" style="color:var(--muted);font-size:13px">▼ 펼치기</span>
+      </div>
+      <div id="importSection" style="display:none;margin-top:14px">
+        <!-- 방법 1: 붙여넣기 -->
+        <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px">방법 1 — 엑셀에서 복사 → 붙여넣기</div>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:8px">
+          날짜·체중 두 열을 드래그해서 복사한 뒤 붙여넣으세요. (12/10, 2025-12-10 등 자유롭게)
+        </p>
+        <textarea class="paste-area" id="pasteArea"
+          placeholder="2025-12-10&#9;124.0
+2026-01-07&#9;117.4
+..."></textarea>
+        <div class="flex-row gap-8 mt-8">
+          <button class="btn btn-ghost btn-sm" onclick="clearPaste()">지우기</button>
+          <button class="btn btn-primary btn-sm" onclick="parsePaste()">미리보기</button>
+        </div>
+        <!-- 방법 2: 파일 -->
+        <div style="font-size:12px;font-weight:700;color:var(--muted);margin:14px 0 8px">방법 2 — 파일 업로드 (.xlsx / .csv)</div>
+        <div class="dropzone" id="importDropzone" onclick="document.getElementById('importFile').click()">
+          <div class="dz-icon">📂</div>
+          <p>클릭하거나 파일을 드롭하세요</p>
+          <small>.xlsx, .xls, .csv 지원</small>
+        </div>
+        <input type="file" id="importFile" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleImportFile(event)">
+        <!-- 미리보기 -->
+        <div id="importPreviewCard" style="display:none;margin-top:12px">
+          <div class="section-title" id="importPreviewTitle">미리보기</div>
+          <div id="importPreviewWrap" style="overflow-x:auto;max-height:240px;overflow-y:auto"></div>
+          <div class="flex-row gap-8 mt-8">
+            <button class="btn btn-ghost btn-sm" onclick="cancelImportPreview()">취소</button>
+            <button class="btn btn-primary btn-sm" id="doImportBtn" onclick="doImport()">
+              📥 <span id="importCount">0</span>개 가져오기
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+window.toggleHistory = () => {
+  const sec=document.getElementById('histSection');
+  const arrow=document.getElementById('histArrow');
+  if(sec.style.display==='none'){sec.style.display='';arrow.textContent='▲ 접기';}
+  else{sec.style.display='none';arrow.textContent='▼ 펼치기';}
+};
+
+// ── 체중 유효성 검사 ─────────────────────────────────────────────────
+function validateWeight(dateStr, newW) {
+  // 인접 기록 찾기
+  const sorted = Object.entries(existingMap)
+    .filter(([d,w]) => d !== dateStr && w != null)
+    .sort((a,b) => a[0].localeCompare(b[0]));
+  if (!sorted.length) return null; // 비교 대상 없으면 통과
+
+  const targetTime = new Date(dateStr).getTime();
+  let nearest = null, nearestDays = Infinity;
+  sorted.forEach(([d,w]) => {
+    const days = Math.abs((new Date(d).getTime() - targetTime) / 86400000);
+    if (days < nearestDays) { nearestDays = days; nearest = { d, w, days }; }
+  });
+  if (!nearest) return null;
+
+  const maxAllowed = Math.min(Math.max(nearest.days, 1) * 3, 20);
+  const diff = Math.abs(newW - nearest.w);
+  if (diff > maxAllowed) {
+    return `전후 기록(${nearest.w.toFixed(1)}kg)과 ${diff.toFixed(1)}kg 차이입니다. 정상적인 수치를 입력해주세요. 이게 맞다면 관리자에게 문의하세요.`;
+  }
+  return null;
+}
+
+function showWeightError(msg, onDismiss) {
+  // 에러 모달
+  let el = document.getElementById('weightErrModal');
+  if (!el) {
+    document.body.insertAdjacentHTML('beforeend',`
+      <div id="weightErrModal" style="position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:600;opacity:0;pointer-events:none;transition:opacity .2s">
+        <div style="background:var(--surface);border:1px solid var(--red);border-radius:12px;padding:20px;max-width:88vw;width:320px;text-align:center" onclick="event.stopPropagation()">
+          <div style="font-size:24px;margin-bottom:10px">⚠️</div>
+          <div id="weightErrMsg" style="font-size:13px;color:var(--text);line-height:1.6;margin-bottom:16px"></div>
+          <button class="btn btn-ghost btn-sm btn-full" onclick="closeWeightErr()">확인</button>
+        </div>
+      </div>`);
+    el = document.getElementById('weightErrModal');
+    el.addEventListener('click', () => closeWeightErr());
+  }
+  document.getElementById('weightErrMsg').textContent = msg;
+  el.style.opacity='1'; el.style.pointerEvents='all';
+  window._weightErrCb = onDismiss;
+}
+window.closeWeightErr = () => {
+  const el = document.getElementById('weightErrModal');
+  if (el) { el.style.opacity='0'; el.style.pointerEvents='none'; }
+  if (window._weightErrCb) { window._weightErrCb(); window._weightErrCb=null; }
+};
+
+window.saveRecent = async (input) => {
+  const dateStr=input.dataset.date, raw=input.value.trim();
+  if(raw===''||raw==='-'){await setWeight(uid,dateStr,null);input.closest('.weight-row').classList.remove('has-value');return;}
+  const w=parseWeight(raw);
+  if(w===null){showToast('숫자를 입력해주세요','err');return;}
+  const err = validateWeight(dateStr, w);
+  if (err) { showWeightError(err, ()=>{ input.value=existingMap[dateStr]!=null?existingMap[dateStr].toFixed(1):''; }); return; }
+  input.value=w.toFixed(1);
+  await setWeight(uid,dateStr,w);
+  input.closest('.weight-row').classList.add('has-value');
+  existingMap[dateStr]=w;
+  showToast('저장 ✓','ok');
+};
+window.fmtInput = (input)=>{const w=parseWeight(input.value);if(w!==null)input.value=w.toFixed(1);};
+
+window.saveHist = async (date, input) => {
+  const w=parseWeight(input.value);
+  if(w===null)return;
+  const err=validateWeight(date,w);
+  if(err){showWeightError(err,()=>{const prev=existingMap[date];input.value=prev!=null?prev.toFixed(1):'';});return;}
+  input.value=w.toFixed(1);
+  await setWeight(uid,date,w);
+  const s=document.getElementById(`hs-${date}`);
+  if(s){s.innerHTML='<span class="saved-flash">✓</span>';}
+  // 최근 6일 인풋도 업데이트
+  const ri=document.querySelector(`input[data-date="${date}"]`);
+  if(ri){ri.value=w.toFixed(1);ri.closest('.weight-row')?.classList.add('has-value');}
+  existingMap[date]=w;
+};
+window.delHist = async (date) => {
+  await deleteWeight(uid,date);
+  document.getElementById(`hrow-${date}`)?.remove();
+  delete existingMap[date];
+  const ri=document.querySelector(`input[data-date="${date}"]`);
+  if(ri){ri.value='';ri.closest('.weight-row')?.classList.remove('has-value');}
+  showToast('삭제됨','ok');
+};
+
+window.openDateModal = () => {
+  document.getElementById('extraDate').value=toDateStr(new Date());
+  document.getElementById('extraWeight').value='';
+  document.getElementById('addDateModal').classList.add('open');
+};
+window.closeDateModal = ()=>document.getElementById('addDateModal').classList.remove('open');
+window.submitExtra = async ()=>{
+  const dateStr=document.getElementById('extraDate').value;
+  const w=parseWeight(document.getElementById('extraWeight').value);
+  if(!dateStr){showToast('날짜를 선택해주세요','err');return;}
+  if(w===null){showToast('체중을 입력해주세요','err');return;}
+  const err=validateWeight(dateStr,w);
+  if(err){showWeightError(err,null);return;}
+  await setWeight(uid,dateStr,w);
+  existingMap[dateStr]=w;
+  closeDateModal();
+  showToast(`${dateStr} 저장 ✓`,'ok');
+  render();
+};
+
+function showToast(msg,type='ok'){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className=`toast show ${type}`;
+  setTimeout(()=>t.className='toast',2000);
+}
+
+// ── 프로필 수정 ──────────────────────────────────────────────────────
+window.openProfileEdit = () => {
+  selEmoji = user?.emoji || '⚖️';
+  document.getElementById('pEmojiGrid').innerHTML = EMOJIS.map(e =>
+    `<button style="font-size:22px;padding:4px;border-radius:7px;cursor:pointer;background:${e===selEmoji?'rgba(0,229,170,.15)':'transparent'};border:2px solid ${e===selEmoji?'var(--teal)':'transparent'}" onclick="pickPEmoji('${e}')">${e}</button>`
+  ).join('');
+  document.getElementById('pCustomEmoji').value  = '';
+  document.getElementById('pHeight').value       = user?.height    || '';
+  document.getElementById('pBirthYear').value    = user?.birthYear || '';
+  const titles = user?.earnedTitles || [];
+  const tg = document.getElementById('pTitleGroup');
+  if(titles.length){ tg.style.display=''; document.getElementById('pTitleSection').innerHTML=`<select class="input-field" id="pTitleSelect"><option value="">칭호 없음</option>${titles.map(t=>`<option value="${t}" ${t===user?.selectedTitle?'selected':''}>${t}</option>`).join('')}</select>`; }
+  else tg.style.display='none';
+  const hasPw=!!user?.passwordHash;
+  document.getElementById('pPwLabel').textContent=hasPw?'비밀번호 변경':'비밀번호 설정 (선택)';
+  document.getElementById('pPwSection').innerHTML=`<input class="input-field" id="pNewPw" type="password" inputmode="numeric" maxlength="4" placeholder="${hasPw?'새 비밀번호 4자리':'비워두면 공개'}" style="margin-bottom:8px"><input class="input-field" id="pNewPwC" type="password" inputmode="numeric" maxlength="4" placeholder="확인">`;
+  document.getElementById('profileModal').classList.add('open');
+};
+window.closeProfileEdit = () => document.getElementById('profileModal').classList.remove('open');
+document.getElementById('profileModal').addEventListener('click',e=>{if(e.target===document.getElementById('profileModal'))closeProfileEdit();});
+window.pickPEmoji = e => {
+  selEmoji=e; document.getElementById('pCustomEmoji').value='';
+  document.querySelectorAll('#pEmojiGrid button').forEach(b=>{
+    const s=b.textContent===e; b.style.background=s?'rgba(0,229,170,.15)':'transparent'; b.style.border=`2px solid ${s?'var(--teal)':'transparent'}`;
+  });
+};
+window.saveProfileEdit = async () => {
+  const custom=document.getElementById('pCustomEmoji').value.trim();
+  const emoji=custom||selEmoji;
+  const height=parseInt(document.getElementById('pHeight').value)||null;
+  const birthYear=parseInt(document.getElementById('pBirthYear').value)||null;
+  if(!height){showToast('키를 입력해주세요','err');return;}
+  if(!birthYear){showToast('출생연도를 입력해주세요','err');return;}
+  const pw=document.getElementById('pNewPw')?.value||'';
+  const pwC=document.getElementById('pNewPwC')?.value||'';
+  if(pw&&pw!==pwC){showToast('비밀번호가 일치하지 않아요','err');return;}
+  if(pw&&!/^\d{4}$/.test(pw)){showToast('숫자 4자리로 입력해주세요','err');return;}
+  const selectedTitle=document.getElementById('pTitleSelect')?.value||user?.selectedTitle||null;
+  await updateUser(uid,{emoji,height,birthYear,selectedTitle});
+  user={...user,emoji,height,birthYear,selectedTitle};
+  document.getElementById('chipEmoji').textContent=emoji;
+  if(pw){const h=await setUserPassword(uid,pw);saveAuth(uid,h);user.passwordHash=h;}
+  closeProfileEdit();showToast('프로필 변경됨 ✓');
+};
+
+// ── 가져오기 ─────────────────────────────────────────────────────────
+window.toggleImport = () => {
+  const sec=document.getElementById('importSection');
+  const arrow=document.getElementById('importArrow');
+  if(sec.style.display==='none'){sec.style.display='';arrow.textContent='▲ 접기';}
+  else{sec.style.display='none';arrow.textContent='▼ 펼치기';}
+};
+
+function parseImportDate(raw) {
+  if (!raw) return null;
+  const s = String(raw).trim();
+  if (!s || s === '-') return null;
+  if (/^\d{5}$/.test(s)) { const d=new Date((parseInt(s)-25569)*86400000); return toDateStr(d); }
+  const cleaned = s.replace(/[./년월]/g,'-').replace(/일/g,'').replace(/\s+/g,'');
+  const patterns = [/^(\d{4})-(\d{1,2})-(\d{1,2})$/,/^(\d{2})-(\d{1,2})-(\d{1,2})$/,/^(\d{1,2})-(\d{1,2})$/];
+  for (const p of patterns) {
+    const m = cleaned.match(p);
+    if (m) {
+      let year,month,day;
+      if(m.length===4){year=m[1].length===2?2000+parseInt(m[1]):parseInt(m[1]);month=parseInt(m[2]);day=parseInt(m[3]);}
+      else{year=new Date().getFullYear();month=parseInt(m[1]);day=parseInt(m[2]);}
+      if(month<1||month>12||day<1||day>31)return null;
+      return `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    }
+  }
+  const d=new Date(s); return isNaN(d.getTime())?null:toDateStr(d);
+}
+function parseImportRows(rows) {
+  const result=[];
+  for(const row of rows){
+    if(!row||row.length<2)continue;
+    let dateVal=null,weightVal=null;
+    for(let i=0;i<row.length;i++){
+      const cell=String(row[i]).trim();
+      if(!dateVal){const d=parseImportDate(cell);if(d){dateVal=d;continue;}}
+      if(!weightVal&&dateVal){const w=parseWeight(cell);if(w!==null){weightVal=w;break;}}
+    }
+    if(!dateVal)continue;
+    result.push({date:dateVal,weight:weightVal,ok:weightVal!==null});
+  }
+  return result;
+}
+let pendingImport=[];
+function showImportPreview(records){
+  pendingImport=records.filter(r=>r.ok);
+  const ok=pendingImport.length,skip=records.length-ok;
+  document.getElementById('importPreviewTitle').textContent=`미리보기 — ${ok}개 가져올 수 있음 (${skip}개 건너뜀)`;
+  document.getElementById('importCount').textContent=ok;
+  let html=`<table class="preview-table"><thead><tr><th>날짜</th><th>체중</th><th>상태</th></tr></thead><tbody>`;
+  records.slice(0,100).forEach(r=>{html+=`<tr><td>${r.date}</td><td>${r.weight!=null?r.weight.toFixed(1)+' kg':'-'}</td><td>${r.ok?'<span class="badge-ok">✓</span>':'<span class="badge-skip">건너뜀</span>'}</td></tr>`;});
+  if(records.length>100)html+=`<tr><td colspan="3" style="text-align:center;color:var(--muted)">...외 ${records.length-100}개</td></tr>`;
+  html+='</tbody></table>';
+  document.getElementById('importPreviewWrap').innerHTML=html;
+  document.getElementById('importPreviewCard').style.display='';
+}
+window.cancelImportPreview=()=>{document.getElementById('importPreviewCard').style.display='none';pendingImport=[];};
+window.clearPaste=()=>{document.getElementById('pasteArea').value='';};
+window.parsePaste=()=>{
+  const text=document.getElementById('pasteArea').value.trim();
+  if(!text){showToast('붙여넣을 데이터가 없어요','err');return;}
+  showImportPreview(parseImportRows(text.split('\n').map(l=>l.split(/\t|,/))));
+};
+window.handleImportFile=(e)=>{
+  const file=e.target.files[0]; if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const wb=XLSX.read(ev.target.result,{type:'array',cellDates:true});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const raw=XLSX.utils.sheet_to_json(ws,{header:1,raw:false,dateNF:'YYYY-MM-DD'});
+      showImportPreview(parseImportRows(raw.filter(r=>r.some(c=>c))));
+    }catch(err){showToast('파일 파싱 오류: '+err.message,'err');}
+  };
+  reader.readAsArrayBuffer(file);
+};
+// 드래그 앤 드롭
+window.addEventListener('load',()=>{
+  const dz=document.getElementById('importDropzone'); if(!dz)return;
+  dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag-over');});
+  dz.addEventListener('dragleave',()=>dz.classList.remove('drag-over'));
+  dz.addEventListener('drop',e=>{
+    e.preventDefault();dz.classList.remove('drag-over');
+    const file=e.dataTransfer.files[0];
+    if(file){document.getElementById('importFile').files=e.dataTransfer.files;handleImportFile({target:{files:[file]}});}
+  });
+});
+window.doImport=async()=>{
+  if(!pendingImport.length){showToast('가져올 데이터가 없어요','err');return;}
+  const btn=document.getElementById('doImportBtn');
+  btn.disabled=true;btn.textContent='저장 중...';
+  try{
+    await batchSetWeights(uid,pendingImport);
+    showToast(`${pendingImport.length}개 저장 완료 ✓`,'ok');
+    cancelImportPreview();
+    render();
+  }catch(e){showToast('오류: '+e.message,'err');}
+  finally{btn.disabled=false;btn.innerHTML=`📥 <span id="importCount">${pendingImport.length}</span>개 가져오기`;}
+};
+
+render().catch(console.error);
+</script>
+<script src="register-sw.js"></script>
+</body>
+</html>
