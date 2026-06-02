@@ -35,8 +35,8 @@
 </head>
 <body>
 <header class="top-bar">
-  <a href="index.html?select=1" class="title" style="text-decoration:none;color:inherit">📊 그래프</a>
-  <nav class="side-nav" id="sideNav"></nav>
+  <a href="index.html?select=1" class="mweg-title">마웨그</a>
+  <div></div>
   <div style="display:flex;align-items:center;gap:8px">
     <div class="user-chip" onclick="openProfileEdit()">
       <span id="chipEmoji">⚖️</span><span id="chipName">-</span>
@@ -117,17 +117,16 @@ window.doLogout = () => { clearAuth(); localStorage.removeItem('uid'); location.
 
 function buildNav(uid) {
   const links=[
-    {href:`dashboard.html?user=${uid}`,   icon:'📊', label:'그래프',   id:'dashboard'},
-    {href:`input.html?user=${uid}`,        icon:'✏️',  label:'체중 입력', id:'input'},
-    {href:`achievements.html?user=${uid}`, icon:'🏆', label:'업적',     id:'achievements'},
+    {href:`input.html?user=${uid}`,        icon:'✏️',  label:'데이터 입력', id:'input'},
+    {href:`dashboard.html?user=${uid}`,    icon:'📊', label:'그래프',      id:'dashboard'},
+    {href:`achievements.html?user=${uid}`, icon:'🏆', label:'업적',        id:'achievements'},
   ];
-  [document.getElementById('bottomNav'),document.getElementById('sideNav')].forEach((nav,ni)=>{
-    links.forEach(l=>{
-      const a=document.createElement('a');
-      a.href=l.href; a.className=l.id==='dashboard'?'active':'';
-      a.innerHTML=ni===0?`<span class="icon">${l.icon}</span>${l.label}`:`${l.icon} ${l.label}`;
-      nav.appendChild(a);
-    });
+  const nav=document.getElementById('bottomNav');
+  links.forEach(l=>{
+    const a=document.createElement('a');
+    a.href=l.href; a.className=l.id==='dashboard'?'active':'';
+    a.innerHTML=`<span class="icon">${l.icon}</span>${l.label}`;
+    nav.appendChild(a);
   });
 }
 

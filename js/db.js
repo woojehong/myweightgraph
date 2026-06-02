@@ -40,15 +40,36 @@ export async function getUser(userId) {
   return snap.exists() ? { id: snap.id, ...snap.data() } : null;
 }
 export async function createUser({ id, name, emoji='⚖️', goal=DEFAULT_GOAL,
-                                   height=null, birthYear=null, password=null }) {
+                                   height=null, birthYear=null, password=null,
+                                   referenceWeight=null, currentWeight=null, pastRecords=[] }) {
   const passwordHash = password ? await sha256(password) : null;
+  const now = new Date();
+  const unlock = new Date(now);
+  unlock.setMonth(unlock.getMonth() + 6);
+
   await setDoc(doc(db, 'users', id), {
     name, emoji, goal,
-    height:    height    ? Number(height)    : null,
-    birthYear: birthYear ? Number(birthYear) : null,
+    height:          height          ? Number(height)          : null,
+    birthYear:       birthYear       ? Number(birthYear)       : null,
+    referenceWeight: referenceWeight ? Number(referenceWeight) : null,
+    goalSetAt:       now.toISOString(),
+    goalUnlockAt:    unlock.toISOString(),
     passwordHash,
     createdAt: serverTimestamp()
   });
+
+  // 현재 체중 저장
+  if (currentWeight != null) {
+    const today = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+    await setDoc(doc(db, 'weights', id, 'records', today),
+      { date: today, weight: Number(currentWeight), updatedAt: serverTimestamp() });
+  }
+
+  // 과거 기록 일괄 저장
+  if (pastRecords.length) {
+    await batchSetWeights(id, pastRecords);
+  }
+
   return passwordHash;
 }
 export async function setUserPassword(userId, newPassword) {

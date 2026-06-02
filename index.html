@@ -8,27 +8,41 @@
   <link rel="apple-touch-icon" href="favicon.png">
   <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
   <title>마웨그 | My Weight Graph</title>
-  <meta name="description" content="나만의 체중 변화 그래프 — 기록하고, 분석하고, 목표를 이루세요.">
-  <meta property="og:title" content="마웨그 | MyWeG">
-  <meta property="og:description" content="나만의 체중 변화 그래프 — 기록하고, 분석하고, 목표를 이루세요.">
-  <meta property="og:type" content="website">
-  <meta property="og:image" content="favicon.png">
   <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
-    .emoji-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin:6px 0 10px;}
-    .emoji-btn{font-size:22px;padding:5px;border-radius:7px;cursor:pointer;background:transparent;
-      border:2px solid transparent;transition:all .15s;text-align:center;line-height:1;}
+    .emoji-btn{font-size:22px;padding:5px;border-radius:7px;cursor:pointer;background:transparent;border:2px solid transparent;transition:all .15s;text-align:center;line-height:1;}
     .emoji-btn:hover{background:rgba(255,255,255,.07);}
     .emoji-btn.selected{border-color:var(--teal);background:rgba(0,229,170,.1);}
     .pw-dots{display:flex;gap:8px;justify-content:center;margin:10px 0;}
     .pw-dot{width:12px;height:12px;border-radius:50%;border:2px solid var(--border);transition:all .2s;}
     .pw-dot.filled{background:var(--teal);border-color:var(--teal);}
     .pin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px;}
-    .pin-btn{padding:14px;border-radius:10px;font-size:18px;font-weight:700;
-      background:var(--surface2);border:1px solid var(--border);color:var(--text);
-      cursor:pointer;transition:all .15s;text-align:center;}
+    .pin-btn{padding:14px;border-radius:10px;font-size:18px;font-weight:700;background:var(--surface2);border:1px solid var(--border);color:var(--text);cursor:pointer;transition:all .15s;text-align:center;}
     .pin-btn:hover{background:rgba(255,255,255,.1);}
     .pin-btn:active{transform:scale(.95);}
+
+    /* 스텝 인디케이터 */
+    .step-bar{display:flex;align-items:center;gap:6px;margin-bottom:18px;}
+    .step-dot{width:8px;height:8px;border-radius:50%;background:var(--border);transition:all .3s;}
+    .step-dot.active{background:var(--teal);box-shadow:0 0 6px var(--teal);}
+    .step-dot.done{background:rgba(0,229,170,.4);}
+    .step-line{flex:1;height:2px;background:var(--border);border-radius:1px;transition:background .3s;}
+    .step-line.done{background:rgba(0,229,170,.4);}
+    .step-label{font-size:11px;color:var(--muted);margin-left:auto;}
+
+    /* 가져오기 */
+    .paste-area{width:100%;min-height:100px;background:var(--bg);border:1px dashed var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:12px;font-family:monospace;resize:vertical;}
+    .paste-area:focus{border-color:var(--teal);outline:none;}
+
+    /* 기준체중 라디오 */
+    .ref-option{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;border:1px solid var(--border);cursor:pointer;transition:all .15s;margin-bottom:8px;}
+    .ref-option:hover{border-color:rgba(0,229,170,.3);}
+    .ref-option.selected{border-color:var(--teal);background:rgba(0,229,170,.06);}
+    .ref-option input[type=radio]{accent-color:var(--teal);}
+
+    /* 경고 박스 */
+    .warn-box{background:rgba(255,167,38,.08);border:1px solid rgba(255,167,38,.3);border-radius:10px;padding:12px;font-size:12px;color:rgba(255,167,38,.9);line-height:1.6;margin-bottom:14px;}
   </style>
 </head>
 <body>
@@ -52,84 +66,362 @@
   </div>
 </div>
 
-<!-- 사용자 추가 모달 -->
+<!-- 사용자 추가 모달 (3단계) -->
 <div class="modal-bg" id="addModal">
   <div class="modal" style="max-height:90vh;overflow-y:auto">
-    <h3>➕ 새 사용자 추가</h3>
-    <div class="input-group">
-      <label class="input-label">이름 *</label>
-      <input class="input-field" id="newName" placeholder="홍길동" maxlength="12">
+    <!-- 스텝 인디케이터 -->
+    <div class="step-bar">
+      <div class="step-dot active" id="sd1"></div>
+      <div class="step-line" id="sl1"></div>
+      <div class="step-dot" id="sd2"></div>
+      <div class="step-line" id="sl2"></div>
+      <div class="step-dot" id="sd3"></div>
+      <span class="step-label" id="stepLabel">1 / 3</span>
     </div>
-    <div class="input-group">
-      <label class="input-label">이모지 선택</label>
-      <div class="emoji-grid" id="emojiGrid"></div>
-      <input class="input-field" id="newEmoji" placeholder="직접 입력 (예: 🦁)" maxlength="4"
-        oninput="onCustomEmoji(this.value)">
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      <div class="input-group">
-        <label class="input-label">키 (cm) *</label>
-        <input class="input-field" id="newHeight" type="number" placeholder="175" min="100" max="250">
-      </div>
-      <div class="input-group">
-        <label class="input-label">출생연도 *</label>
-        <input class="input-field" id="newBirthYear" type="number" placeholder="1990" min="1930" max="2010">
-      </div>
-    </div>
-    <div class="input-group">
-      <label class="input-label">목표 체중 (kg)</label>
-      <input class="input-field" id="newGoal" type="number" placeholder="80" min="30" max="200">
-    </div>
-    <div class="input-group">
-      <label class="input-label">비밀번호 (4자리 숫자, 선택)</label>
-      <input class="input-field" id="newPw" type="password" inputmode="numeric"
-        placeholder="비워두면 공개" maxlength="4" pattern="[0-9]{4}">
-    </div>
-    <div class="input-group">
-      <label class="input-label">비밀번호 확인</label>
-      <input class="input-field" id="newPwConfirm" type="password" inputmode="numeric"
-        placeholder="비워두면 공개" maxlength="4" pattern="[0-9]{4}">
-    </div>
-    <div class="flex-row gap-8 mt-12">
-      <button class="btn btn-ghost btn-full" onclick="closeModal()">취소</button>
-      <button class="btn btn-primary btn-full" onclick="submitNewUser()">추가</button>
-    </div>
+    <div id="stepContent"></div>
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script type="module">
-import { getUsers, createUser } from './js/db.js';
+import { getUsers, createUser, parseWeight, toDateStr } from './js/db.js';
 import { sha256, saveAuth, isAuthed } from './js/auth.js';
 
-const EMOJIS = [
-  '⚖️','💪','🔥','👑','🏃','🌟','🎯','😤',
-  '🦁','🐯','🐻','🐺','🦊','🐸','🐼','🦋',
-  '🍎','🥗','🥑','🎽','🏋️','🚴','🧘','💎',
-  '🌈','⚡','🎖️','🏆','🌙','☀️','💫','✨',
-];
-let selectedEmoji = EMOJIS[0];
-let pwTarget = null;
-let pinVal   = '';
+const EMOJIS = ['⚖️','💪','🔥','👑','🏃','🌟','🎯','😤','🦁','🐯','🐻','🐺','🦊','🐸','🐼','🦋','🍎','🥗','🥑','🎽','🏋️','🚴','🧘','💎','🌈','⚡','🎖️','🏆','🌙','☀️','💫','✨'];
 
-// ── 이모지 그리드 ────────────────────────────────────────────────────
+let selectedEmoji = EMOJIS[0];
+let pwTarget = null, pinVal = '';
+
+// ── 3단계 상태 ────────────────────────────────────────────────────────
+let step = 1;
+let draft = {}; // { name, emoji, height, birthYear, pw }
+let currentWeight = null;
+let importedRecords = []; // [{date, weight}] from past import
+let refWeightChoice = 'current'; // 'current' or index of importedRecords
+
+// ── 스텝 UI ──────────────────────────────────────────────────────────
+function updateStepBar(n) {
+  for (let i=1; i<=3; i++) {
+    const dot = document.getElementById(`sd${i}`);
+    dot.className = 'step-dot' + (i===n?' active':i<n?' done':'');
+  }
+  for (let i=1; i<=2; i++) {
+    document.getElementById(`sl${i}`).className = 'step-line' + (i<n?' done':'');
+  }
+  document.getElementById('stepLabel').textContent = `${n} / 3`;
+}
+
+function showStep(n) {
+  step = n;
+  updateStepBar(n);
+  if (n===1) renderStep1();
+  else if (n===2) renderStep2();
+  else renderStep3();
+}
+
+// ── STEP 1: 기본 정보 ────────────────────────────────────────────────
+function renderStep1() {
+  document.getElementById('stepContent').innerHTML = `
+    <h3 style="margin-bottom:14px">👤 기본 정보</h3>
+    <div class="input-group">
+      <label class="input-label">이름 *</label>
+      <input class="input-field" id="s1Name" placeholder="홍길동" maxlength="12" value="${draft.name||''}">
+    </div>
+    <div class="input-group">
+      <label class="input-label">이모지 선택</label>
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:8px" id="emojiGrid"></div>
+      <input class="input-field" id="s1Emoji" placeholder="직접 입력 (예: 🦁)" maxlength="4" oninput="onCustomEmoji(this.value)">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="input-group">
+        <label class="input-label">키 (cm) *</label>
+        <input class="input-field" id="s1Height" type="number" placeholder="175" min="100" max="250" value="${draft.height||''}">
+      </div>
+      <div class="input-group">
+        <label class="input-label">출생연도 *</label>
+        <input class="input-field" id="s1BirthYear" type="number" placeholder="1990" min="1930" max="2010" value="${draft.birthYear||''}">
+      </div>
+    </div>
+    <div class="input-group">
+      <label class="input-label">비밀번호 (4자리 숫자, 선택)</label>
+      <input class="input-field" id="s1Pw" type="password" inputmode="numeric" placeholder="비워두면 공개" maxlength="4">
+    </div>
+    <div class="input-group">
+      <label class="input-label">비밀번호 확인</label>
+      <input class="input-field" id="s1PwC" type="password" inputmode="numeric" placeholder="비워두면 공개" maxlength="4">
+    </div>
+    <div class="flex-row gap-8 mt-12">
+      <button class="btn btn-ghost btn-full" onclick="closeModal()">취소</button>
+      <button class="btn btn-primary btn-full" onclick="nextFromStep1()">다음 →</button>
+    </div>`;
+  buildEmojiGrid();
+}
+
 function buildEmojiGrid() {
-  document.getElementById('emojiGrid').innerHTML = EMOJIS.map(e =>
+  const g = document.getElementById('emojiGrid'); if (!g) return;
+  g.innerHTML = EMOJIS.map(e =>
     `<button class="emoji-btn ${e===selectedEmoji?'selected':''}" onclick="pickEmoji('${e}')">${e}</button>`
   ).join('');
 }
-window.pickEmoji = e => {
-  selectedEmoji = e;
-  document.getElementById('newEmoji').value = '';
-  buildEmojiGrid();
+window.pickEmoji = e => { selectedEmoji=e; document.getElementById('s1Emoji').value=''; buildEmojiGrid(); };
+window.onCustomEmoji = val => { if(val.trim()){selectedEmoji=val.trim();document.querySelectorAll('.emoji-btn').forEach(b=>b.classList.remove('selected'));} };
+
+window.nextFromStep1 = () => {
+  const name      = document.getElementById('s1Name').value.trim();
+  const emoji     = document.getElementById('s1Emoji').value.trim() || selectedEmoji;
+  const height    = parseInt(document.getElementById('s1Height').value) || null;
+  const birthYear = parseInt(document.getElementById('s1BirthYear').value) || null;
+  const pw        = document.getElementById('s1Pw').value;
+  const pwC       = document.getElementById('s1PwC').value;
+  if (!name)      { showToast('이름을 입력해주세요','err'); return; }
+  if (!height)    { showToast('키를 입력해주세요','err'); return; }
+  if (!birthYear) { showToast('출생연도를 입력해주세요','err'); return; }
+  if (pw && pw !== pwC)           { showToast('비밀번호가 일치하지 않아요','err'); return; }
+  if (pw && !/^\d{4}$/.test(pw)) { showToast('비밀번호는 숫자 4자리예요','err'); return; }
+  draft = { name, emoji, height, birthYear, pw };
+  showStep(2);
 };
-window.onCustomEmoji = val => {
-  if (val.trim()) {
-    selectedEmoji = val.trim();
-    document.querySelectorAll('.emoji-btn').forEach(b=>b.classList.remove('selected'));
+
+// ── STEP 2: 체중 데이터 ──────────────────────────────────────────────
+function renderStep2() {
+  const today = toDateStr(new Date());
+  document.getElementById('stepContent').innerHTML = `
+    <h3 style="margin-bottom:14px">⚖️ 체중 데이터</h3>
+    <div class="input-group">
+      <label class="input-label">오늘 체중 (kg) *</label>
+      <div style="display:flex;align-items:center;gap:8px">
+        <input class="input-field" id="s2Weight" type="number" step="0.1" placeholder="90.0"
+          style="max-width:120px;margin-bottom:0" value="${currentWeight||''}">
+        <span style="color:var(--muted);font-size:13px">kg</span>
+      </div>
+    </div>
+
+    <div class="card mt-12" style="padding:12px">
+      <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="togglePastImport()">
+        <div style="font-size:13px;font-weight:600">📥 과거 체중 가져오기 <span style="font-size:11px;color:var(--muted);font-weight:400">(선택)</span></div>
+        <span id="pastArrow" style="font-size:12px;color:var(--muted)">▼ 펼치기</span>
+      </div>
+      <div id="pastImportSection" style="display:none;margin-top:12px">
+        <p style="font-size:12px;color:var(--muted);margin-bottom:8px">엑셀/구글시트에서 날짜·체중 두 열을 복사 후 붙여넣거나 파일을 업로드하세요.</p>
+        <textarea class="paste-area" id="pastePaste" placeholder="2026-03-01&#9;124.0
+2026-03-05&#9;122.8
+..."></textarea>
+        <div class="flex-row gap-8 mt-8">
+          <button class="btn btn-ghost btn-sm" onclick="clearPaste()">지우기</button>
+          <button class="btn btn-primary btn-sm" onclick="parsePasteData()">미리보기</button>
+        </div>
+        <div style="margin:10px 0;text-align:center;font-size:12px;color:var(--muted)">또는</div>
+        <div class="dropzone" id="pastDropzone" onclick="document.getElementById('pastFile').click()" style="padding:14px">
+          <div style="font-size:22px;margin-bottom:4px">📂</div>
+          <p style="font-size:12px">클릭하거나 파일 드롭 (.xlsx / .csv)</p>
+        </div>
+        <input type="file" id="pastFile" accept=".xlsx,.xls,.csv" style="display:none" onchange="handlePastFile(event)">
+        <div id="importPreview" style="margin-top:10px"></div>
+      </div>
+    </div>
+
+    <div class="flex-row gap-8 mt-12">
+      <button class="btn btn-ghost btn-full" onclick="showStep(1)">← 이전</button>
+      <button class="btn btn-primary btn-full" onclick="nextFromStep2()">다음 →</button>
+    </div>`;
+}
+
+window.togglePastImport = () => {
+  const s=document.getElementById('pastImportSection'), a=document.getElementById('pastArrow');
+  const open=s.style.display==='none'; s.style.display=open?'':'none'; a.textContent=open?'▲ 접기':'▼ 펼치기';
+};
+window.clearPaste = () => { document.getElementById('pastePaste').value=''; document.getElementById('importPreview').innerHTML=''; importedRecords=[]; };
+
+function parseDateStr(raw) {
+  if (!raw) return null;
+  const s = String(raw).trim();
+  if (!s || s==='-') return null;
+  if (/^\d{5}$/.test(s)) { const d=new Date((parseInt(s)-25569)*86400000); return toDateStr(d); }
+  const cleaned = s.replace(/[./년월]/g,'-').replace(/일/g,'').replace(/\s+/g,'');
+  const patterns = [/^(\d{4})-(\d{1,2})-(\d{1,2})$/,/^(\d{2})-(\d{1,2})-(\d{1,2})$/,/^(\d{1,2})-(\d{1,2})$/];
+  for (const p of patterns) {
+    const m=cleaned.match(p);
+    if(m){
+      let y,mo,d;
+      if(m.length===4){y=m[1].length===2?2000+parseInt(m[1]):parseInt(m[1]);mo=parseInt(m[2]);d=parseInt(m[3]);}
+      else{y=new Date().getFullYear();mo=parseInt(m[1]);d=parseInt(m[2]);}
+      if(mo<1||mo>12||d<1||d>31)return null;
+      return `${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    }
+  }
+  const d=new Date(s); return isNaN(d.getTime())?null:toDateStr(d);
+}
+
+function parseRows(rows) {
+  const result=[];
+  for(const row of rows){
+    if(!row||row.length<2)continue;
+    let dv=null,wv=null;
+    for(let i=0;i<row.length;i++){
+      const cell=String(row[i]).trim();
+      if(!dv){const d=parseDateStr(cell);if(d){dv=d;continue;}}
+      if(!wv&&dv){const w=parseWeight(cell);if(w!==null){wv=w;break;}}
+    }
+    if(dv&&wv!==null)result.push({date:dv,weight:wv});
+  }
+  return result;
+}
+
+function showImportPreview(records) {
+  importedRecords = records;
+  const el = document.getElementById('importPreview');
+  if (!records.length) { el.innerHTML='<p style="font-size:12px;color:var(--muted)">가져올 수 있는 데이터가 없어요.</p>'; return; }
+  el.innerHTML = `
+    <div style="font-size:12px;color:var(--teal);margin-bottom:6px">✓ ${records.length}개 기록 준비됨</div>
+    <div style="max-height:120px;overflow-y:auto;font-size:11px;color:var(--muted)">
+      ${records.slice(0,5).map(r=>`<div>${r.date} — ${r.weight.toFixed(1)}kg</div>`).join('')}
+      ${records.length>5?`<div>...외 ${records.length-5}개</div>`:''}
+    </div>`;
+}
+
+window.parsePasteData = () => {
+  const text=document.getElementById('pastePaste').value.trim();
+  if(!text){showToast('붙여넣을 데이터가 없어요','err');return;}
+  showImportPreview(parseRows(text.split('\n').map(l=>l.split(/\t|,/))));
+};
+window.handlePastFile = e => {
+  const file=e.target.files[0]; if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const wb=XLSX.read(ev.target.result,{type:'array',cellDates:true});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const raw=XLSX.utils.sheet_to_json(ws,{header:1,raw:false,dateNF:'YYYY-MM-DD'});
+      showImportPreview(parseRows(raw.filter(r=>r.some(c=>c))));
+    }catch(err){showToast('파일 파싱 오류: '+err.message,'err');}
+  };
+  reader.readAsArrayBuffer(file);
+};
+
+window.nextFromStep2 = () => {
+  const w = parseWeight(document.getElementById('s2Weight').value);
+  if (w === null) { showToast('오늘 체중을 입력해주세요','err'); return; }
+  currentWeight = w;
+  showStep(3);
+};
+
+// ── STEP 3: 목표 설정 ────────────────────────────────────────────────
+function renderStep3() {
+  const unlock = new Date(); unlock.setMonth(unlock.getMonth()+6);
+  const unlockStr = `${unlock.getFullYear()}년 ${unlock.getMonth()+1}월 ${unlock.getDate()}일`;
+
+  // 과거 기록 중 최고 체중 옵션 만들기
+  const pastOptions = importedRecords.length
+    ? [...importedRecords].sort((a,b)=>b.weight-a.weight).slice(0,5)
+    : [];
+
+  document.getElementById('stepContent').innerHTML = `
+    <h3 style="margin-bottom:12px">🎯 목표 설정</h3>
+    <div class="warn-box">
+      ⚠️ 목표 체중은 신중하게 설정하세요.<br>
+      설정 후 <strong>${unlockStr}</strong>까지 변경할 수 없어요.<br>
+      변경이 꼭 필요하다면 관리자에게 문의해주세요. (업적 시스템 유지를 위함)
+    </div>
+
+    <div class="input-group">
+      <label class="input-label">목표 체중 (kg) *</label>
+      <div style="display:flex;align-items:center;gap:8px">
+        <input class="input-field" id="s3Goal" type="number" step="0.1" placeholder="80"
+          style="max-width:120px;margin-bottom:0">
+        <span style="color:var(--muted);font-size:13px">kg</span>
+      </div>
+    </div>
+
+    <div class="input-group mt-12">
+      <label class="input-label">기준 체중 선택 *</label>
+      <p style="font-size:11px;color:var(--muted);margin-bottom:10px">감량 업적 계산의 출발점이 돼요.</p>
+
+      <div class="ref-option selected" id="refOpt_current" onclick="selectRef('current')">
+        <input type="radio" name="refW" checked>
+        <div>
+          <div style="font-size:13px;font-weight:700">현재 체중으로 설정</div>
+          <div style="font-size:11px;color:var(--muted)">${currentWeight?.toFixed(1)} kg</div>
+        </div>
+      </div>
+
+      ${pastOptions.map((r,i) => `
+        <div class="ref-option" id="refOpt_past${i}" onclick="selectRef('past${i}')">
+          <input type="radio" name="refW">
+          <div>
+            <div style="font-size:13px;font-weight:700">과거 기록에서 선택</div>
+            <div style="font-size:11px;color:var(--muted)">${r.date} — ${r.weight.toFixed(1)} kg</div>
+          </div>
+        </div>`).join('')}
+
+      ${importedRecords.length > 5 ? `
+        <div class="input-group mt-8">
+          <label class="input-label">또는 직접 입력</label>
+          <input class="input-field" id="s3RefCustom" type="number" step="0.1" placeholder="직접 입력"
+            oninput="selectRef('custom')">
+        </div>` : ''}
+    </div>
+
+    <div class="flex-row gap-8 mt-12">
+      <button class="btn btn-ghost btn-full" onclick="showStep(2)">← 이전</button>
+      <button class="btn btn-primary btn-full" onclick="submitNewUser()">✓ 완료</button>
+    </div>`;
+}
+
+window.selectRef = key => {
+  refWeightChoice = key;
+  document.querySelectorAll('.ref-option').forEach(el => el.classList.remove('selected'));
+  const target = document.getElementById(`refOpt_${key}`);
+  if (target) { target.classList.add('selected'); target.querySelector('input').checked=true; }
+};
+
+// ── 최종 사용자 생성 ─────────────────────────────────────────────────
+window.submitNewUser = async () => {
+  const goal = parseFloat(document.getElementById('s3Goal').value) || null;
+  if (!goal) { showToast('목표 체중을 입력해주세요','err'); return; }
+
+  // 기준 체중 결정
+  let refW = currentWeight;
+  if (refWeightChoice === 'custom') {
+    const cv = parseFloat(document.getElementById('s3RefCustom')?.value);
+    if (!isNaN(cv) && cv > 0) refW = cv;
+  } else if (refWeightChoice.startsWith('past')) {
+    const idx = parseInt(refWeightChoice.replace('past',''));
+    const pastOptions = [...importedRecords].sort((a,b)=>b.weight-a.weight);
+    if (pastOptions[idx]) refW = pastOptions[idx].weight;
+  }
+
+  const btn = document.querySelector('#stepContent .btn-primary');
+  if (btn) { btn.disabled=true; btn.textContent='저장 중...'; }
+
+  try {
+    const { name, emoji, height, birthYear, pw } = draft;
+    const id = name.toLowerCase().replace(/[^a-z0-9]/g,'_') + '_' + Date.now().toString(36);
+    const hash = await createUser({
+      id, name, emoji, goal, height, birthYear,
+      password: pw || null,
+      referenceWeight: refW,
+      currentWeight,
+      pastRecords: importedRecords
+    });
+    if (hash) saveAuth(id, hash);
+    closeModal();
+    showToast(`${name} 추가 완료!`, 'ok');
+    render();
+  } catch(e) {
+    showToast('오류: ' + e.message, 'err');
+    if (btn) { btn.disabled=false; btn.textContent='✓ 완료'; }
   }
 };
+
+// ── 모달 열기/닫기 ───────────────────────────────────────────────────
+window.openModal = () => {
+  step=1; draft={}; currentWeight=null; importedRecords=[]; refWeightChoice='current';
+  selectedEmoji = EMOJIS[0];
+  document.getElementById('addModal').classList.add('open');
+  showStep(1);
+};
+window.closeModal = () => document.getElementById('addModal').classList.remove('open');
 
 // ── 사용자 목록 렌더 ─────────────────────────────────────────────────
 async function render() {
@@ -137,13 +429,9 @@ async function render() {
   const params  = new URLSearchParams(location.search);
   const authReq = params.get('auth_required');
 
-  // 마지막 사용자 자동 이동 (auth_required, select 파라미터 없을 때만)
   if (!authReq && !params.get('select')) {
     const lastUid = localStorage.getItem('uid');
-    if (lastUid) {
-      location.href = `dashboard.html?user=${encodeURIComponent(lastUid)}`;
-      return;
-    }
+    if (lastUid) { location.href=`input.html?user=${encodeURIComponent(lastUid)}`; return; }
   }
 
   try {
@@ -164,7 +452,7 @@ async function render() {
 
     const grid = document.getElementById('userGrid');
     if (!users.length) {
-      grid.innerHTML='<p class="text-muted text-center" style="grid-column:1/-1;padding:24px 0">아직 사용자가 없어요.</p>';
+      grid.innerHTML='<p class="text-muted text-center" style="padding:24px 0">아직 사용자가 없어요.</p>';
     } else {
       users.forEach(u => {
         const card = document.createElement('div');
@@ -173,7 +461,7 @@ async function render() {
         const title = u.selectedTitle || '';
         card.innerHTML = `
           <div class="avatar">${u.emoji||'⚖️'}</div>
-          ${title ? `<div style="font-size:10px;color:var(--teal);font-weight:700;margin-bottom:2px">${title}</div>` : ''}
+          ${title?`<div style="font-size:10px;color:var(--teal);font-weight:700;margin-bottom:2px">${title}</div>`:''}
           <div class="name">${u.name}</div>
           <div class="sub" style="color:var(--muted)">${score}점</div>`;
         card.onclick = () => enterUser(u);
@@ -181,7 +469,6 @@ async function render() {
       });
     }
 
-    // auth_required 파라미터 있으면 해당 유저 PIN 모달 자동 오픈
     if (authReq) {
       const u = users.find(x => x.id === authReq);
       if (u && u.passwordHash) openPwModal(u);
@@ -193,129 +480,61 @@ async function render() {
 
 function enterUser(u) {
   if (!u.passwordHash || isAuthed(u.id, u.passwordHash)) {
-    // 비밀번호 없거나 이미 이 기기에서 인증됨 → 바로 입장
     localStorage.setItem('uid', u.id);
-    location.href = `dashboard.html?user=${encodeURIComponent(u.id)}`;
+    location.href = `input.html?user=${encodeURIComponent(u.id)}`;
   } else {
-    // 비밀번호 있음 → PIN 입력
     openPwModal(u);
   }
 }
 
 // ── PIN 모달 ─────────────────────────────────────────────────────────
 function buildPinGrid() {
-  const keys = [1,2,3,4,5,6,7,8,9,'','0','⌫'];
-  const grid = document.getElementById('pinGrid');
-  grid.innerHTML = '';
-  keys.forEach(k => {
-    const btn = document.createElement('button');
-    btn.className = 'pin-btn';
-    if (k === '') {
-      btn.style.visibility = 'hidden';
-    } else {
-      btn.textContent = k;
-      if (k === '⌫') btn.style.fontSize = '14px';
-      btn.addEventListener('click', () => handlePin(String(k)));
-    }
+  const keys=[1,2,3,4,5,6,7,8,9,'','0','⌫'];
+  const grid=document.getElementById('pinGrid'); grid.innerHTML='';
+  keys.forEach(k=>{
+    const btn=document.createElement('button'); btn.className='pin-btn';
+    if(k===''){btn.style.visibility='hidden';}
+    else{btn.textContent=k;if(k==='⌫')btn.style.fontSize='14px';btn.addEventListener('click',()=>handlePin(String(k)));}
     grid.appendChild(btn);
   });
 }
-
-function openPwModal(u) {
-  pwTarget = u; pinVal = '';
-  document.getElementById('pwAvatar').textContent = u.emoji||'⚖️';
-  document.getElementById('pwName').textContent   = u.name;
-  document.getElementById('pwErr').textContent    = '';
-  updateDots();
-  buildPinGrid();
+function openPwModal(u){
+  pwTarget=u;pinVal='';
+  document.getElementById('pwAvatar').textContent=u.emoji||'⚖️';
+  document.getElementById('pwName').textContent=u.name;
+  document.getElementById('pwErr').textContent='';
+  updateDots();buildPinGrid();
   document.getElementById('pwModal').classList.add('open');
 }
-
-window.closePwModal = () => {
-  document.getElementById('pwModal').classList.remove('open');
-  pwTarget = null; pinVal = '';
-};
-
-async function handlePin(key) {
-  if (!pwTarget) return;
-  if (key === '⌫') {
-    pinVal = pinVal.slice(0, -1);
-  } else if (pinVal.length < 4) {
-    pinVal += key;
-  }
+window.closePwModal=()=>{document.getElementById('pwModal').classList.remove('open');pwTarget=null;pinVal='';};
+async function handlePin(key){
+  if(!pwTarget)return;
+  if(key==='⌫'){pinVal=pinVal.slice(0,-1);}
+  else if(pinVal.length<4){pinVal+=key;}
   updateDots();
-  document.getElementById('pwErr').textContent = '';
-
-  if (pinVal.length === 4) {
-    try {
-      const hash = await sha256(pinVal);
-      if (hash === pwTarget.passwordHash) {
-        saveAuth(pwTarget.id, pwTarget.passwordHash);
-        localStorage.setItem('uid', pwTarget.id);
+  document.getElementById('pwErr').textContent='';
+  if(pinVal.length===4){
+    try{
+      const hash=await sha256(pinVal);
+      if(hash===pwTarget.passwordHash){
+        saveAuth(pwTarget.id,pwTarget.passwordHash);
+        localStorage.setItem('uid',pwTarget.id);
         closePwModal();
-        location.href = `dashboard.html?user=${encodeURIComponent(pwTarget.id)}`;
-      } else {
-        document.getElementById('pwErr').textContent = '비밀번호가 틀렸어요';
-        pinVal = ''; updateDots();
-      }
-    } catch(e) {
-      document.getElementById('pwErr').textContent = '오류: ' + e.message;
-      pinVal = ''; updateDots();
-    }
+        location.href=`input.html?user=${encodeURIComponent(pwTarget.id)}`;
+      }else{document.getElementById('pwErr').textContent='비밀번호가 틀렸어요';pinVal='';updateDots();}
+    }catch(e){document.getElementById('pwErr').textContent='오류: '+e.message;pinVal='';updateDots();}
   }
 }
+function updateDots(){document.querySelectorAll('.pw-dot').forEach((d,i)=>d.classList.toggle('filled',i<pinVal.length));}
 
-function updateDots() {
-  document.querySelectorAll('.pw-dot').forEach((d,i) => {
-    d.classList.toggle('filled', i < pinVal.length);
-  });
-}
-
-// ── 사용자 생성 ──────────────────────────────────────────────────────
-window.openModal = () => {
-  selectedEmoji = EMOJIS[0];
-  document.getElementById('addModal').classList.add('open');
-  document.getElementById('newEmoji').value = '';
-  buildEmojiGrid();
-};
-window.closeModal = () => document.getElementById('addModal').classList.remove('open');
-
-window.submitNewUser = async () => {
-  const name      = document.getElementById('newName').value.trim();
-  const emoji     = document.getElementById('newEmoji').value.trim()||selectedEmoji;
-  const height    = parseInt(document.getElementById('newHeight').value)||null;
-  const birthYear = parseInt(document.getElementById('newBirthYear').value)||null;
-  const goal      = parseFloat(document.getElementById('newGoal').value)||80;
-  const pw        = document.getElementById('newPw').value;
-  const pwConfirm = document.getElementById('newPwConfirm').value;
-
-  if (!name)      { showToast('이름을 입력해주세요','err'); return; }
-  if (!height)    { showToast('키를 입력해주세요','err'); return; }
-  if (!birthYear) { showToast('출생연도를 입력해주세요','err'); return; }
-  if (pw && pw !== pwConfirm) { showToast('비밀번호가 일치하지 않아요','err'); return; }
-  if (pw && !/^\d{4}$/.test(pw)) { showToast('비밀번호는 숫자 4자리예요','err'); return; }
-
-  const id   = name.toLowerCase().replace(/[^a-z0-9]/g,'_')+'_'+Date.now().toString(36);
-  const hash = await createUser({id, name, emoji, goal, height, birthYear, password: pw||null});
-  if (hash) saveAuth(id, hash);
-  closeModal();
-  showToast(`${name} 추가 완료!`,'ok');
-  render();
-};
+document.getElementById('pwModal').addEventListener('click',e=>{if(e.target===document.getElementById('pwModal'))closePwModal();});
+document.getElementById('addModal').addEventListener('click',e=>{if(e.target===document.getElementById('addModal'))closeModal();});
 
 function showToast(msg,type='ok'){
   const t=document.getElementById('toast');
-  t.textContent=msg; t.className=`toast show ${type}`;
+  t.textContent=msg;t.className=`toast show ${type}`;
   setTimeout(()=>t.className='toast',2500);
 }
-
-// 모달 바깥 클릭 시 닫기
-document.getElementById('pwModal').addEventListener('click', e => {
-  if(e.target === document.getElementById('pwModal')) closePwModal();
-});
-document.getElementById('addModal').addEventListener('click', e => {
-  if(e.target === document.getElementById('addModal')) closeModal();
-});
 
 render();
 </script>

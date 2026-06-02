@@ -31,8 +31,8 @@
 <body>
 
 <header class="top-bar">
-  <span class="title">✏️ 체중 입력</span>
-  <nav class="side-nav" id="sideNav"></nav>
+  <a href="index.html?select=1" class="mweg-title">마웨그</a>
+  <div></div>
   <div style="display:flex;align-items:center;gap:8px">
     <div class="user-chip" onclick="openProfileEdit()" style="cursor:pointer">
       <span id="chipEmoji">⚖️</span><span id="chipName">-</span>
@@ -114,17 +114,16 @@ let existingMap={}, allRecords=[], user=null;
 
 function buildNav() {
   const links=[
-    {href:`dashboard.html?user=${uid}`,   icon:'📊', label:'그래프',   id:'dashboard'},
-    {href:`input.html?user=${uid}`,        icon:'✏️',  label:'체중 입력', id:'input'},
-    {href:`achievements.html?user=${uid}`, icon:'🏆', label:'업적',     id:'achievements'},
+    {href:`input.html?user=${uid}`,        icon:'✏️',  label:'데이터 입력', id:'input'},
+    {href:`dashboard.html?user=${uid}`,    icon:'📊', label:'그래프',      id:'dashboard'},
+    {href:`achievements.html?user=${uid}`, icon:'🏆', label:'업적',        id:'achievements'},
   ];
-  [document.getElementById('bottomNav'),document.getElementById('sideNav')].forEach((nav,ni)=>{
-    links.forEach(l=>{
-      const a=document.createElement('a');
-      a.href=l.href; a.className=l.id==='input'?'active':'';
-      a.innerHTML=ni===0?`<span class="icon">${l.icon}</span>${l.label}`:`${l.icon} ${l.label}`;
-      nav.appendChild(a);
-    });
+  const nav=document.getElementById('bottomNav');
+  links.forEach(l=>{
+    const a=document.createElement('a');
+    a.href=l.href; a.className=l.id==='input'?'active':'';
+    a.innerHTML=`<span class="icon">${l.icon}</span>${l.label}`;
+    nav.appendChild(a);
   });
 }
 
@@ -132,23 +131,53 @@ function fmtDate(d){
   return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
 }
 
-function recentRow(dateStr, label, isToday) {
-  const val = existingMap[dateStr];
-  const d   = new Date(dateStr);
-  return `
-    <div class="weight-row ${isToday?'is-today':''} ${val!=null?'has-value':''}" data-date="${dateStr}">
-      <div class="date-lbl">
-        <div>${label}</div>
-        <div class="day-sub">${fmtDate(d)} (${DAY_KO[d.getDay()]})</div>
-      </div>
-      <input class="w-input" type="number" step="0.1" placeholder="--.-"
-        value="${val!=null?val.toFixed(1):''}"
-        data-date="${dateStr}"
-        onchange="saveRecent(this)"
-        onblur="fmtInput(this)">
-      <div class="w-unit">kg</div>
-    </div>`;
-}
+// ── 데이터 입력 카드 ─────────────────────────────────────────────────
+window.onDayInput = dateStr => {
+  const card=document.getElementById(`daycard-${dateStr}`);
+  const inp=document.getElementById(`inp-${dateStr}`);
+  const st=document.getElementById(`dcst-${dateStr}`);
+  if(!card)return;
+  const raw=inp.value.trim();
+  if(raw===''||raw==='-'){
+    // 빈 값으로 되돌림 → 저장된 게 있으면 green, 없으면 neutral
+    card.className=`day-card ${existingMap[dateStr]!=null?'saved':''}`;
+    st.textContent=existingMap[dateStr]!=null?'✓ 저장됨':'';
+  } else {
+    card.className=`day-card dirty`;
+    st.textContent='저장 버튼을 눌러주세요';
+  }
+};
+
+window.submitDay = async dateStr => {
+  const inp=document.getElementById(`inp-${dateStr}`);
+  const card=document.getElementById(`daycard-${dateStr}`);
+  const st=document.getElementById(`dcst-${dateStr}`);
+  const raw=inp.value.trim();
+
+  // 빈값 → 기록 삭제
+  if(raw===''||raw==='-'){
+    await setWeight(uid,dateStr,null);
+    delete existingMap[dateStr];
+    card.className='day-card';
+    st.textContent='';
+    showToast('기록이 삭제됐어요','ok');
+    return;
+  }
+
+  const w=parseWeight(raw);
+  if(w===null){showToast('숫자를 입력해주세요','err');return;}
+
+  const err=validateWeight(dateStr,w);
+  if(err){showWeightError(err,()=>{const prev=existingMap[dateStr];inp.value=prev!=null?prev.toFixed(1):'';onDayInput(dateStr);});return;}
+
+  inp.value=w.toFixed(1);
+  await setWeight(uid,dateStr,w);
+  existingMap[dateStr]=w;
+  card.className='day-card saved';
+  st.textContent='✓ 저장됨';
+  showToast('저장됐어요 ✓','ok');
+};
+
 
 async function render() {
   buildNav();
@@ -161,13 +190,32 @@ async function render() {
 
   const today = new Date(); today.setHours(0,0,0,0);
   const labels=['오늘','어제','2일 전','3일 전','4일 전','5일 전'];
-  let rows='';
+  let cards='';
   for(let i=0;i<=5;i++){
     const d=new Date(today); d.setDate(d.getDate()-i);
-    rows+=recentRow(toDateStr(d), labels[i], i===0);
+    const dateStr=toDateStr(d);
+    const val=existingMap[dateStr];
+    const hasSaved=val!=null;
+    const stateClass=hasSaved?'saved':'';
+    cards+=`
+      <div class="day-card ${stateClass} ${i===0?'is-today':''}" id="daycard-${dateStr}">
+        <div class="dc-top">
+          <span class="dc-name" style="${i===0?'color:var(--teal)':''}">${labels[i]}</span>
+          <span class="dc-date">${fmtDate(d)} (${DAY_KO[d.getDay()]})</span>
+        </div>
+        <div class="dc-row">
+          <input type="number" step="0.1" class="dc-input" id="inp-${dateStr}"
+            placeholder="--.-"
+            value="${hasSaved?val.toFixed(1):''}"
+            oninput="onDayInput('${dateStr}')">
+          <span class="dc-unit">kg</span>
+          <button class="dc-btn" onclick="submitDay('${dateStr}')">저장</button>
+        </div>
+        <div class="dc-status" id="dcst-${dateStr}">${hasSaved?'✓ 저장됨':''}</div>
+      </div>`;
   }
 
-  // 전체 기록 (수정 가능한 테이블)
+  // 전체 기록
   const sorted=[...allRecords].sort((a,b)=>b.date.localeCompare(a.date));
   const histRows = sorted.map(r=>`
     <tr id="hrow-${r.date}">
@@ -184,10 +232,7 @@ async function render() {
     </tr>`).join('');
 
   document.getElementById('content').innerHTML=`
-    <div class="card">
-      <div class="section-title">최근 6일</div>
-      ${rows}
-    </div>
+    ${cards}
 
     <button class="btn btn-ghost btn-full mt-12" onclick="openDateModal()">
       ➕ 날짜 직접 추가하기
@@ -307,20 +352,6 @@ window.closeWeightErr = () => {
   if (window._weightErrCb) { window._weightErrCb(); window._weightErrCb=null; }
 };
 
-window.saveRecent = async (input) => {
-  const dateStr=input.dataset.date, raw=input.value.trim();
-  if(raw===''||raw==='-'){await setWeight(uid,dateStr,null);input.closest('.weight-row').classList.remove('has-value');return;}
-  const w=parseWeight(raw);
-  if(w===null){showToast('숫자를 입력해주세요','err');return;}
-  const err = validateWeight(dateStr, w);
-  if (err) { showWeightError(err, ()=>{ input.value=existingMap[dateStr]!=null?existingMap[dateStr].toFixed(1):''; }); return; }
-  input.value=w.toFixed(1);
-  await setWeight(uid,dateStr,w);
-  input.closest('.weight-row').classList.add('has-value');
-  existingMap[dateStr]=w;
-  showToast('저장 ✓','ok');
-};
-window.fmtInput = (input)=>{const w=parseWeight(input.value);if(w!==null)input.value=w.toFixed(1);};
 
 window.saveHist = async (date, input) => {
   const w=parseWeight(input.value);
