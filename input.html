@@ -36,7 +36,7 @@
     .ex-btn.on-check { opacity:1; border-color:var(--green); color:var(--green); background:rgba(102,187,106,.1); }
     .ex-btn.on-cross { opacity:1; border-color:var(--red);   color:var(--red);   background:rgba(239,83,80,.1); }
 
-    /* 식단/운동 섹션 */
+    /* 식단/운동 섹션 (모바일) */
     .dc-extra { margin-top:12px; padding-top:12px; border-top:1px solid var(--border); display:flex; gap:16px; flex-wrap:wrap; }
     .dc-meal-col { display:flex; flex-direction:column; gap:6px; flex:1; min-width:160px; }
     .dc-meal-row { display:flex; align-items:center; gap:8px; }
@@ -45,17 +45,23 @@
     .dc-ex-label { font-size:11px; color:var(--muted); }
     .dc-ex-row { display:flex; gap:6px; }
 
-    /* 히스토리 테이블 */
-    .rec-table{width:100%;border-collapse:collapse;font-size:13px;}
-    .rec-table th{text-align:left;padding:6px 8px;color:var(--muted);border-bottom:1px solid var(--border);font-size:11px;font-weight:600;}
-    .rec-table td{padding:6px 8px;border-bottom:1px solid rgba(255,255,255,.04);}
-    .rec-table tr:last-child td{border-bottom:none;}
-    .w-edit{background:transparent;border:none;border-bottom:1px solid transparent;color:var(--text);font-size:13px;width:64px;text-align:right;padding:2px 4px;transition:border-color .2s;}
-    .w-edit:focus{outline:none;border-bottom-color:var(--teal);background:rgba(0,229,170,.05);}
-    .del-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;padding:2px 6px;}
-    .del-btn:hover{color:var(--red);}
-    .saved-flash{color:var(--teal);font-size:11px;animation:fadeout 1.5s forwards;}
-    @keyframes fadeout{0%{opacity:1;}80%{opacity:1;}100%{opacity:0;}}
+    /* 모두 입력 완료 */
+    .day-card.all-done { border-color: var(--green) !important; background: rgba(102,187,106,.05) !important; }
+
+    /* 데스크탑: 한 줄 레이아웃 */
+    @media(min-width:768px) {
+      .day-card { display:flex; flex-direction:row; align-items:center; flex-wrap:nowrap; gap:14px; padding:10px 16px; }
+      .day-card .dc-top { margin-bottom:0; flex-shrink:0; min-width:130px; }
+      .day-card .dc-row { flex-shrink:0; margin:0; }
+      .day-card .dc-status { display:none; }
+      .dc-extra { flex:1; margin-top:0 !important; padding-top:0 !important; border-top:none !important; flex-wrap:nowrap !important; gap:8px !important; align-items:center !important; }
+      .dc-meal-col { flex-direction:row !important; align-items:center !important; gap:8px !important; flex:1 !important; min-width:auto !important; }
+      .dc-meal-row { flex-wrap:nowrap; }
+      .dc-meal-label { width:auto !important; font-size:10px !important; flex-shrink:0; }
+      .dc-ex-col { flex-direction:row !important; align-items:center !important; gap:6px !important; }
+      .tl-btn { width:18px; height:18px; }
+      .ex-btn { width:26px; height:26px; font-size:13px; }
+    }
   </style>
 </head>
 <body>
@@ -186,42 +192,52 @@ window.submitDay = async dateStr => {
   inp.style.borderColor='var(--green)';
   if(st){st.textContent='✓ 저장됨';st.style.color='var(--green)';}
   showToast('저장됐어요 ✓','ok');
+  refreshCardState(dateStr);
 };
+
+// ── all-done 체크 ─────────────────────────────────────────────────────
+function refreshCardState(dateStr) {
+  const rec = allRecords.find(r=>r.date===dateStr);
+  const weight = existingMap[dateStr];
+  const meal = rec?.meal || {};
+  const exercise = rec?.exercise;
+  const allDone = weight != null
+    && meal.morning != null && meal.lunch != null && meal.dinner != null
+    && (exercise === true || exercise === false);
+  const card = document.getElementById(`daycard-${dateStr}`);
+  if (card) card.classList.toggle('all-done', allDone);
+}
 
 // ── 식단 저장 ─────────────────────────────────────────────────────────
 window.setMeal = async (dateStr, mealTime, value) => {
   const rec = allRecords.find(r=>r.date===dateStr);
   const currentMeal = rec?.meal || {};
-  // 토글: 이미 같은 값이면 null로
   const newVal = currentMeal[mealTime] === value ? null : value;
   const newMeal = { ...currentMeal, [mealTime]: newVal };
   await setDietExercise(uid, dateStr, { meal: newMeal });
-  // 로컬 업데이트
   if(rec) rec.meal=newMeal;
   else allRecords.push({ date:dateStr, meal:newMeal });
-  // 버튼 UI 업데이트
   ['red','yellow','green'].forEach(c=>{
     const btn=document.querySelector(`#daycard-${dateStr} .tl-btn.${c}-tl[onclick*="${mealTime}"]`);
     if(btn) btn.classList.toggle('on', newMeal[mealTime]===(c==='yellow'?'yellow':c));
   });
+  refreshCardState(dateStr);
 };
 
 // ── 운동 저장 ─────────────────────────────────────────────────────────
 window.setExercise = async (dateStr, value) => {
   const rec = allRecords.find(r=>r.date===dateStr);
   const current = rec?.exercise;
-  const newVal = current === value ? null : value; // 토글
+  const newVal = current === value ? null : value;
   await setDietExercise(uid, dateStr, { exercise: newVal });
   if(rec) rec.exercise=newVal;
   else allRecords.push({ date:dateStr, exercise:newVal });
-  // 버튼 UI 업데이트
-  const checkBtn = document.querySelector(`#daycard-${dateStr} .ex-btn.on-check, #daycard-${dateStr} .ex-btn:first-of-type`);
-  const crossBtn = document.querySelector(`#daycard-${dateStr} .ex-btn.on-cross, #daycard-${dateStr} .ex-btn:last-of-type`);
   document.querySelectorAll(`#daycard-${dateStr} .ex-btn`).forEach((btn,i)=>{
     btn.className='ex-btn';
     if(newVal===true  && i===0) btn.className='ex-btn on-check';
     if(newVal===false && i===1) btn.className='ex-btn on-cross';
   });
+  refreshCardState(dateStr);
 };
 
 
@@ -248,8 +264,12 @@ async function render() {
     const hasSaved=val!=null;
     const isToday=(i===0);
 
-    // 식단/운동 (오늘만)
-    const extraSection = isToday ? `
+    // 모두 입력 완료 여부
+    const allDone = hasSaved
+      && meal.morning != null && meal.lunch != null && meal.dinner != null
+      && (exercise === true || exercise === false);
+
+    const extraSection = `
       <div class="dc-extra">
         <div class="dc-meal-col">
           ${['morning','lunch','dinner'].map((m,mi)=>`
@@ -269,10 +289,10 @@ async function render() {
             <button class="ex-btn ${exercise===false?'on-cross':''}" onclick="setExercise('${dateStr}',false)">✗</button>
           </div>
         </div>
-      </div>` : '';
+      </div>`;
 
     cards+=`
-      <div class="day-card" id="daycard-${dateStr}">
+      <div class="day-card${allDone?' all-done':''}" id="daycard-${dateStr}">
         <div class="dc-top">
           <span class="dc-name" style="${isToday?'color:var(--teal)':''}">${labels[i]}</span>
           <span class="dc-date">${fmtDate(d)} (${DAY_KO[d.getDay()]})</span>
@@ -291,50 +311,7 @@ async function render() {
       </div>`;
   }
 
-  document.getElementById('content').innerHTML=cards+`
-
-    <!-- ── 데이터 가져오기 ────────────────────────────────────────── -->
-    <div class="card mt-12">
-      <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer"
-           onclick="toggleImport()">
-        <div class="section-title" style="margin:0">📥 데이터 가져오기</div>
-        <span id="importArrow" style="color:var(--muted);font-size:13px">▼ 펼치기</span>
-      </div>
-      <div id="importSection" style="display:none;margin-top:14px">
-        <!-- 방법 1: 붙여넣기 -->
-        <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px">방법 1 — 엑셀에서 복사 → 붙여넣기</div>
-        <p style="font-size:12px;color:var(--muted);margin-bottom:8px">
-          날짜·체중 두 열을 드래그해서 복사한 뒤 붙여넣으세요. (12/10, 2025-12-10 등 자유롭게)
-        </p>
-        <textarea class="paste-area" id="pasteArea"
-          placeholder="2025-12-10&#9;124.0
-2026-01-07&#9;117.4
-..."></textarea>
-        <div class="flex-row gap-8 mt-8">
-          <button class="btn btn-ghost btn-sm" onclick="clearPaste()">지우기</button>
-          <button class="btn btn-primary btn-sm" onclick="parsePaste()">미리보기</button>
-        </div>
-        <!-- 방법 2: 파일 -->
-        <div style="font-size:12px;font-weight:700;color:var(--muted);margin:14px 0 8px">방법 2 — 파일 업로드 (.xlsx / .csv)</div>
-        <div class="dropzone" id="importDropzone" onclick="document.getElementById('importFile').click()">
-          <div class="dz-icon">📂</div>
-          <p>클릭하거나 파일을 드롭하세요</p>
-          <small>.xlsx, .xls, .csv 지원</small>
-        </div>
-        <input type="file" id="importFile" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleImportFile(event)">
-        <!-- 미리보기 -->
-        <div id="importPreviewCard" style="display:none;margin-top:12px">
-          <div class="section-title" id="importPreviewTitle">미리보기</div>
-          <div id="importPreviewWrap" style="overflow-x:auto;max-height:240px;overflow-y:auto"></div>
-          <div class="flex-row gap-8 mt-8">
-            <button class="btn btn-ghost btn-sm" onclick="cancelImportPreview()">취소</button>
-            <button class="btn btn-primary btn-sm" id="doImportBtn" onclick="doImport()">
-              📥 <span id="importCount">0</span>개 가져오기
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>`;
+  document.getElementById('content').innerHTML=cards;
 }
 
 
