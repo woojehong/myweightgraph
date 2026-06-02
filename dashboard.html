@@ -35,10 +35,13 @@
   </style>
 </head>
 <body>
-<header class="top-bar">
-  <a href="index.html?select=1" class="mweg-title">마웨그</a>
-  <div></div>
-  <div style="display:flex;align-items:center;gap:8px">
+<header class="top-bar" style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px">
+  <!-- 좌: 오늘 결여 알림 -->
+  <div id="todayAlert" style="min-width:0"></div>
+  <!-- 중앙: 마웨그 -->
+  <a href="index.html?select=1" class="mweg-title" style="justify-self:center">마웨그</a>
+  <!-- 우: 유저칩 + 로그아웃 -->
+  <div style="display:flex;align-items:center;gap:8px;justify-content:flex-end">
     <div class="user-chip" onclick="openProfileEdit()">
       <span id="chipEmoji">⚖️</span><span id="chipName">-</span>
       <span style="font-size:10px;color:var(--muted);margin-left:2px" id="chipEdit"></span>
@@ -220,6 +223,7 @@ async function render() {
   doRender();
   renderStats(stats);
   bindToggles(stats);
+  checkTodayAlert();
 }
 
 // ── 프로필 이모지 수정 ────────────────────────────────────────────────
@@ -331,6 +335,31 @@ window.resetZoom = () => {
   if (mc?._chartInstance) mc._chartInstance.resetZoom();
 };
 
+
+function checkTodayAlert() {
+  const todayStr = toDateStr(new Date());
+  const rec = records.find(r => r.date === todayStr);
+  const missing = [];
+  if (rec?.weight == null) missing.push('체중');
+  const meal = rec?.meal || {};
+  if (!meal.morning) missing.push('아침');
+  if (!meal.lunch)   missing.push('점심');
+  if (!meal.dinner)  missing.push('저녁');
+  if (rec?.exercise == null) missing.push('운동');
+
+  const el = document.getElementById('todayAlert');
+  if (!el) return;
+  if (!missing.length) { el.innerHTML = ''; return; }
+
+  el.innerHTML = `<a href="input.html?user=${uid}"
+    style="display:inline-flex;align-items:center;gap:5px;
+           background:rgba(255,167,38,.12);border:1px solid rgba(255,167,38,.3);
+           border-radius:8px;padding:5px 9px;font-size:11px;font-weight:600;
+           color:var(--orange);text-decoration:none;white-space:nowrap;
+           max-width:100%;overflow:hidden;text-overflow:ellipsis">
+    ⚠️ 오늘 미입력: ${missing.join(' · ')}
+  </a>`;
+}
 
 function doRender() {
   const mainC=document.getElementById('mainC');

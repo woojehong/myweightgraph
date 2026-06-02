@@ -315,9 +315,13 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
     const pixels = visible.map(r => x.getPixelForValue(new Date(r.date).getTime()));
     const n      = visible.length;
 
-    // 경계선 없는 셀 계산 (중간값 분할)
-    const cellL = visible.map((_, i) => i === 0     ? chartArea.left  : (pixels[i-1] + pixels[i]) / 2);
-    const cellR = visible.map((_, i) => i === n - 1 ? chartArea.right : (pixels[i] + pixels[i+1]) / 2);
+    // 평균 셀 간격 기반 경계 (첫/마지막 셀도 동일 크기 — 차트 끝까지 늘어나지 않음)
+    const avgSpacing = n > 1 ? (pixels[n-1] - pixels[0]) / (n - 1) : dynH;
+    const halfW      = avgSpacing / 2;
+    const cellL = visible.map((_, i) =>
+      i === 0 ? Math.max(chartArea.left, pixels[0] - halfW) : (pixels[i-1] + pixels[i]) / 2);
+    const cellR = visible.map((_, i) =>
+      i === n-1 ? Math.min(chartArea.right, pixels[n-1] + halfW) : (pixels[i] + pixels[i+1]) / 2);
 
     // ── 동적 셀 높이 (날짜 수에 따라 정사각형 유지) ─────────────────
     const avgCellW = n > 1
@@ -347,13 +351,11 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
         });
       });
       ctx.restore();
-      // 행 레이블
+      // "식단" 레이블 — 3행 중앙
       ctx.save();
-      ctx.font = '9px sans-serif'; ctx.textAlign = 'right'; ctx.fillStyle = 'rgba(255,255,255,.3)';
-      ['아침', '점심', '저녁'].forEach((lbl, ri) => {
-        ctx.textBaseline = 'middle';
-        ctx.fillText(lbl, chartArea.left - 3, dietTop + ri * dynH + dynH / 2);
-      });
+      ctx.font = '9px sans-serif'; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = 'rgba(255,255,255,.3)';
+      ctx.fillText('식단', chartArea.left - 3, dietTop + dynH * 1.5);
       ctx.restore();
       sY += 3 * dynH + 2;
     }

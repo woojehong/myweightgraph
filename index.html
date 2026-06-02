@@ -435,7 +435,7 @@ async function render() {
 
   if (!authReq && !params.get('select')) {
     const lastUid = localStorage.getItem('uid');
-    if (lastUid) { location.href=`input.html?user=${encodeURIComponent(lastUid)}`; return; }
+    if (lastUid) { location.href=`dashboard.html?user=${encodeURIComponent(lastUid)}`; return; }
   }
 
   try {
@@ -485,7 +485,7 @@ async function render() {
 function enterUser(u) {
   if (!u.passwordHash || isAuthed(u.id, u.passwordHash)) {
     localStorage.setItem('uid', u.id);
-    location.href = `input.html?user=${encodeURIComponent(u.id)}`;
+    location.href = `dashboard.html?user=${encodeURIComponent(u.id)}`;
   } else {
     openPwModal(u);
   }
@@ -524,7 +524,7 @@ async function handlePin(key){
         saveAuth(pwTarget.id,pwTarget.passwordHash);
         localStorage.setItem('uid',pwTarget.id);
         closePwModal();
-        location.href=`input.html?user=${encodeURIComponent(pwTarget.id)}`;
+        location.href=`dashboard.html?user=${encodeURIComponent(pwTarget.id)}`;
       }else{document.getElementById('pwErr').textContent='비밀번호가 틀렸어요';pinVal='';updateDots();}
     }catch(e){document.getElementById('pwErr').textContent='오류: '+e.message;pinVal='';updateDots();}
   }
