@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>관리자 | 마웨그</title>
+  <meta property="og:title" content="관리자 | 마웨그">
+  <meta property="og:type" content="website">
   <link rel="stylesheet" href="css/style.css">
   <style>
     .admin-grid{display:grid;grid-template-columns:280px 1fr;gap:16px;}
@@ -90,7 +92,7 @@
 <script type="module">
 import { onAuthChange, adminSignOut, ADMIN_UID,
          getUsers, getUser, updateUser, deleteUser,
-         getWeights, setWeight, deleteWeight,
+         getWeights, setWeight, deleteWeight, setDietExercise,
          getSettings, updateSettings,
          setUserPassword, parseWeight, DEFAULT_SETTINGS,
          getEarnedAchievements, invalidateAchievement,
@@ -228,7 +230,10 @@ function fmtTs(ts) {
   return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
 }
 
+let _detailRecords = [];
+
 function renderDetail(user, records, earned=[]) {
+  _detailRecords = records;
   const sorted=[...records].sort((a,b)=>b.date.localeCompare(a.date));
   document.getElementById('userDetail').innerHTML=`
     <div class="card">
@@ -237,6 +242,7 @@ function renderDetail(user, records, earned=[]) {
           <div style="font-size:17px;font-weight:800">${user.emoji||'⚖️'} ${user.name}</div>
           <div style="font-size:12px;color:var(--muted);margin-top:2px">
             ${[user.height?`${user.height}cm`:'',user.birthYear?`${user.birthYear}년생`:'',`목표 ${user.goal||80}kg`].filter(Boolean).join(' · ')}
+            ${user.selectedTitle?`· 🏷️ ${user.selectedTitle}`:''}
           </div>
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap">
@@ -246,9 +252,16 @@ function renderDetail(user, records, earned=[]) {
         </div>
       </div>
       <div class="section-title">${records.length}개 기록</div>
-      <div style="max-height:280px;overflow-y:auto;margin-top:6px">
+      <div style="max-height:400px;overflow-y:auto;margin-top:6px">
         <table class="rec-table">
-          <thead><tr><th>날짜</th><th style="text-align:right">체중</th><th></th><th></th></tr></thead>
+          <thead><tr>
+            <th>날짜</th>
+            <th>체중</th>
+            <th style="width:20px"></th>
+            <th>식단 (아·점·저)</th>
+            <th>운동</th>
+            <th></th>
+          </tr></thead>
           <tbody id="recBody">${sorted.map(r=>recRow(user.id,r)).join('')}</tbody>
         </table>
       </div>
@@ -281,57 +294,170 @@ function renderDetail(user, records, earned=[]) {
     </div>`;
 }
 
-function recRow(uid,r){
+function mealTlHtml(uid, date, mealTime, currentColor) {
+  const cols = ['green','yellow','red'];
+  const bg = { green:'rgba(102,187,106,', yellow:'rgba(255,167,38,', red:'rgba(239,83,80,' };
+  const btns = cols.map(c =>
+    `<button onclick="adminSetMeal('${uid}','${date}','${mealTime}','${c}')"
+      title="${{green:'좋음',yellow:'보통',red:'나쁨'}[c]}"
+      style="width:13px;height:13px;border-radius:2px;border:none;cursor:pointer;
+             background:${bg[c]}${currentColor===c?'.9':'.18'});
+             outline:${currentColor===c?`2px solid ${bg[c]}.9)`:'none'};
+             outline-offset:1px"></button>`
+  ).join('');
+  const reset = `<button onclick="adminSetMeal('${uid}','${date}','${mealTime}',null)"
+    title="미선택"
+    style="font-size:9px;padding:0 3px;line-height:13px;height:13px;background:none;
+           border:1px solid rgba(255,255,255,.2);border-radius:2px;color:var(--muted);cursor:pointer">✕</button>`;
+  return `<div style="display:flex;gap:2px;align-items:center">${btns}${reset}</div>`;
+}
+
+function exBtnsHtml(uid, date, exercise) {
+  const yesStyle = `background:rgba(102,187,106,${exercise===true?'.25':'.07'});border:1px solid rgba(102,187,106,${exercise===true?'.7':'.25'});color:${exercise===true?'#66bb6a':'var(--muted)'}`;
+  const noStyle  = `background:rgba(239,83,80,${exercise===false?'.25':'.07'});border:1px solid rgba(239,83,80,${exercise===false?'.7':'.25'});color:${exercise===false?'#ef5350':'var(--muted)'}`;
+  const offStyle = `background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.18);color:var(--muted)`;
+  return `<div style="display:flex;gap:3px">
+    <button onclick="adminSetEx('${uid}','${date}',true)"  style="font-size:11px;padding:1px 5px;border-radius:4px;cursor:pointer;${yesStyle}">✓</button>
+    <button onclick="adminSetEx('${uid}','${date}',false)" style="font-size:11px;padding:1px 5px;border-radius:4px;cursor:pointer;${noStyle}">✗</button>
+    <button onclick="adminSetEx('${uid}','${date}',null)"  style="font-size:11px;padding:1px 5px;border-radius:4px;cursor:pointer;${offStyle}">-</button>
+  </div>`;
+}
+
+function recRow(uid, r) {
+  const meal = r.meal || {};
   return `<tr id="row-${r.date}">
-    <td style="color:var(--muted);font-size:12px">${r.date}</td>
-    <td style="text-align:right">
-      <input class="w-edit" type="number" step="0.1"
-        value="${r.weight!=null?r.weight.toFixed(1):''}"
-        onblur="saveW('${uid}','${r.date}',this)"
-        onkeydown="if(event.key==='Enter')this.blur()">
-      <span style="font-size:11px;color:var(--muted)">kg</span>
+    <td style="color:var(--muted);font-size:12px;white-space:nowrap">${r.date}</td>
+    <td>
+      <div style="display:flex;align-items:center;gap:4px">
+        <input class="w-edit" type="number" step="0.1"
+          value="${r.weight!=null?r.weight.toFixed(1):''}"
+          onblur="saveW('${uid}','${r.date}',this)"
+          onkeydown="if(event.key==='Enter')this.blur()">
+        <span style="font-size:11px;color:var(--muted)">kg</span>
+      </div>
     </td>
-    <td id="saved-${r.date}" style="width:24px"></td>
+    <td id="saved-${r.date}" style="width:18px"></td>
+    <td>
+      <div style="display:flex;flex-direction:column;gap:2px">
+        ${['morning','lunch','dinner'].map(m => mealTlHtml(uid, r.date, m, meal[m]||null)).join('')}
+      </div>
+    </td>
+    <td>${exBtnsHtml(uid, r.date, r.exercise)}</td>
     <td><button class="del-btn" onclick="removeW('${uid}','${r.date}')">🗑</button></td>
   </tr>`;
 }
-window.saveW=async(uid,date,input)=>{
-  const w=parseWeight(input.value); if(w===null)return;
-  input.value=w.toFixed(1); await setWeight(uid,date,w);
-  const s=document.getElementById(`saved-${date}`);
-  if(s)s.innerHTML='<span class="saved-flash">✓</span>';
+
+window.saveW = async (uid, date, input) => {
+  const w = parseWeight(input.value); if (w===null) return;
+  input.value = w.toFixed(1); await setWeight(uid, date, w);
+  const s = document.getElementById(`saved-${date}`);
+  if (s) s.innerHTML = '<span class="saved-flash">✓</span>';
 };
-window.removeW=async(uid,date)=>{
-  await deleteWeight(uid,date);
+window.removeW = async (uid, date) => {
+  await deleteWeight(uid, date);
   document.getElementById(`row-${date}`)?.remove();
+  _detailRecords = _detailRecords.filter(r => r.date !== date);
   showToast('삭제됨','ok');
+};
+window.adminSetMeal = async (uid, date, mealTime, value) => {
+  const rec = _detailRecords.find(r => r.date === date) || { date };
+  const newMeal = { ...(rec.meal||{}), [mealTime]: value };
+  if (value === null) delete newMeal[mealTime];
+  rec.meal = newMeal;
+  if (!_detailRecords.find(r => r.date === date)) _detailRecords.push(rec);
+  await setDietExercise(uid, date, { meal: newMeal });
+  // 해당 행만 재렌더
+  const row = document.getElementById(`row-${date}`);
+  if (row) row.outerHTML = recRow(uid, rec);
+};
+window.adminSetEx = async (uid, date, value) => {
+  const rec = _detailRecords.find(r => r.date === date) || { date };
+  rec.exercise = value;
+  if (!_detailRecords.find(r => r.date === date)) _detailRecords.push(rec);
+  await setDietExercise(uid, date, { exercise: value });
+  const row = document.getElementById(`row-${date}`);
+  if (row) row.outerHTML = recRow(uid, rec);
 };
 
 // ── 정보 수정 ─────────────────────────────────────────────────────────
-window.openEditUser=uid=>{
-  const u=allUsers.find(x=>x.id===uid); if(!u)return;
+const ADMIN_EMOJIS = ['⚖️','💪','🔥','👑','🏃','🌟','🎯','😤','🦁','🐯','🐻','🐺','🦊','🐸','🐼','🦋','🍎','🥗','🥑','🎽','🏋️','🚴','🧘','💎','🌈','⚡','🎖️','🏆','🌙','☀️','💫','✨'];
+let _adminPickEmoji = '';
+
+window.openEditUser = uid => {
+  const u = allUsers.find(x => x.id === uid); if (!u) return;
+  _adminPickEmoji = u.emoji || '⚖️';
+  const titles  = tierSettings?.titles || [];
+  const borders = BORDER_LIST;
   addModal(`
-    <h3>✏️ ${u.name} 정보 수정</h3>
-    <div class="input-group"><label class="input-label">목표 체중 (kg)</label>
-      <input class="input-field" id="eGoal" type="number" value="${u.goal||80}"></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+    <h3>✏️ ${u.name} 수정</h3>
+    <div class="input-group"><label class="input-label">이름</label>
+      <input class="input-field" id="eName" value="${u.name||''}"></div>
+    <div class="input-group"><label class="input-label">이모지</label>
+      <div style="display:grid;grid-template-columns:repeat(8,1fr);gap:3px;margin-bottom:6px" id="eEmojiGrid">
+        ${ADMIN_EMOJIS.map(e=>`<button onclick="pickAdminEmoji('${e}')" style="font-size:18px;padding:3px;border-radius:5px;cursor:pointer;background:${e===_adminPickEmoji?'rgba(0,229,170,.15)':'transparent'};border:2px solid ${e===_adminPickEmoji?'var(--teal)':'transparent'}">${e}</button>`).join('')}
+      </div>
+      <input class="input-field" id="eEmoji" value="${_adminPickEmoji}" placeholder="직접 입력" maxlength="4">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+      <div class="input-group"><label class="input-label">목표 (kg)</label>
+        <input class="input-field" id="eGoal" type="number" value="${u.goal||80}"></div>
       <div class="input-group"><label class="input-label">키 (cm)</label>
         <input class="input-field" id="eHeight" type="number" value="${u.height||''}"></div>
       <div class="input-group"><label class="input-label">출생연도</label>
         <input class="input-field" id="eBirthYear" type="number" value="${u.birthYear||''}"></div>
+    </div>
+    ${titles.length ? `
+    <div class="input-group"><label class="input-label">칭호</label>
+      <select class="input-field" id="eTitle">
+        <option value="">없음</option>
+        ${titles.map(t=>`<option value="${t.name}" ${u.selectedTitle===t.name?'selected':''}>${t.name}</option>`).join('')}
+      </select>
+    </div>` : ''}
+    <div class="input-group"><label class="input-label">테두리</label>
+      <select class="input-field" id="eBorder">
+        <option value="">없음</option>
+        ${borders.map(b=>`<option value="${b.id}" ${u.selectedBorder===b.id?'selected':''}>${b.name}</option>`).join('')}
+      </select>
     </div>
     <div class="flex-row gap-8 mt-12">
       <button class="btn btn-ghost btn-full" onclick="rmModal()">취소</button>
       <button class="btn btn-primary btn-full" onclick="saveEdit('${uid}')">저장</button>
     </div>`);
 };
-window.saveEdit=async uid=>{
-  const goal=parseFloat(document.getElementById('eGoal').value)||80;
-  const height=parseInt(document.getElementById('eHeight').value)||null;
-  const birthYear=parseInt(document.getElementById('eBirthYear').value)||null;
-  await updateUser(uid,{goal,height,birthYear});
-  allUsers=await getUsers(); rmModal();
-  selectUser(uid); renderUserList(); showToast('저장됨','ok');
+
+window.pickAdminEmoji = e => {
+  _adminPickEmoji = e;
+  document.getElementById('eEmoji').value = e;
+  document.querySelectorAll('#eEmojiGrid button').forEach(b => {
+    const on = b.textContent === e;
+    b.style.background = on ? 'rgba(0,229,170,.15)' : 'transparent';
+    b.style.border = `2px solid ${on ? 'var(--teal)' : 'transparent'}`;
+  });
+};
+
+window.saveEdit = async uid => {
+  const name      = document.getElementById('eName')?.value.trim();
+  const emoji     = document.getElementById('eEmoji')?.value.trim() || '⚖️';
+  const goal      = parseFloat(document.getElementById('eGoal').value) || 80;
+  const height    = parseInt(document.getElementById('eHeight').value) || null;
+  const birthYear = parseInt(document.getElementById('eBirthYear').value) || null;
+  const selectedTitle  = document.getElementById('eTitle')?.value || null;
+  const selectedBorder = document.getElementById('eBorder')?.value || null;
+
+  if (!name) { showToast('이름을 입력해주세요','err'); return; }
+
+  // 관리자가 칭호 배정 시 earnedTitles에 추가
+  const u = allUsers.find(x => x.id === uid);
+  let earnedTitles = u?.earnedTitles || [];
+  if (selectedTitle && !earnedTitles.includes(selectedTitle))
+    earnedTitles = [...earnedTitles, selectedTitle];
+
+  await updateUser(uid, { name, emoji, goal, height, birthYear, selectedTitle, selectedBorder, earnedTitles });
+  allUsers = await getUsers();
+  rmModal();
+  selectUser(uid);
+  renderUserList();
+  showToast('저장됨','ok');
 };
 
 // ── 비밀번호 관리 ─────────────────────────────────────────────────────
