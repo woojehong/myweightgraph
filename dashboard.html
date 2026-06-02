@@ -200,9 +200,29 @@ async function render() {
       <label class="opt-item"><input type="checkbox" id="sETA"     ${S.showStatETA!==false?'checked':''}> 예상일</label>
       <label class="opt-item"><input type="checkbox" id="sBMI"     ${S.showStatBMI!==false?'checked':''}> BMI</label>
       <label class="opt-item"><input type="checkbox" id="sStreak"  ${S.showStatStreak!==false?'checked':''}> 연속감량</label>
+      <div class="opt-sep"></div>
+      <span class="opt-label">서브그래프</span>
+      <label class="opt-item"><input type="checkbox" id="tDiet" ${S.showDietGraph?'checked':''}> 식단</label>
+      <label class="opt-item"><input type="checkbox" id="tExercise" ${S.showExerciseGraph?'checked':''}> 운동</label>
     </div>
 
     <div class="stats-grid mt-12" id="statsGrid"></div>
+
+    <!-- 식단 서브그래프 -->
+    <div id="dietGraphWrap" style="display:${S.showDietGraph?'block':'none'};margin-top:24px">
+      <div style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">🥗 식단</div>
+      <div style="position:relative;overflow-x:auto">
+        <canvas id="dietC" style="display:block"></canvas>
+      </div>
+    </div>
+
+    <!-- 운동 서브그래프 -->
+    <div id="exerciseGraphWrap" style="display:${S.showExerciseGraph?'block':'none'};margin-top:16px">
+      <div style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">💪 운동</div>
+      <div style="position:relative;overflow-x:auto">
+        <canvas id="exerciseC" style="display:block"></canvas>
+      </div>
+    </div>
 
     <!-- 오늘 체중 입력 -->
     <div class="card mt-12" style="display:flex;align-items:center;justify-content:center;gap:10px;padding:12px 16px;flex-wrap:wrap">
@@ -218,6 +238,7 @@ async function render() {
   doRender();
   renderStats(stats);
   bindToggles(stats);
+  if (S.showDietGraph || S.showExerciseGraph) renderSubCharts(records);
 }
 
 // ── 프로필 이모지 수정 ────────────────────────────────────────────────
@@ -369,7 +390,130 @@ window.saveTodayWeight = async () => {
 
 window.resetZoom = () => {
   const mc = document.getElementById('mainC');
-  if (mc?._chartInstance) mc._chartInstance.resetZoom();
+  if (mc?._chartInstance) {
+    mc._chartInstance.resetZoom();
+    syncSubCharts();
+  }
+};
+
+// ── 식단/운동 서브그래프 ─────────────────────────────────────────────
+let _dietChart = null, _exerciseChart = null;
+
+const MEAL_COLORS = {
+  green:  'rgba(102,187,106,.9)',
+  yellow: 'rgba(255,167,38,.9)',
+  red:    'rgba(239,83,80,.9)',
+  null:   'rgba(255,255,255,.06)',
+};
+
+function buildSubChartData(recs) {
+  const sorted = [...recs].sort((a,b)=>a.date.localeCompare(b.date));
+  const labels = sorted.map(r => r.date);
+
+  const mColors = { morning:[], lunch:[], dinner:[] };
+  const exColors = [];
+
+  sorted.forEach(r => {
+    mColors.morning.push(MEAL_COLORS[r.meal?.morning] || MEAL_COLORS.null);
+    mColors.lunch  .push(MEAL_COLORS[r.meal?.lunch]   || MEAL_COLORS.null);
+    mColors.dinner .push(MEAL_COLORS[r.meal?.dinner]  || MEAL_COLORS.null);
+    exColors.push(r.exercise === true  ? 'rgba(102,187,106,.9)' :
+                  r.exercise === false ? 'rgba(239,83,80,.9)'   :
+                  'rgba(255,255,255,.06)');
+  });
+
+  return { labels, mColors, exColors };
+}
+
+function renderSubCharts(recs) {
+  const { labels, mColors, exColors } = buildSubChartData(recs);
+  if (!labels.length) return;
+
+  const sharedXOpts = {
+    type: 'category',
+    grid: { display: false },
+    ticks: { display: false },
+    border: { display: false },
+  };
+  const noY = { display: false, stacked: true, min: 0, max: 3 };
+  const barOpts = { barPercentage: 1.0, categoryPercentage: 1.0 };
+
+  // ── 식단 차트 ──────────────────────────────────────────────────────
+  const dietC = document.getElementById('dietC');
+  if (dietC) {
+    if (_dietChart) { _dietChart.destroy(); _dietChart = null; }
+    const squareH = 18;
+    dietC.height = squareH * 3;
+    _dietChart = new Chart(dietC, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          { label:'아침', data: labels.map(()=>1), backgroundColor: mColors.morning, ...barOpts },
+          { label:'점심', data: labels.map(()=>1), backgroundColor: mColors.lunch,   ...barOpts },
+          { label:'저녁', data: labels.map(()=>1), backgroundColor: mColors.dinner,  ...barOpts },
+        ]
+      },
+      options: {
+        animation: false,
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: { ...sharedXOpts },
+          y: { ...noY }
+        },
+        plugins: { legend:{ display:false }, tooltip:{ enabled:false } }
+      }
+    });
+  }
+
+  // ── 운동 차트 ──────────────────────────────────────────────────────
+  const exC = document.getElementById('exerciseC');
+  if (exC) {
+    if (_exerciseChart) { _exerciseChart.destroy(); _exerciseChart = null; }
+    const squareH = 18;
+    exC.height = squareH;
+    _exerciseChart = new Chart(exC, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          { label:'운동', data: labels.map(()=>1), backgroundColor: exColors,
+            barPercentage: 1.0, categoryPercentage: 1.0 }
+        ]
+      },
+      options: {
+        animation: false,
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: { ...sharedXOpts },
+          y: { display: false, min: 0, max: 1 }
+        },
+        plugins: { legend:{ display:false }, tooltip:{ enabled:false } }
+      }
+    });
+  }
+
+  syncSubCharts();
+}
+
+window.syncSubCharts = function() {
+  const mc = document.getElementById('mainC');
+  if (!mc?._chartInstance) return;
+  const { min, max } = mc._chartInstance.scales.x;
+  // 서브 차트의 x축 카테고리 기반이므로 날짜 범위로 필터
+  [_dietChart, _exerciseChart].forEach(ch => {
+    if (!ch) return;
+    const labels = ch.data.labels;
+    const minDate = new Date(min).toISOString().slice(0,10);
+    const maxDate = new Date(max).toISOString().slice(0,10);
+    const minIdx  = Math.max(0, labels.findIndex(l => l >= minDate));
+    const maxIdx  = labels.filter(l => l <= maxDate).length - 1;
+    ch.options.scales.x.min = minIdx;
+    ch.options.scales.x.max = Math.max(minIdx, maxIdx);
+    ch.update('none');
+  });
 };
 function bindToggles_dummy() {
 }
@@ -439,6 +583,22 @@ function bindToggles(stats) {
   bind('t7ma','show7dayMA');
   bind('tbar','showWeeklyBar');
   bind('tpred','showPrediction');
+
+  // 서브그래프 토글
+  document.getElementById('tDiet')?.addEventListener('change', async e => {
+    S = {...S, showDietGraph: e.target.checked};
+    await updateSettings({ showDietGraph: e.target.checked });
+    const wrap = document.getElementById('dietGraphWrap');
+    if (wrap) wrap.style.display = e.target.checked ? 'block' : 'none';
+    if (e.target.checked) renderSubCharts(records);
+  });
+  document.getElementById('tExercise')?.addEventListener('change', async e => {
+    S = {...S, showExerciseGraph: e.target.checked};
+    await updateSettings({ showExerciseGraph: e.target.checked });
+    const wrap = document.getElementById('exerciseGraphWrap');
+    if (wrap) wrap.style.display = e.target.checked ? 'block' : 'none';
+    if (e.target.checked) renderSubCharts(records);
+  });
 
   // 스탯 토글
   const statBinds=[

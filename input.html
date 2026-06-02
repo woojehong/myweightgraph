@@ -9,18 +9,44 @@
   <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
   <title>체중 입력 | 마웨그</title>
   <link rel="stylesheet" href="css/style.css">
-  <!-- SheetJS (Excel 파싱) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
+    /* 신호등 */
+    .tl-group { display:flex; gap:6px; align-items:center; }
+    .tl-btn {
+      width:22px; height:22px; border-radius:50%; border:none; cursor:pointer;
+      opacity:.2; transition:opacity .15s, transform .1s; flex-shrink:0;
+    }
+    .tl-btn:hover { opacity:.5; }
+    .tl-btn.on { opacity:1; transform:scale(1.15); }
+    .tl-btn.red-tl    { background:var(--red); }
+    .tl-btn.yellow-tl { background:var(--orange); }
+    .tl-btn.green-tl  { background:var(--green); }
+
+    /* 운동 버튼 */
+    .ex-btn {
+      width:32px; height:32px; border-radius:8px; border:1.5px solid var(--border);
+      font-size:16px; cursor:pointer; background:transparent; color:var(--muted);
+      opacity:.35; transition:all .15s; display:flex; align-items:center; justify-content:center;
+    }
+    .ex-btn:hover { opacity:.65; }
+    .ex-btn.on-check { opacity:1; border-color:var(--green); color:var(--green); background:rgba(102,187,106,.1); }
+    .ex-btn.on-cross { opacity:1; border-color:var(--red);   color:var(--red);   background:rgba(239,83,80,.1); }
+
+    /* 식단/운동 섹션 */
+    .dc-extra { margin-top:12px; padding-top:12px; border-top:1px solid var(--border); display:flex; gap:16px; flex-wrap:wrap; }
+    .dc-meal-col { display:flex; flex-direction:column; gap:6px; flex:1; min-width:160px; }
+    .dc-meal-row { display:flex; align-items:center; gap:8px; }
+    .dc-meal-label { font-size:11px; color:var(--muted); width:28px; flex-shrink:0; }
+    .dc-ex-col { display:flex; flex-direction:column; gap:6px; justify-content:center; }
+    .dc-ex-label { font-size:11px; color:var(--muted); }
+    .dc-ex-row { display:flex; gap:6px; }
+
+    /* 히스토리 테이블 */
     .rec-table{width:100%;border-collapse:collapse;font-size:13px;}
     .rec-table th{text-align:left;padding:6px 8px;color:var(--muted);border-bottom:1px solid var(--border);font-size:11px;font-weight:600;}
     .rec-table td{padding:6px 8px;border-bottom:1px solid rgba(255,255,255,.04);}
     .rec-table tr:last-child td{border-bottom:none;}
-    .w-edit{
-      background:transparent;border:none;border-bottom:1px solid transparent;
-      color:var(--text);font-size:13px;width:64px;text-align:right;
-      padding:2px 4px;transition:border-color .2s;
-    }
+    .w-edit{background:transparent;border:none;border-bottom:1px solid transparent;color:var(--text);font-size:13px;width:64px;text-align:right;padding:2px 4px;transition:border-color .2s;}
     .w-edit:focus{outline:none;border-bottom-color:var(--teal);background:rgba(0,229,170,.05);}
     .del-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;padding:2px 6px;}
     .del-btn:hover{color:var(--red);}
@@ -79,29 +105,11 @@
   </div>
 </div>
 
-<!-- 날짜 추가 모달 -->
-<div class="modal-bg" id="addDateModal">
-  <div class="modal">
-    <h3>📅 날짜 직접 추가</h3>
-    <div class="input-group">
-      <label class="input-label">날짜</label>
-      <input class="input-field" id="extraDate" type="date">
-    </div>
-    <div class="input-group">
-      <label class="input-label">체중 (kg)</label>
-      <input class="input-field" id="extraWeight" type="number" step="0.1" placeholder="90.0">
-    </div>
-    <div class="flex-row gap-8 mt-12">
-      <button class="btn btn-ghost btn-full" onclick="closeDateModal()">취소</button>
-      <button class="btn btn-primary btn-full" onclick="submitExtra()">저장</button>
-    </div>
-  </div>
-</div>
 
 <div class="toast" id="toast"></div>
 
 <script type="module">
-import { getUser, getWeights, setWeight, deleteWeight, parseWeight, toDateStr, batchSetWeights, updateUser, setUserPassword } from './js/db.js';
+import { getUser, getWeights, setWeight, deleteWeight, parseWeight, toDateStr, updateUser, setUserPassword, setDietExercise } from './js/db.js';
 import { clearAuth, saveAuth } from './js/auth.js';
 const uid = new URLSearchParams(location.search).get('user') || localStorage.getItem('uid');
 if (!uid) location.href='index.html';
@@ -133,33 +141,31 @@ function fmtDate(d){
 
 // ── 데이터 입력 카드 ─────────────────────────────────────────────────
 window.onDayInput = dateStr => {
-  const card=document.getElementById(`daycard-${dateStr}`);
   const inp=document.getElementById(`inp-${dateStr}`);
   const st=document.getElementById(`dcst-${dateStr}`);
-  if(!card)return;
+  if(!inp)return;
   const raw=inp.value.trim();
+  const hasSaved=existingMap[dateStr]!=null;
   if(raw===''||raw==='-'){
-    // 빈 값으로 되돌림 → 저장된 게 있으면 green, 없으면 neutral
-    card.className=`day-card ${existingMap[dateStr]!=null?'saved':''}`;
-    st.textContent=existingMap[dateStr]!=null?'✓ 저장됨':'';
+    inp.style.borderColor=hasSaved?'var(--green)':'var(--border)';
+    if(st){st.textContent=hasSaved?'✓ 저장됨':'';st.style.color=hasSaved?'var(--green)':'var(--muted)';}
   } else {
-    card.className=`day-card dirty`;
-    st.textContent='저장 버튼을 눌러주세요';
+    // 입력 중이면 빨간 (아직 미저장)
+    inp.style.borderColor='var(--red)';
+    if(st){st.textContent='저장 버튼을 눌러주세요';st.style.color='var(--red)';}
   }
 };
 
 window.submitDay = async dateStr => {
   const inp=document.getElementById(`inp-${dateStr}`);
-  const card=document.getElementById(`daycard-${dateStr}`);
   const st=document.getElementById(`dcst-${dateStr}`);
   const raw=inp.value.trim();
 
-  // 빈값 → 기록 삭제
   if(raw===''||raw==='-'){
     await setWeight(uid,dateStr,null);
-    delete existingMap[dateStr];
-    card.className='day-card';
-    st.textContent='';
+    existingMap[dateStr]=null;
+    inp.style.borderColor='var(--border)';
+    if(st){st.textContent='';st.style.color='var(--muted)';}
     showToast('기록이 삭제됐어요','ok');
     return;
   }
@@ -173,9 +179,45 @@ window.submitDay = async dateStr => {
   inp.value=w.toFixed(1);
   await setWeight(uid,dateStr,w);
   existingMap[dateStr]=w;
-  card.className='day-card saved';
-  st.textContent='✓ 저장됨';
+  inp.style.borderColor='var(--green)';
+  if(st){st.textContent='✓ 저장됨';st.style.color='var(--green)';}
   showToast('저장됐어요 ✓','ok');
+};
+
+// ── 식단 저장 ─────────────────────────────────────────────────────────
+window.setMeal = async (dateStr, mealTime, value) => {
+  const rec = allRecords.find(r=>r.date===dateStr);
+  const currentMeal = rec?.meal || {};
+  // 토글: 이미 같은 값이면 null로
+  const newVal = currentMeal[mealTime] === value ? null : value;
+  const newMeal = { ...currentMeal, [mealTime]: newVal };
+  await setDietExercise(uid, dateStr, { meal: newMeal });
+  // 로컬 업데이트
+  if(rec) rec.meal=newMeal;
+  else allRecords.push({ date:dateStr, meal:newMeal });
+  // 버튼 UI 업데이트
+  ['red','yellow','green'].forEach(c=>{
+    const btn=document.querySelector(`#daycard-${dateStr} .tl-btn.${c}-tl[onclick*="${mealTime}"]`);
+    if(btn) btn.classList.toggle('on', newMeal[mealTime]===(c==='yellow'?'yellow':c));
+  });
+};
+
+// ── 운동 저장 ─────────────────────────────────────────────────────────
+window.setExercise = async (dateStr, value) => {
+  const rec = allRecords.find(r=>r.date===dateStr);
+  const current = rec?.exercise;
+  const newVal = current === value ? null : value; // 토글
+  await setDietExercise(uid, dateStr, { exercise: newVal });
+  if(rec) rec.exercise=newVal;
+  else allRecords.push({ date:dateStr, exercise:newVal });
+  // 버튼 UI 업데이트
+  const checkBtn = document.querySelector(`#daycard-${dateStr} .ex-btn.on-check, #daycard-${dateStr} .ex-btn:first-of-type`);
+  const crossBtn = document.querySelector(`#daycard-${dateStr} .ex-btn.on-cross, #daycard-${dateStr} .ex-btn:last-of-type`);
+  document.querySelectorAll(`#daycard-${dateStr} .ex-btn`).forEach((btn,i)=>{
+    btn.className='ex-btn';
+    if(newVal===true  && i===0) btn.className='ex-btn on-check';
+    if(newVal===false && i===1) btn.className='ex-btn on-cross';
+  });
 };
 
 
@@ -189,68 +231,63 @@ async function render() {
   document.getElementById('chipEmoji').textContent = user?.emoji??'⚖️';
 
   const today = new Date(); today.setHours(0,0,0,0);
+  const todayStr = toDateStr(today);
   const labels=['오늘','어제','2일 전','3일 전','4일 전','5일 전'];
   let cards='';
   for(let i=0;i<=5;i++){
     const d=new Date(today); d.setDate(d.getDate()-i);
     const dateStr=toDateStr(d);
-    const val=existingMap[dateStr];
+    const rec=allRecords.find(r=>r.date===dateStr);
+    const val=rec?.weight;
+    const meal=rec?.meal||{};
+    const exercise=rec?.exercise;
     const hasSaved=val!=null;
-    const stateClass=hasSaved?'saved':'';
+    const isToday=(i===0);
+
+    // 식단/운동 (오늘만)
+    const extraSection = isToday ? `
+      <div class="dc-extra">
+        <div class="dc-meal-col">
+          ${['morning','lunch','dinner'].map((m,mi)=>`
+            <div class="dc-meal-row">
+              <span class="dc-meal-label">${['아침','점심','저녁'][mi]}</span>
+              <div class="tl-group">
+                <button class="tl-btn red-tl ${meal[m]==='red'?'on':''}"    onclick="setMeal('${dateStr}','${m}','red')"></button>
+                <button class="tl-btn yellow-tl ${meal[m]==='yellow'?'on':''}" onclick="setMeal('${dateStr}','${m}','yellow')"></button>
+                <button class="tl-btn green-tl ${meal[m]==='green'?'on':''}"  onclick="setMeal('${dateStr}','${m}','green')"></button>
+              </div>
+            </div>`).join('')}
+        </div>
+        <div class="dc-ex-col">
+          <span class="dc-ex-label">운동</span>
+          <div class="dc-ex-row">
+            <button class="ex-btn ${exercise===true?'on-check':''}"  onclick="setExercise('${dateStr}',true)">✓</button>
+            <button class="ex-btn ${exercise===false?'on-cross':''}" onclick="setExercise('${dateStr}',false)">✗</button>
+          </div>
+        </div>
+      </div>` : '';
+
     cards+=`
-      <div class="day-card ${stateClass} ${i===0?'is-today':''}" id="daycard-${dateStr}">
+      <div class="day-card" id="daycard-${dateStr}">
         <div class="dc-top">
-          <span class="dc-name" style="${i===0?'color:var(--teal)':''}">${labels[i]}</span>
+          <span class="dc-name" style="${isToday?'color:var(--teal)':''}">${labels[i]}</span>
           <span class="dc-date">${fmtDate(d)} (${DAY_KO[d.getDay()]})</span>
         </div>
         <div class="dc-row">
           <input type="number" step="0.1" class="dc-input" id="inp-${dateStr}"
             placeholder="--.-"
             value="${hasSaved?val.toFixed(1):''}"
+            style="border-color:${hasSaved?'var(--green)':'var(--border)'}"
             oninput="onDayInput('${dateStr}')">
           <span class="dc-unit">kg</span>
           <button class="dc-btn" onclick="submitDay('${dateStr}')">저장</button>
         </div>
-        <div class="dc-status" id="dcst-${dateStr}">${hasSaved?'✓ 저장됨':''}</div>
+        <div class="dc-status" id="dcst-${dateStr}" style="color:${hasSaved?'var(--green)':'var(--muted)'}">${hasSaved?'✓ 저장됨':''}</div>
+        ${extraSection}
       </div>`;
   }
 
-  // 전체 기록
-  const sorted=[...allRecords].sort((a,b)=>b.date.localeCompare(a.date));
-  const histRows = sorted.map(r=>`
-    <tr id="hrow-${r.date}">
-      <td style="color:var(--muted);font-size:12px">${r.date}</td>
-      <td style="text-align:right">
-        <input class="w-edit" type="number" step="0.1"
-          value="${r.weight!=null?r.weight.toFixed(1):''}"
-          onblur="saveHist('${r.date}',this)"
-          onkeydown="if(event.key==='Enter')this.blur()">
-        <span style="font-size:11px;color:var(--muted)">kg</span>
-      </td>
-      <td id="hs-${r.date}" style="width:24px"></td>
-      <td><button class="del-btn" onclick="delHist('${r.date}')" title="삭제">🗑</button></td>
-    </tr>`).join('');
-
-  document.getElementById('content').innerHTML=`
-    ${cards}
-
-    <button class="btn btn-ghost btn-full mt-12" onclick="openDateModal()">
-      ➕ 날짜 직접 추가하기
-    </button>
-
-    <div class="card mt-12">
-      <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer"
-           onclick="toggleHistory()">
-        <div class="section-title" style="margin:0">📋 전체 기록 수정 (${allRecords.length}개)</div>
-        <span id="histArrow" style="color:var(--muted);font-size:13px">▼ 펼치기</span>
-      </div>
-      <div id="histSection" style="display:none;margin-top:12px;max-height:360px;overflow-y:auto">
-        <table class="rec-table">
-          <thead><tr><th>날짜</th><th style="text-align:right">체중</th><th></th><th></th></tr></thead>
-          <tbody>${histRows}</tbody>
-        </table>
-      </div>
-    </div>
+  document.getElementById('content').innerHTML=cards;
 
     <!-- ── 데이터 가져오기 ────────────────────────────────────────── -->
     <div class="card mt-12">
@@ -296,12 +333,6 @@ async function render() {
     </div>`;
 }
 
-window.toggleHistory = () => {
-  const sec=document.getElementById('histSection');
-  const arrow=document.getElementById('histArrow');
-  if(sec.style.display==='none'){sec.style.display='';arrow.textContent='▲ 접기';}
-  else{sec.style.display='none';arrow.textContent='▼ 펼치기';}
-};
 
 // ── 체중 유효성 검사 ─────────────────────────────────────────────────
 function validateWeight(dateStr, newW) {
@@ -353,48 +384,6 @@ window.closeWeightErr = () => {
 };
 
 
-window.saveHist = async (date, input) => {
-  const w=parseWeight(input.value);
-  if(w===null)return;
-  const err=validateWeight(date,w);
-  if(err){showWeightError(err,()=>{const prev=existingMap[date];input.value=prev!=null?prev.toFixed(1):'';});return;}
-  input.value=w.toFixed(1);
-  await setWeight(uid,date,w);
-  const s=document.getElementById(`hs-${date}`);
-  if(s){s.innerHTML='<span class="saved-flash">✓</span>';}
-  // 최근 6일 인풋도 업데이트
-  const ri=document.querySelector(`input[data-date="${date}"]`);
-  if(ri){ri.value=w.toFixed(1);ri.closest('.weight-row')?.classList.add('has-value');}
-  existingMap[date]=w;
-};
-window.delHist = async (date) => {
-  await deleteWeight(uid,date);
-  document.getElementById(`hrow-${date}`)?.remove();
-  delete existingMap[date];
-  const ri=document.querySelector(`input[data-date="${date}"]`);
-  if(ri){ri.value='';ri.closest('.weight-row')?.classList.remove('has-value');}
-  showToast('삭제됨','ok');
-};
-
-window.openDateModal = () => {
-  document.getElementById('extraDate').value=toDateStr(new Date());
-  document.getElementById('extraWeight').value='';
-  document.getElementById('addDateModal').classList.add('open');
-};
-window.closeDateModal = ()=>document.getElementById('addDateModal').classList.remove('open');
-window.submitExtra = async ()=>{
-  const dateStr=document.getElementById('extraDate').value;
-  const w=parseWeight(document.getElementById('extraWeight').value);
-  if(!dateStr){showToast('날짜를 선택해주세요','err');return;}
-  if(w===null){showToast('체중을 입력해주세요','err');return;}
-  const err=validateWeight(dateStr,w);
-  if(err){showWeightError(err,null);return;}
-  await setWeight(uid,dateStr,w);
-  existingMap[dateStr]=w;
-  closeDateModal();
-  showToast(`${dateStr} 저장 ✓`,'ok');
-  render();
-};
 
 function showToast(msg,type='ok'){
   const t=document.getElementById('toast');
@@ -447,104 +436,6 @@ window.saveProfileEdit = async () => {
   closeProfileEdit();showToast('프로필 변경됨 ✓');
 };
 
-// ── 가져오기 ─────────────────────────────────────────────────────────
-window.toggleImport = () => {
-  const sec=document.getElementById('importSection');
-  const arrow=document.getElementById('importArrow');
-  if(sec.style.display==='none'){sec.style.display='';arrow.textContent='▲ 접기';}
-  else{sec.style.display='none';arrow.textContent='▼ 펼치기';}
-};
-
-function parseImportDate(raw) {
-  if (!raw) return null;
-  const s = String(raw).trim();
-  if (!s || s === '-') return null;
-  if (/^\d{5}$/.test(s)) { const d=new Date((parseInt(s)-25569)*86400000); return toDateStr(d); }
-  const cleaned = s.replace(/[./년월]/g,'-').replace(/일/g,'').replace(/\s+/g,'');
-  const patterns = [/^(\d{4})-(\d{1,2})-(\d{1,2})$/,/^(\d{2})-(\d{1,2})-(\d{1,2})$/,/^(\d{1,2})-(\d{1,2})$/];
-  for (const p of patterns) {
-    const m = cleaned.match(p);
-    if (m) {
-      let year,month,day;
-      if(m.length===4){year=m[1].length===2?2000+parseInt(m[1]):parseInt(m[1]);month=parseInt(m[2]);day=parseInt(m[3]);}
-      else{year=new Date().getFullYear();month=parseInt(m[1]);day=parseInt(m[2]);}
-      if(month<1||month>12||day<1||day>31)return null;
-      return `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-    }
-  }
-  const d=new Date(s); return isNaN(d.getTime())?null:toDateStr(d);
-}
-function parseImportRows(rows) {
-  const result=[];
-  for(const row of rows){
-    if(!row||row.length<2)continue;
-    let dateVal=null,weightVal=null;
-    for(let i=0;i<row.length;i++){
-      const cell=String(row[i]).trim();
-      if(!dateVal){const d=parseImportDate(cell);if(d){dateVal=d;continue;}}
-      if(!weightVal&&dateVal){const w=parseWeight(cell);if(w!==null){weightVal=w;break;}}
-    }
-    if(!dateVal)continue;
-    result.push({date:dateVal,weight:weightVal,ok:weightVal!==null});
-  }
-  return result;
-}
-let pendingImport=[];
-function showImportPreview(records){
-  pendingImport=records.filter(r=>r.ok);
-  const ok=pendingImport.length,skip=records.length-ok;
-  document.getElementById('importPreviewTitle').textContent=`미리보기 — ${ok}개 가져올 수 있음 (${skip}개 건너뜀)`;
-  document.getElementById('importCount').textContent=ok;
-  let html=`<table class="preview-table"><thead><tr><th>날짜</th><th>체중</th><th>상태</th></tr></thead><tbody>`;
-  records.slice(0,100).forEach(r=>{html+=`<tr><td>${r.date}</td><td>${r.weight!=null?r.weight.toFixed(1)+' kg':'-'}</td><td>${r.ok?'<span class="badge-ok">✓</span>':'<span class="badge-skip">건너뜀</span>'}</td></tr>`;});
-  if(records.length>100)html+=`<tr><td colspan="3" style="text-align:center;color:var(--muted)">...외 ${records.length-100}개</td></tr>`;
-  html+='</tbody></table>';
-  document.getElementById('importPreviewWrap').innerHTML=html;
-  document.getElementById('importPreviewCard').style.display='';
-}
-window.cancelImportPreview=()=>{document.getElementById('importPreviewCard').style.display='none';pendingImport=[];};
-window.clearPaste=()=>{document.getElementById('pasteArea').value='';};
-window.parsePaste=()=>{
-  const text=document.getElementById('pasteArea').value.trim();
-  if(!text){showToast('붙여넣을 데이터가 없어요','err');return;}
-  showImportPreview(parseImportRows(text.split('\n').map(l=>l.split(/\t|,/))));
-};
-window.handleImportFile=(e)=>{
-  const file=e.target.files[0]; if(!file)return;
-  const reader=new FileReader();
-  reader.onload=ev=>{
-    try{
-      const wb=XLSX.read(ev.target.result,{type:'array',cellDates:true});
-      const ws=wb.Sheets[wb.SheetNames[0]];
-      const raw=XLSX.utils.sheet_to_json(ws,{header:1,raw:false,dateNF:'YYYY-MM-DD'});
-      showImportPreview(parseImportRows(raw.filter(r=>r.some(c=>c))));
-    }catch(err){showToast('파일 파싱 오류: '+err.message,'err');}
-  };
-  reader.readAsArrayBuffer(file);
-};
-// 드래그 앤 드롭
-window.addEventListener('load',()=>{
-  const dz=document.getElementById('importDropzone'); if(!dz)return;
-  dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag-over');});
-  dz.addEventListener('dragleave',()=>dz.classList.remove('drag-over'));
-  dz.addEventListener('drop',e=>{
-    e.preventDefault();dz.classList.remove('drag-over');
-    const file=e.dataTransfer.files[0];
-    if(file){document.getElementById('importFile').files=e.dataTransfer.files;handleImportFile({target:{files:[file]}});}
-  });
-});
-window.doImport=async()=>{
-  if(!pendingImport.length){showToast('가져올 데이터가 없어요','err');return;}
-  const btn=document.getElementById('doImportBtn');
-  btn.disabled=true;btn.textContent='저장 중...';
-  try{
-    await batchSetWeights(uid,pendingImport);
-    showToast(`${pendingImport.length}개 저장 완료 ✓`,'ok');
-    cancelImportPreview();
-    render();
-  }catch(e){showToast('오류: '+e.message,'err');}
-  finally{btn.disabled=false;btn.innerHTML=`📥 <span id="importCount">${pendingImport.length}</span>개 가져오기`;}
-};
 
 render().catch(console.error);
 </script>

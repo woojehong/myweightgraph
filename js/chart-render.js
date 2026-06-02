@@ -309,8 +309,10 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
           }
         },
         zoom:{
-          zoom:{wheel:{enabled:true,speed:0.15},pinch:{enabled:true},mode:'x'},
-          pan:{enabled:true,mode:'x'},
+          zoom:{wheel:{enabled:true,speed:0.15},pinch:{enabled:true},mode:'x',
+            onZoomComplete(){ if(window.syncSubCharts) window.syncSubCharts(); }},
+          pan:{enabled:true,mode:'x',
+            onPanComplete(){ if(window.syncSubCharts) window.syncSubCharts(); }},
           limits:{x:{min:startTs,max:endTs,minRange:7*86400000}}
         }
       },

@@ -96,10 +96,19 @@ export async function getWeights(userId) {
 }
 export async function setWeight(userId, dateStr, weight) {
   if (weight === null) {
-    await deleteDoc(doc(db, 'weights', userId, 'records', dateStr)); return;
+    // weight만 null로 설정 (meal/exercise는 유지)
+    await setDoc(doc(db, 'weights', userId, 'records', dateStr),
+      { date: dateStr, weight: null, updatedAt: serverTimestamp() }, { merge: true });
+    return;
   }
   await setDoc(doc(db, 'weights', userId, 'records', dateStr),
-    { date: dateStr, weight, updatedAt: serverTimestamp() });
+    { date: dateStr, weight, updatedAt: serverTimestamp() }, { merge: true });
+}
+
+export async function setDietExercise(userId, dateStr, data) {
+  // data: { meal?: {morning, lunch, dinner}, exercise?: boolean|null }
+  await setDoc(doc(db, 'weights', userId, 'records', dateStr),
+    { date: dateStr, ...data, updatedAt: serverTimestamp() }, { merge: true });
 }
 export async function batchSetWeights(userId, records) {
   for (let i=0; i<records.length; i+=499) {
