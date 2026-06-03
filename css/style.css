@@ -176,11 +176,19 @@ input  { font-family: inherit; outline: none; }
 .user-card .sub  { font-size: 11px; color: var(--muted); margin-top: 3px; }
 
 /* 마웨그 헤더 타이틀 */
+.mweg-header-wrap {
+  display: flex; flex-direction: column; align-items: center;
+  text-decoration: none; cursor: pointer; line-height: 1;
+}
 .mweg-title {
-  font-size: 18px; font-weight: 900; letter-spacing: -0.5px;
+  font-size: 26px; font-weight: 900; letter-spacing: -1px;
   background: linear-gradient(135deg, #00e5aa, #4fc3f7);
   -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
   text-decoration: none; cursor: pointer;
+}
+.mweg-subtitle {
+  font-size: 9px; font-weight: 600; letter-spacing: 0.18em;
+  color: rgba(255,255,255,0.35); text-transform: uppercase; margin-top: 2px;
 }
 
 /* 데이터 입력 카드 */

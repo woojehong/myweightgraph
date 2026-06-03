@@ -33,9 +33,9 @@ export const ACHIEVEMENTS = [
   { id:'record_200',  cat:'record', name:'200회 측정',    desc:'체중을 200번 측정했어요',                 score:30, icon:'🏅' },
   { id:'record_250',  cat:'record', name:'250회 측정',    desc:'체중을 250번 측정했어요',                 score:30, icon:'⭐' },
   { id:'record_300',  cat:'record', name:'300회 측정',    desc:'체중을 300번 측정했어요',                 score:40, icon:'⭐' },
-  { id:'record_365',  cat:'record', name:'365회 측정 위업', desc:'체중을 365번 측정했어요',               score:50, icon:'🌟', legendary:true },
-  { id:'record_500',  cat:'record', name:'500회 측정 위업', desc:'체중을 500번 측정했어요',               score:50, icon:'💎', legendary:true },
-  { id:'record_1000', cat:'record', name:'1000회 측정 위업', desc:'체중을 1000번 측정했어요',             score:50, icon:'👑', legendary:true },
+  { id:'record_365',  cat:'record', name:'365회 측정',   desc:'체중을 365번 측정했어요',                  score:50, icon:'🌟', legendary:true },
+  { id:'record_500',  cat:'record', name:'500회 측정',   desc:'체중을 500번 측정했어요',                  score:50, icon:'💎', legendary:true },
+  { id:'record_1000', cat:'record', name:'1000회 측정',  desc:'체중을 1000번 측정했어요',                 score:50, icon:'👑', legendary:true },
 
   // ── 감량 ─────────────────────────────────────────────────────────
   { id:'loss_1pct',  cat:'loss', name:'첫 감량',   desc:'기준 체중 대비 1% 감량',                        score:10, icon:'📉' },
@@ -47,7 +47,7 @@ export const ACHIEVEMENTS = [
   { id:'loss_15pct', cat:'loss', name:'15% 달성',  desc:'15% 감량 또는 BMI 23.5 이하',                   score:30, icon:'💪', bmiThreshold:23.5 },
   { id:'loss_20pct', cat:'loss', name:'20% 달성',  desc:'20% 감량 또는 BMI 23 이하',                     score:30, icon:'⚡', bmiThreshold:23   },
   { id:'loss_25pct', cat:'loss', name:'25% 달성',  desc:'25% 감량 또는 BMI 22.5 이하',                   score:40, icon:'⚡', bmiThreshold:22.5 },
-  { id:'loss_30pct', cat:'loss', name:'30% 위업',  desc:'30% 감량 또는 BMI 22 이하',                     score:50, icon:'👑', legendary:true, bmiThreshold:22 },
+  { id:'loss_30pct', cat:'loss', name:'30% 달성',  desc:'30% 감량 또는 BMI 22 이하',                     score:50, icon:'👑', legendary:true, bmiThreshold:22 },
 
   // ── 목표 ─────────────────────────────────────────────────────────
   { id:'goal_set',      cat:'goal', name:'목표 설정',    desc:'목표 체중을 처음으로 설정했어요',           score:10, icon:'🎯' },
@@ -69,7 +69,7 @@ export const ACHIEVEMENTS = [
   { id:'daily_70',  cat:'daily', name:'70회 갱신',       desc:'최저 체중을 70번 경신했어요',               score:30, icon:'💎' },
   { id:'daily_80',  cat:'daily', name:'80회 갱신',       desc:'최저 체중을 80번 경신했어요',               score:30, icon:'💎' },
   { id:'daily_90',  cat:'daily', name:'90회 갱신',       desc:'최저 체중을 90번 경신했어요',               score:40, icon:'💎' },
-  { id:'daily_100', cat:'daily', name:'100회 갱신 위업', desc:'최저 체중을 100번 경신했어요',              score:50, icon:'👑', legendary:true },
+  { id:'daily_100', cat:'daily', name:'100회 갱신',      desc:'최저 체중을 100번 경신했어요',              score:50, icon:'👑', legendary:true },
 
   // ── 일간 — 식단 기록 (3끼 모두 기록한 날, 6월 1일~) ─────────────
   { id:'diet_meal_1',   cat:'daily', name:'첫 식단 기록', desc:'3끼 모두 기록한 날 첫 달성',               score:10, icon:'🥗' },
@@ -97,7 +97,7 @@ export const ACHIEVEMENTS = [
   { id:'weekly_15', cat:'weekly', name:'15주 감량',      desc:'전주 평균보다 낮아진 주 15회 누적',         score:20, icon:'📅' },
   { id:'weekly_20', cat:'weekly', name:'20주 감량',      desc:'전주 평균보다 낮아진 주 20회 누적',         score:30, icon:'📅' },
   { id:'weekly_25', cat:'weekly', name:'25주 감량',      desc:'전주 평균보다 낮아진 주 25회 누적',         score:40, icon:'📅' },
-  { id:'weekly_30', cat:'weekly', name:'30주 감량 위업', desc:'전주 평균보다 낮아진 주 30회 누적',         score:50, icon:'👑', legendary:true },
+  { id:'weekly_30', cat:'weekly', name:'30주 감량 ', desc:'전주 평균보다 낮아진 주 30회 누적',         score:50, icon:'👑', legendary:true },
 
   // ── 주간 — 체중 입력 (6월 1일~) ──────────────────────────────────
   { id:'weekly_input_3', cat:'weekly', name:'주 3회 입력', desc:'한 주에 3회 이상 기록한 주 최초 달성',     score:10, icon:'✏️' },
@@ -131,12 +131,12 @@ export const ACHIEVEMENTS = [
   { id:'monthly_20x9',  cat:'monthly', name:'9개월 달성',    desc:'월 20회+ 기록 9개월 누적',                score:30, icon:'🗓️' },
   { id:'monthly_20x10', cat:'monthly', name:'10개월 달성',   desc:'월 20회+ 기록 10개월 누적',               score:30, icon:'🗓️' },
   { id:'monthly_20x11', cat:'monthly', name:'11개월 달성',   desc:'월 20회+ 기록 11개월 누적',               score:40, icon:'🗓️' },
-  { id:'monthly_20x12', cat:'monthly', name:'1년 달성 위업', desc:'월 20회+ 기록 12개월 누적',               score:50, icon:'🌟', legendary:true },
+  { id:'monthly_20x12', cat:'monthly', name:'1년 달성 ', desc:'월 20회+ 기록 12개월 누적',               score:50, icon:'🌟', legendary:true },
 
   // ── 월간 — 체중 감량 (1월 1일~) ──────────────────────────────────
   { id:'monthly_dec_1', cat:'monthly', name:'월간 감량 1개월', desc:'15회+ 입력 월 기준 연속 감량 1개월',    score:30, icon:'📉' },
   { id:'monthly_dec_2', cat:'monthly', name:'월간 감량 2개월', desc:'15회+ 입력 월 기준 연속 감량 2개월',    score:40, icon:'📉' },
-  { id:'monthly_dec_3', cat:'monthly', name:'월간 감량 위업',  desc:'15회+ 입력 월 기준 연속 감량 3개월',    score:50, icon:'👑', legendary:true },
+  { id:'monthly_dec_3', cat:'monthly', name:'월간 감량 ',  desc:'15회+ 입력 월 기준 연속 감량 3개월',    score:50, icon:'👑', legendary:true },
 
   // ── 월간 — 식단 기록 (6월 1일~) ──────────────────────────────────
   { id:'diet_month_1', cat:'monthly', name:'월간 식단 1개월', desc:'한 달에 60끼 이상 기록한 달 달성',       score:20, icon:'🥗' },
@@ -164,36 +164,37 @@ export const ACHIEVEMENTS = [
   { id:'meal_entry_100', cat:'diet', name:'식단 100끼 기록', desc:'색상 관계없이 기록된 끼니 100개 누적',     score:20, icon:'🍽️' },
   { id:'meal_entry_200', cat:'diet', name:'식단 200끼 기록', desc:'색상 관계없이 기록된 끼니 200개 누적',     score:30, icon:'🍽️' },
   { id:'meal_entry_300', cat:'diet', name:'식단 300끼 기록', desc:'색상 관계없이 기록된 끼니 300개 누적',     score:40, icon:'🍽️' },
-  { id:'meal_entry_500', cat:'diet', name:'식단 500끼 위업', desc:'색상 관계없이 기록된 끼니 500개 누적',     score:50, icon:'🍽️', legendary:true },
+  { id:'meal_entry_500', cat:'diet', name:'식단 500끼 ', desc:'색상 관계없이 기록된 끼니 500개 누적',     score:50, icon:'🍽️', legendary:true },
 
   // ── 운동 — 연속 (6월 1일~) ───────────────────────────────────────
   { id:'ex_streak_2',  cat:'exercise', name:'운동 2일 연속',  desc:'2일 연속 운동 달성',                      score:10, icon:'🔥' },
   { id:'ex_streak_3',  cat:'exercise', name:'운동 3일 연속',  desc:'3일 연속 운동 달성',                      score:20, icon:'🔥' },
   { id:'ex_streak_5',  cat:'exercise', name:'운동 5일 연속',  desc:'5일 연속 운동 달성',                      score:30, icon:'🔥' },
   { id:'ex_streak_7',  cat:'exercise', name:'운동 7일 연속',  desc:'7일 연속 운동 달성',                      score:40, icon:'🔥' },
-  { id:'ex_streak_14', cat:'exercise', name:'운동 2주 연속 위업', desc:'14일 연속 운동 달성',                 score:50, icon:'🔥', legendary:true },
+  { id:'ex_streak_14', cat:'exercise', name:'운동 2주 연속 ', desc:'14일 연속 운동 달성',                 score:50, icon:'🔥', legendary:true },
 
   // ── 운동 — 누적 고단계 (6월 1일~) ───────────────────────────────
   { id:'ex_cum_150', cat:'exercise', name:'운동 150회',       desc:'운동 체크마크 150회 달성',                score:40, icon:'🏋️' },
   { id:'ex_cum_200', cat:'exercise', name:'운동 200회',       desc:'운동 체크마크 200회 달성',                score:50, icon:'🏋️', legendary:true },
-  { id:'ex_cum_300', cat:'exercise', name:'운동 300회 위업',  desc:'운동 체크마크 300회 달성',                score:50, icon:'🏋️', legendary:true },
-  { id:'ex_cum_500', cat:'exercise', name:'운동 500회 위업',  desc:'운동 체크마크 500회 달성',                score:50, icon:'🏋️', legendary:true },
+  { id:'ex_cum_300', cat:'exercise', name:'운동 300회',  desc:'운동 체크마크 300회 달성',                score:50, icon:'🏋️', legendary:true },
+  { id:'ex_cum_500', cat:'exercise', name:'운동 500회',  desc:'운동 체크마크 500회 달성',                score:50, icon:'🏋️', legendary:true },
 
   // ── 등급 — 티어 달성 (점수 기반, 메타 업적) ──────────────────────
-  { id:'grade_bronze',      cat:'grade', name:'브론즈 달성',       desc:'업적 점수 80점 이상 달성',            score:20, icon:'🥉' },
-  { id:'grade_silver',      cat:'grade', name:'실버 달성',         desc:'업적 점수 200점 이상 달성',           score:30, icon:'🥈' },
-  { id:'grade_gold',        cat:'grade', name:'골드 달성',         desc:'업적 점수 380점 이상 달성',           score:40, icon:'🥇' },
-  { id:'grade_platinum',    cat:'grade', name:'플래티넘 달성 위업', desc:'업적 점수 580점 이상 달성',           score:50, icon:'💎', legendary:true },
-  { id:'grade_diamond',     cat:'grade', name:'다이아몬드 달성 위업', desc:'업적 점수 800점 이상 달성',         score:50, icon:'💠', legendary:true },
-  { id:'grade_master',      cat:'grade', name:'마스터 달성 위업',  desc:'업적 점수 1000점 이상 달성',          score:50, icon:'👑', legendary:true },
-  { id:'grade_grandmaster', cat:'grade', name:'그랜드마스터 달성 위업', desc:'업적 점수 1250점 이상 달성',      score:50, icon:'🌟', legendary:true },
-  { id:'grade_challenger',  cat:'grade', name:'챌린저 달성 위업',  desc:'업적 점수 1500점 이상 달성',          score:50, icon:'⚡', legendary:true },
+  { id:'grade_bronze',      cat:'grade', name:'브론즈 달성',      desc:'업적 점수가 브론즈 기준 이상 달성',     score:20,  icon:'🥉' },
+  { id:'grade_silver',      cat:'grade', name:'실버 달성',        desc:'업적 점수가 실버 기준 이상 달성',       score:30,  icon:'🥈' },
+  { id:'grade_gold',        cat:'grade', name:'골드 달성',        desc:'업적 점수가 골드 기준 이상 달성',       score:40,  icon:'🥇' },
+  { id:'grade_platinum',    cat:'grade', name:'플래티넘 달성',    desc:'업적 점수가 플래티넘 기준 이상 달성',   score:50,  icon:'💎', legendary:true },
+  { id:'grade_emerald',     cat:'grade', name:'에메랄드 달성',    desc:'업적 점수가 에메랄드 기준 이상 달성',   score:70,  icon:'💚', legendary:true },
+  { id:'grade_diamond',     cat:'grade', name:'다이아몬드 달성',  desc:'업적 점수가 다이아몬드 기준 이상 달성', score:80,  icon:'💠', legendary:true },
+  { id:'grade_master',      cat:'grade', name:'마스터 달성',      desc:'업적 점수가 마스터 기준 이상 달성',     score:100, icon:'👑', legendary:true },
+  { id:'grade_grandmaster', cat:'grade', name:'그랜드마스터 달성',desc:'업적 점수가 그랜드마스터 기준 이상 달성',score:150,icon:'🌟', legendary:true },
+  { id:'grade_challenger',  cat:'grade', name:'챌린저 달성',      desc:'업적 점수가 챌린저 기준 이상 달성',     score:200, icon:'⚡', legendary:true },
 
   // ── 업적 — 달성 개수 마일스톤 (메타 업적) ────────────────────────
   { id:'ach_10',  cat:'milestone', name:'업적 10개 달성',   desc:'업적을 10개 달성했어요',                    score:10, icon:'🎖️' },
   { id:'ach_50',  cat:'milestone', name:'업적 50개 달성',   desc:'업적을 50개 달성했어요',                    score:30, icon:'🎖️' },
-  { id:'ach_100', cat:'milestone', name:'업적 100개 달성 위업', desc:'업적을 100개 달성했어요',               score:50, icon:'🏆', legendary:true },
-  { id:'ach_200', cat:'milestone', name:'업적 200개 달성 위업', desc:'업적을 200개 달성했어요',               score:50, icon:'👑', legendary:true },
+  { id:'ach_100', cat:'milestone', name:'업적 100개 달성', desc:'업적을 100개 달성했어요',               score:50, icon:'🏆', legendary:true },
+  { id:'ach_200', cat:'milestone', name:'업적 200개 달성', desc:'업적을 200개 달성했어요',               score:50, icon:'👑', legendary:true },
 ];
 
 const toDs = d =>
@@ -443,6 +444,7 @@ export function calculateMetaEarnedIds(baseEarned, baseScore, tiers) {
     'grade_silver':      sorted.find(t=>t.id==='silver')?.minScore      ?? 200,
     'grade_gold':        sorted.find(t=>t.id==='gold')?.minScore        ?? 380,
     'grade_platinum':    sorted.find(t=>t.id==='platinum')?.minScore    ?? 580,
+    'grade_emerald':     sorted.find(t=>t.id==='emerald')?.minScore     ?? 700,
     'grade_diamond':     sorted.find(t=>t.id==='diamond')?.minScore     ?? 800,
     'grade_master':      sorted.find(t=>t.id==='master')?.minScore      ?? 1000,
     'grade_grandmaster': sorted.find(t=>t.id==='grandmaster')?.minScore ?? 1250,
@@ -521,15 +523,16 @@ export function calcTotalScore(earnedIds) {
 }
 
 export const DEFAULT_TIERS = [
-  { id:'iron',        name:'아이언',       minScore:0,    color:'#8B8B8B' },
-  { id:'bronze',      name:'브론즈',       minScore:80,   color:'#CD7F32' },
-  { id:'silver',      name:'실버',         minScore:200,  color:'#A8A8A8' },
-  { id:'gold',        name:'골드',         minScore:380,  color:'#FFD700' },
-  { id:'platinum',    name:'플래티넘',     minScore:580,  color:'#E5E4E2' },
-  { id:'diamond',     name:'다이아몬드',   minScore:800,  color:'#89CFF0' },
+  { id:'iron',        name:'아이언',       minScore:0,    color:'#6B6B6B' },
+  { id:'bronze',      name:'브론즈',       minScore:80,   color:'#8C4A2F' },
+  { id:'silver',      name:'실버',         minScore:200,  color:'#82A0AA' },
+  { id:'gold',        name:'골드',         minScore:380,  color:'#C89B3C' },
+  { id:'platinum',    name:'플래티넘',     minScore:580,  color:'#009B8D' },
+  { id:'emerald',     name:'에메랄드',     minScore:700,  color:'#00A86B' },
+  { id:'diamond',     name:'다이아몬드',   minScore:800,  color:'#576BCE' },
   { id:'master',      name:'마스터',       minScore:1000, color:'#9B59B6' },
-  { id:'grandmaster', name:'그랜드마스터', minScore:1250, color:'#E74C3C' },
-  { id:'challenger',  name:'챌린저',       minScore:1500, color:'#F39C12' },
+  { id:'grandmaster', name:'그랜드마스터', minScore:1250, color:'#CD3232' },
+  { id:'challenger',  name:'챌린저',       minScore:1500, color:'#F4C874' },
 ];
 
 export function getTierForScore(score, tiers = DEFAULT_TIERS) {

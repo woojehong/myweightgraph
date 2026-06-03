@@ -64,9 +64,13 @@
   <link rel="stylesheet" href="css/borders.css">
 </head>
 <body>
-<header class="top-bar">
-  <span class="title">🔐 관리자</span>
-  <div style="display:flex;align-items:center;gap:8px">
+<header class="top-bar" style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px">
+  <div></div>
+  <div class="mweg-header-wrap" style="justify-self:center">
+    <span class="mweg-title">마웨그 관리자</span>
+    <span class="mweg-subtitle">Admin Dashboard</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px;justify-content:flex-end">
     <a href="index.html" class="btn btn-ghost btn-sm">메인</a>
     <button class="btn btn-ghost btn-sm" onclick="doLogout()">로그아웃</button>
   </div>
@@ -646,11 +650,10 @@ function renderDataroom() {
   const tierContent = `
     <p style="font-size:12px;color:var(--muted);margin-bottom:12px">점수 컷·색상 수정 후 저장하세요. 변경 즉시 적용됩니다.</p>
     <table class="tier-table">
-      <thead><tr><th>티어</th><th>이름</th><th>최소 점수</th><th>색상</th></tr></thead>
+      <thead><tr><th>티어</th><th>최소 점수</th><th>색상</th></tr></thead>
       <tbody>${sorted.map(t=>`
         <tr>
-          <td><div style="display:flex;align-items:center;gap:6px"><div style="width:12px;height:12px;border-radius:50%;background:${t.color}"></div><span style="font-size:11px;color:var(--muted)">${t.id}</span></div></td>
-          <td><input class="input-field" style="padding:4px 8px;font-size:12px;width:110px" value="${t.name}" data-tier="${t.id}" data-field="name"></td>
+          <td><div style="display:flex;align-items:center;gap:6px"><div style="width:12px;height:12px;border-radius:50%;background:${t.color}"></div><span style="font-size:13px;font-weight:700;color:${t.color}">${t.name}</span></div></td>
           <td><input class="input-field" type="number" style="padding:4px 8px;font-size:12px;width:72px" value="${t.minScore}" data-tier="${t.id}" data-field="minScore"></td>
           <td><div style="display:flex;align-items:center;gap:6px">
             <input type="color" value="${t.color}" data-tier="${t.id}" data-field="color" onchange="updateTierColor(this)" style="width:32px;height:26px;border:none;background:none;cursor:pointer;border-radius:4px">
@@ -827,11 +830,9 @@ window.updateTierColor = (input) => {
 
 window.saveTiers = async () => {
   const tiers = (tierSettings?.tiers || DEFAULT_TIERS).map(t => {
-    const nameEl  = document.querySelector(`input[data-tier="${t.id}"][data-field="name"]`);
     const scoreEl = document.querySelector(`input[data-tier="${t.id}"][data-field="minScore"]`);
     const colorEl = document.querySelector(`input[data-tier="${t.id}"][data-field="color"]`);
     return { ...t,
-      name:     nameEl  ? nameEl.value.trim()       : t.name,
       minScore: scoreEl ? parseInt(scoreEl.value)||0 : t.minScore,
       color:    colorEl ? colorEl.value              : t.color,
     };
