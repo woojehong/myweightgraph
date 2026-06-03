@@ -210,3 +210,76 @@
   0%   { box-shadow: 0 0 8px 3px #F39C12aa; }
   100% { box-shadow: 0 0 20px 8px #F39C12cc, 0 0 40px 15px #ff000044; }
 }
+
+/* ── 21. 플라즈마 ───────────────────────────────────────────────── */
+.border-plasma {
+  background: var(--tier-color, #4fc3f7);
+  animation: plasma-arc 0.8s ease-in-out infinite;
+}
+@keyframes plasma-arc {
+  0%   { box-shadow: 0 0 6px 2px var(--tier-color,#4fc3f7), 3px -3px 0 1px rgba(255,255,255,.9), -3px 3px 0 1px rgba(255,255,255,.5); }
+  33%  { box-shadow: 0 0 10px 4px var(--tier-color,#4fc3f7), -4px -2px 0 1px rgba(255,255,255,.8), 2px 4px 0 1px rgba(255,255,255,.7); }
+  66%  { box-shadow: 0 0 8px 3px var(--tier-color,#4fc3f7), 4px 3px 0 1px rgba(255,255,255,.9), -2px -4px 0 1px rgba(255,255,255,.6); }
+  100% { box-shadow: 0 0 6px 2px var(--tier-color,#4fc3f7), 3px -3px 0 1px rgba(255,255,255,.9), -3px 3px 0 1px rgba(255,255,255,.5); }
+}
+
+/* ── 22. 마그마 ─────────────────────────────────────────────────── */
+.border-magma {
+  background: conic-gradient(#7f0000, #cc2200, #ff5500, #ff9900, #ffcc00, #ff5500, #cc2200, #7f0000);
+  animation: spin-border 2.5s linear infinite, magma-glow 1.2s ease-in-out infinite alternate;
+}
+@keyframes magma-glow {
+  0%   { box-shadow: 0 0 8px 3px #ff5500aa, 0 0 16px 6px #cc220066; }
+  100% { box-shadow: 0 0 20px 8px #ff9900cc, 0 0 36px 12px #ff550044; }
+}
+
+/* ── 23. 보이드 리프트 ──────────────────────────────────────────── */
+.border-void-rift {
+  background: conic-gradient(#0d0020, #6b21a8, #3b0764, #9333ea, #3b0764, #6b21a8, #0d0020);
+  animation: spin-border 5s linear infinite, void-pulse 1.8s ease-in-out infinite;
+}
+@keyframes void-pulse {
+  0%,100% { box-shadow: 0 0 6px 2px #6b21a8, 0 0 20px 6px #3b076466; }
+  50%     { box-shadow: 0 0 14px 5px #9333ea, 0 0 32px 10px #6b21a888, inset 0 0 8px #9333ea44; }
+}
+
+/* ── 24. 매트릭스 ───────────────────────────────────────────────── */
+.border-matrix {
+  background: #001a00;
+  box-shadow: 0 0 10px 3px #00ff41bb, 0 0 22px 6px #00ff4155, inset 0 0 6px #00ff4133;
+  animation: matrix-flicker 0.12s step-end infinite;
+}
+@keyframes matrix-flicker {
+  0%,88%,100% { opacity: 1; box-shadow: 0 0 10px 3px #00ff41bb, 0 0 22px 6px #00ff4155; }
+  92%         { opacity: .7; box-shadow: 0 0 4px 1px #00ff4155; }
+  96%         { opacity: .9; box-shadow: 0 0 14px 5px #00ff41cc; }
+}
+
+/* ── 25. 코스믹 ─────────────────────────────────────────────────── */
+.border-cosmic {
+  background: conic-gradient(#0d001f, #4a0080, #800080, #ff0080, #4a0080, #0d001f);
+  animation: spin-border 7s linear infinite;
+  box-shadow: 0 0 8px 3px #7928ca, 0 0 18px 6px #7928ca44, 0 0 32px 10px #ff008022;
+}
+.border-cosmic::before {
+  content: '';
+  position: absolute; inset: 2px; border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #ff008044, transparent 55%),
+              radial-gradient(circle at 70% 70%, #7928ca66, transparent 55%);
+  animation: cosmic-twinkle 2.5s ease-in-out infinite alternate;
+  z-index: 0;
+}
+@keyframes cosmic-twinkle {
+  0%   { opacity: .4; transform: scale(0.95); }
+  100% { opacity: 1;  transform: scale(1.05); }
+}
+
+/* ── 26. 슈퍼노바 ───────────────────────────────────────────────── */
+.border-supernova {
+  background: conic-gradient(#ff6b00, #ffcc00, #ffffff, #ffcc00, #ff8800, #ff6b00);
+  animation: spin-border 1.2s linear infinite, supernova-burst 1.8s ease-in-out infinite;
+}
+@keyframes supernova-burst {
+  0%,100% { box-shadow: 0 0 6px 2px #ff6b00cc, 0 0 14px 4px #ffcc0066; }
+  50%     { box-shadow: 0 0 20px 8px #ffffffaa, 0 0 36px 12px #ff6b00cc, 0 0 52px 18px #ffcc0033; }
+}

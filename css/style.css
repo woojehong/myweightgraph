@@ -54,12 +54,25 @@ input  { font-family: inherit; outline: none; }
 }
 .top-bar .title { font-size: 16px; font-weight: 700; }
 .top-bar .user-chip {
-  display: flex; align-items: center; gap: 6px;
+  display: flex; align-items: center; gap: 8px;
   background: var(--surface2); border: 1px solid var(--border);
-  border-radius: 20px; padding: 5px 12px;
-  font-size: 13px; color: var(--teal); font-weight: 600;
-  cursor: pointer;
+  border-radius: 20px; padding: 5px 12px 5px 6px;
+  font-size: 13px; font-weight: 600;
+  cursor: pointer; text-decoration: none;
 }
+.chip-avatar {
+  width: 30px; height: 30px; flex-shrink: 0;
+}
+.chip-avatar-inner {
+  width: 24px; height: 24px; border-radius: 50%;
+  background: #0d1117;
+  display: flex; align-items: center; justify-content: center;
+  position: relative; z-index: 1; font-size: 14px;
+}
+.chip-info { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; }
+.chip-title { font-size: 9px; font-weight: 700; display: none; }
+.chip-name  { font-weight: 700; font-size: 13px; }
+.chip-score { font-size: 9px; color: var(--muted); }
 
 /* 하단 네비 (모바일) */
 .bottom-nav {

@@ -13,6 +13,7 @@
   <meta property="og:type" content="website">
   <meta property="og:image" content="favicon.png">
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/borders.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
@@ -42,9 +43,16 @@
   <a href="index.html?select=1" class="mweg-title" style="justify-self:center">마웨그</a>
   <!-- 우: 유저칩 + 로그아웃 -->
   <div style="display:flex;align-items:center;gap:8px;justify-content:flex-end">
-    <div class="user-chip" onclick="openProfileEdit()">
-      <span id="chipEmoji">⚖️</span><span id="chipName">-</span>
-      <span style="font-size:10px;color:var(--muted);margin-left:2px" id="chipEdit"></span>
+    <div class="user-chip" onclick="openProfileEdit()" id="userChip">
+      <div id="chipAvatarWrap" class="avatar-frame chip-avatar">
+        <div class="chip-avatar-inner"><span id="chipEmoji">⚖️</span></div>
+      </div>
+      <div class="chip-info">
+        <span id="chipTitle" class="chip-title"></span>
+        <span id="chipName" class="chip-name">-</span>
+        <span id="chipScore" class="chip-score"></span>
+      </div>
+      <span id="chipEdit" style="font-size:10px;color:var(--muted)"></span>
     </div>
     <button class="btn btn-ghost btn-sm" id="logoutBtn" style="display:none" onclick="doLogout()">로그아웃</button>
   </div>
@@ -109,9 +117,10 @@
 <div class="toast" id="toast"></div>
 
 <script type="module">
-import { getUser, getWeights, getSettings, updateSettings, toDateStr, updateUser, setUserPassword } from './js/db.js';
+import { getUser, getWeights, getSettings, updateSettings, toDateStr, updateUser, setUserPassword, getTierSettings } from './js/db.js';
 import { isAuthed, clearAuth, saveAuth } from './js/auth.js';
 import { renderChart, calcStats } from './js/chart-render.js';
+import { getTierForScore, DEFAULT_TIERS } from './js/achievements.js';
 
 const uid = new URLSearchParams(location.search).get('user') || localStorage.getItem('uid');
 const isAdminView = new URLSearchParams(location.search).get('admin_view') === '1';
@@ -138,7 +147,10 @@ let S={}, user=null, records=[];
 
 async function render() {
   buildNav(uid);
-  [user, records, S] = await Promise.all([getUser(uid), getWeights(uid), getSettings()]);
+  const [_u, _r, _s, _td] = await Promise.all([getUser(uid), getWeights(uid), getSettings(), getTierSettings().catch(()=>null)]);
+  user = _u; records = _r; S = _s;
+  const _tiers = _td?.tiers || DEFAULT_TIERS;
+  const _tier = getTierForScore(user?.totalScore || 0, _tiers);
   if (!isAdminView) {
     document.getElementById('logoutBtn').style.display='';
     document.getElementById('chipEdit').textContent = '✏️';
@@ -151,8 +163,7 @@ async function render() {
     return;
   }
 
-  document.getElementById('chipName').textContent  = user.name;
-  document.getElementById('chipEmoji').textContent = user.emoji||'⚖️';
+  setChipData(user, _tier.color);
   document.title = `${user.name} | 마웨그`;
 
   const stats   = calcStats(records, user);
@@ -308,7 +319,7 @@ window.saveProfileEdit = async () => {
   const selectedTitle = document.getElementById('profileTitleSelect')?.value || user.selectedTitle || null;
   await updateUser(uid, { emoji, selectedTitle, height, birthYear });
   user = { ...user, emoji, selectedTitle, height, birthYear };
-  document.getElementById('chipEmoji').textContent = emoji;
+  setChipData(user, document.getElementById('chipName')?.style.color || '#00e5aa');
 
   if (pw) {
     const newHash = await setUserPassword(uid, pw);
@@ -335,6 +346,26 @@ window.resetZoom = () => {
   if (mc?._chartInstance) mc._chartInstance.resetZoom();
 };
 
+
+function setChipData(u, tierColor) {
+  const tc = tierColor || '#00e5aa';
+  document.getElementById('chipEmoji').textContent = u.emoji || '⚖️';
+  document.getElementById('chipName').textContent  = u.name;
+  document.getElementById('chipName').style.color  = tc;
+  const wrap = document.getElementById('chipAvatarWrap');
+  if (wrap) {
+    wrap.className = `avatar-frame chip-avatar${u.selectedBorder ? ' border-'+u.selectedBorder : ''}`;
+    wrap.style.setProperty('--tier-color', tc);
+  }
+  const titleEl = document.getElementById('chipTitle');
+  if (titleEl) {
+    titleEl.textContent  = u.selectedTitle || '';
+    titleEl.style.color  = tc;
+    titleEl.style.display = u.selectedTitle ? '' : 'none';
+  }
+  const scoreEl = document.getElementById('chipScore');
+  if (scoreEl) scoreEl.textContent = (u.totalScore > 0) ? `${u.totalScore} PT` : '';
+}
 
 function checkTodayAlert() {
   const todayStr = toDateStr(new Date());

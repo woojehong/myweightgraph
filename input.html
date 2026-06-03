@@ -13,6 +13,7 @@
   <meta property="og:type" content="website">
   <meta property="og:image" content="favicon.png">
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/borders.css">
   <style>
     /* 신호등 */
     .tl-group { display:flex; gap:6px; align-items:center; }
@@ -50,7 +51,10 @@
 
     /* 데스크탑: 한 줄 컴팩트 레이아웃 */
     @media(min-width:768px) {
-      .day-card { display:flex; flex-direction:row; align-items:center; flex-wrap:nowrap; gap:10px; padding:8px 14px; margin-bottom:6px; }
+      /* 카드를 내용 크기에 맞게 + 가운데 정렬 */
+      .day-card { display:inline-flex; flex-direction:row; align-items:center; flex-wrap:nowrap;
+                  gap:10px; padding:7px 14px; margin-bottom:6px; width:auto !important; }
+      #content { display:flex; flex-direction:column; align-items:center; }
       .day-card .dc-top { margin-bottom:0; flex-shrink:0; min-width:110px; }
       .day-card .dc-name { font-size:13px; }
       .day-card .dc-date { font-size:10px; }
@@ -59,7 +63,7 @@
       .day-card .dc-btn { padding:6px 10px; font-size:12px; }
       .day-card .dc-status { display:none; }
       .dc-extra { flex-shrink:0; margin-top:0 !important; padding-top:0 !important; border-top:none !important; flex-wrap:nowrap !important; gap:6px !important; align-items:center !important; }
-      .dc-meal-col { flex-direction:column !important; align-items:flex-start !important; gap:2px !important; flex-shrink:0; min-width:auto !important; }
+      .dc-meal-col { flex-direction:column !important; align-items:flex-start !important; gap:5px !important; flex-shrink:0; min-width:auto !important; }
       .dc-meal-row { flex-wrap:nowrap; gap:5px !important; }
       .dc-meal-label { width:auto !important; font-size:10px !important; flex-shrink:0; min-width:24px; }
       .dc-ex-col { flex-direction:column !important; align-items:center !important; gap:2px !important; flex-shrink:0; }
@@ -76,9 +80,16 @@
   <div></div>
   <a href="index.html?select=1" class="mweg-title" style="justify-self:center">마웨그</a>
   <div style="display:flex;align-items:center;gap:8px;justify-content:flex-end">
-    <div class="user-chip" onclick="openProfileEdit()" style="cursor:pointer">
-      <span id="chipEmoji">⚖️</span><span id="chipName">-</span>
-      <span style="font-size:10px;color:var(--muted);margin-left:2px">✏️</span>
+    <div class="user-chip" onclick="openProfileEdit()" id="userChip">
+      <div id="chipAvatarWrap" class="avatar-frame chip-avatar">
+        <div class="chip-avatar-inner"><span id="chipEmoji">⚖️</span></div>
+      </div>
+      <div class="chip-info">
+        <span id="chipTitle" class="chip-title"></span>
+        <span id="chipName" class="chip-name">-</span>
+        <span id="chipScore" class="chip-score"></span>
+      </div>
+      <span style="font-size:10px;color:var(--muted)">✏️</span>
     </div>
     <button class="btn btn-ghost btn-sm" onclick="doLogout()">로그아웃</button>
   </div>
@@ -125,7 +136,8 @@
 <div class="toast" id="toast"></div>
 
 <script type="module">
-import { getUser, getWeights, setWeight, deleteWeight, parseWeight, toDateStr, updateUser, setUserPassword, setDietExercise } from './js/db.js';
+import { getUser, getWeights, setWeight, deleteWeight, parseWeight, toDateStr, updateUser, setUserPassword, setDietExercise, getTierSettings } from './js/db.js';
+import { getTierForScore, DEFAULT_TIERS } from './js/achievements.js';
 import { clearAuth, saveAuth } from './js/auth.js';
 const uid = new URLSearchParams(location.search).get('user') || localStorage.getItem('uid');
 if (!uid) location.href='index.html';
@@ -135,6 +147,19 @@ const EMOJIS=['⚖️','💪','🔥','👑','🏃','🌟','🎯','😤','🦁','
 let selEmoji='';
 const DAY_KO=['일','월','화','수','목','금','토'];
 let existingMap={}, allRecords=[], user=null;
+
+function setChipData(u, tierColor) {
+  const tc = tierColor || '#00e5aa';
+  document.getElementById('chipEmoji').textContent = u?.emoji || '⚖️';
+  document.getElementById('chipName').textContent  = u?.name || '-';
+  document.getElementById('chipName').style.color  = tc;
+  const wrap = document.getElementById('chipAvatarWrap');
+  if (wrap) { wrap.className = `avatar-frame chip-avatar${u?.selectedBorder?' border-'+u.selectedBorder:''}`; wrap.style.setProperty('--tier-color', tc); }
+  const titleEl = document.getElementById('chipTitle');
+  if (titleEl) { titleEl.textContent = u?.selectedTitle||''; titleEl.style.color = tc; titleEl.style.display = u?.selectedTitle?'':'none'; }
+  const scoreEl = document.getElementById('chipScore');
+  if (scoreEl) scoreEl.textContent = ((u?.totalScore||0)>0)?`${u.totalScore} PT`:'';
+}
 
 function buildNav() {
   const links=[
@@ -249,12 +274,12 @@ window.setExercise = async (dateStr, value) => {
 
 async function render() {
   buildNav();
-  const res = await Promise.all([getUser(uid), getWeights(uid)]);
-  user = res[0]; allRecords = res[1];
+  const [_iu, _ir, _itd] = await Promise.all([getUser(uid), getWeights(uid), getTierSettings().catch(()=>null)]);
+  user = _iu; allRecords = _ir;
   existingMap = Object.fromEntries(allRecords.map(r=>[r.date, r.weight]));
-
-  document.getElementById('chipName').textContent  = user?.name??'-';
-  document.getElementById('chipEmoji').textContent = user?.emoji??'⚖️';
+  const _iTiers = _itd?.tiers || DEFAULT_TIERS;
+  const _iTier  = getTierForScore(user?.totalScore || 0, _iTiers);
+  setChipData(user, _iTier.color);
 
   const today = new Date(); today.setHours(0,0,0,0);
   const todayStr = toDateStr(today);
@@ -418,7 +443,7 @@ window.saveProfileEdit = async () => {
   const selectedTitle=document.getElementById('pTitleSelect')?.value||user?.selectedTitle||null;
   await updateUser(uid,{emoji,height,birthYear,selectedTitle});
   user={...user,emoji,height,birthYear,selectedTitle};
-  document.getElementById('chipEmoji').textContent=emoji;
+  setChipData(user, document.getElementById('chipName')?.style.color||'#00e5aa');
   if(pw){const h=await setUserPassword(uid,pw);saveAuth(uid,h);user.passwordHash=h;}
   closeProfileEdit();showToast('프로필 변경됨 ✓');
 };

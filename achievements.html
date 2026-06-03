@@ -165,9 +165,16 @@
   <div></div>
   <a href="index.html?select=1" class="mweg-title" style="justify-self:center">마웨그</a>
   <div style="display:flex;align-items:center;gap:8px;justify-content:flex-end">
-    <div class="user-chip" onclick="openProfileEdit()" style="cursor:pointer">
-      <span id="chipEmoji">⚖️</span><span id="chipName">-</span>
-      <span style="font-size:10px;color:var(--muted);margin-left:2px">✏️</span>
+    <div class="user-chip" onclick="openProfileEdit()" id="userChip">
+      <div id="chipAvatarWrap" class="avatar-frame chip-avatar">
+        <div class="chip-avatar-inner"><span id="chipEmoji">⚖️</span></div>
+      </div>
+      <div class="chip-info">
+        <span id="chipTitle" class="chip-title"></span>
+        <span id="chipName" class="chip-name">-</span>
+        <span id="chipScore" class="chip-score"></span>
+      </div>
+      <span style="font-size:10px;color:var(--muted)">✏️</span>
     </div>
     <button class="btn btn-ghost btn-sm" id="logoutBtn" onclick="doLogout()">로그아웃</button>
   </div>
@@ -252,6 +259,19 @@ function buildNav() {
   });
 }
 
+function setChipData(u, tierColor) {
+  const tc = tierColor || '#00e5aa';
+  document.getElementById('chipEmoji').textContent = u.emoji || '⚖️';
+  document.getElementById('chipName').textContent  = u.name;
+  document.getElementById('chipName').style.color  = tc;
+  const wrap = document.getElementById('chipAvatarWrap');
+  if (wrap) { wrap.className = `avatar-frame chip-avatar${u.selectedBorder?' border-'+u.selectedBorder:''}`; wrap.style.setProperty('--tier-color', tc); }
+  const titleEl = document.getElementById('chipTitle');
+  if (titleEl) { titleEl.textContent = u.selectedTitle||''; titleEl.style.color = tc; titleEl.style.display = u.selectedTitle?'':'none'; }
+  const scoreEl = document.getElementById('chipScore');
+  if (scoreEl) scoreEl.textContent = (u.totalScore>0)?`${u.totalScore} PT`:'';
+}
+
 function fmtDate(ts) {
   if (!ts) return '';
   const d = ts.toDate ? ts.toDate() : new Date(ts);
@@ -283,8 +303,9 @@ async function render() {
   _user = user;
   _tierData = tierData;
 
-  document.getElementById('chipName').textContent  = user.name;
-  document.getElementById('chipEmoji').textContent = user.emoji || '⚖️';
+  const _achTiers = tierData?.tiers || DEFAULT_TIERS;
+  const _achTier  = getTierForScore(totalScore, _achTiers);
+  setChipData(user, _achTier.color);
   document.title = `${user.name} 업적 | 마웨그`;
 
   const tiers      = tierData?.tiers || DEFAULT_TIERS;
@@ -566,7 +587,7 @@ window.saveProfileEdit = async () => {
   const selectedTitle = document.getElementById('pTitleSelect')?.value || _user?.selectedTitle || null;
   await updateUser(uid, { emoji, height, birthYear, selectedTitle });
   _user = { ..._user, emoji, height, birthYear, selectedTitle };
-  document.getElementById('chipEmoji').textContent = emoji;
+  setChipData(_user, document.getElementById('chipName')?.style.color || '#00e5aa');
   if (pw) { const h = await setUserPassword(uid, pw); saveAuth(uid, h); _user.passwordHash = h; }
   closeProfileEdit();
   showToast('프로필 변경됨 ✓');

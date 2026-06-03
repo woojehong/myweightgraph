@@ -13,6 +13,7 @@
   <meta property="og:type" content="website">
   <meta property="og:image" content="favicon.png">
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/borders.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     .emoji-btn{font-size:22px;padding:5px;border-radius:7px;cursor:pointer;background:transparent;border:2px solid transparent;transition:all .15s;text-align:center;line-height:1;}
@@ -89,8 +90,9 @@
 <div class="toast" id="toast"></div>
 
 <script type="module">
-import { getUsers, createUser, parseWeight, toDateStr } from './js/db.js';
+import { getUsers, createUser, parseWeight, toDateStr, getTierSettings } from './js/db.js';
 import { sha256, saveAuth, isAuthed } from './js/auth.js';
+import { getTierForScore, DEFAULT_TIERS } from './js/achievements.js';
 
 const EMOJIS = ['⚖️','💪','🔥','👑','🏃','🌟','🎯','😤','🦁','🐯','🐻','🐺','🦊','🐸','🐼','🦋','🍎','🥗','🥑','🎽','🏋️','🚴','🧘','💎','🌈','⚡','🎖️','🏆','🌙','☀️','💫','✨'];
 
@@ -440,7 +442,11 @@ async function render() {
 
   try {
     const timeout = new Promise((_,rej) => setTimeout(()=>rej(new Error('연결 시간 초과. 네트워크를 확인해주세요.')), 10000));
-    const users = await Promise.race([getUsers(), timeout]);
+    const [users, tierData] = await Promise.race([
+      Promise.all([getUsers(), getTierSettings().catch(()=>null)]),
+      timeout.then(()=>{ throw new Error('연결 시간 초과. 네트워크를 확인해주세요.'); })
+    ]);
+    const _tiers = tierData?.tiers || DEFAULT_TIERS;
 
     app.innerHTML = `
       <div style="margin-bottom:32px">
@@ -461,13 +467,18 @@ async function render() {
       users.forEach(u => {
         const card = document.createElement('div');
         card.className = 'user-card';
-        const score = u.totalScore || 0;
-        const title = u.selectedTitle || '';
+        const score    = u.totalScore || 0;
+        const title    = u.selectedTitle || '';
+        const tier     = getTierForScore(score, _tiers);
+        const tc       = tier.color;
+        const bClass   = u.selectedBorder ? `border-${u.selectedBorder}` : '';
         card.innerHTML = `
-          <div class="avatar">${u.emoji||'⚖️'}</div>
-          ${title?`<div style="font-size:10px;color:var(--teal);font-weight:700;margin-bottom:2px">${title}</div>`:''}
-          <div class="name">${u.name}</div>
-          <div class="sub" style="color:var(--muted)">${score}점</div>`;
+          <div class="avatar-frame ${bClass}" style="--tier-color:${tc};width:52px;height:52px;margin:0 auto 10px;flex-shrink:0">
+            <div style="width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;font-size:22px;position:relative;z-index:1">${u.emoji||'⚖️'}</div>
+          </div>
+          ${title?`<div style="font-size:10px;color:${tc};font-weight:700;margin-bottom:2px">${title}</div>`:''}
+          <div class="name" style="color:${tc}">${u.name}</div>
+          <div class="sub">${score > 0 ? score + ' PT' : ''}</div>`;
         card.onclick = () => enterUser(u);
         grid.appendChild(card);
       });
