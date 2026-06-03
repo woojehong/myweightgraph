@@ -226,11 +226,19 @@ window.onOp=async val=>{document.getElementById('opV').textContent=val+'%';await
 window.selectUser = async uid => {
   selectedUid=uid; renderUserList();
   document.getElementById('userDetail').innerHTML='<div class="loading"><div class="spinner"></div></div>';
-  const [user,records]=await Promise.all([getUser(uid),getWeights(uid)]);
+  const [user,records,earnedRaw]=await Promise.all([getUser(uid),getWeights(uid),getEarnedAchievements(uid).catch(()=>[])]);
   // allUsers에서 adminOverrides 최신화
   const idx = allUsers.findIndex(u=>u.id===uid);
-  if(idx>=0) allUsers[idx]={...allUsers[idx],...user};
-  renderDetail(user,records);
+  const merged = {...(allUsers[idx]||{}), ...user};
+  if(idx>=0) allUsers[idx]=merged;
+  // 시스템 달성 여부 계산
+  const shouldEarn = calculateEarnedIds(records, user);
+  const storedMap  = Object.fromEntries(earnedRaw.map(a=>[a.id,a]));
+  const validBase  = new Set([...earnedRaw.filter(a=>!a.invalidated&&shouldEarn.has(a.id)).map(a=>a.id), ...[...shouldEarn].filter(id=>!storedMap[id])]);
+  const baseScore  = calcTotalScore(validBase);
+  const metaEarned = calculateMetaEarnedIds(validBase, baseScore, tierSettings?.tiers || DEFAULT_TIERS);
+  const systemEarned = new Set([...validBase, ...metaEarned]);
+  renderDetail(merged, records, systemEarned);
 };
 
 function fmtTs(ts) {
@@ -241,7 +249,9 @@ function fmtTs(ts) {
 
 let _detailRecords = [];
 
-function renderDetail(user, records) {
+let _systemEarned = new Set();
+function renderDetail(user, records, systemEarned=new Set()) {
+  _systemEarned = systemEarned;
   _detailRecords = records;
   const sorted=[...records].sort((a,b)=>b.date.localeCompare(a.date));
   document.getElementById('userDetail').innerHTML=`
@@ -497,39 +507,58 @@ function buildAchOverrideUI(user) {
   ACHIEVEMENT_CATEGORIES.forEach(cat => {
     const catAchs = ACHIEVEMENTS.filter(a => a.cat === cat.id);
     if (!catAchs.length) return;
-    html += subCollapsible(`aov-${user.id}-${cat.id}`, `${cat.icon} ${cat.label} (${catAchs.length})`,
+    const earnedCount = catAchs.filter(a => _systemEarned.has(a.id)).length;
+    html += subCollapsible(`aov-${user.id}-${cat.id}`,
+      `${cat.icon} ${cat.label} (${earnedCount}/${catAchs.length})`,
       catAchs.map(a => achOverrideRow(user.id, a, overrides[a.id])).join(''));
   });
   return html;
 }
 
 function achOverrideRow(uid, ach, ov) {
-  const state = ov?.override || 'auto'; // 'auto' | 'earned' | 'not_earned'
+  const state = ov?.override || 'auto';
+  const isSystemEarned = _systemEarned.has(ach.id);
   const dateVal = ov?.earnedAt
     ? (typeof ov.earnedAt === 'string' ? ov.earnedAt.slice(0,10)
        : ov.earnedAt?.toDate ? ov.earnedAt.toDate().toISOString().slice(0,10) : '')
     : '';
   const btnBase = 'font-size:11px;padding:3px 8px;border-radius:6px;cursor:pointer;border:1px solid;font-weight:700;transition:all .15s;';
-  const btnAuto  = state==='auto'
+  const btnAuto = state==='auto'
     ? `${btnBase}background:rgba(0,229,170,.15);border-color:var(--teal);color:var(--teal)`
     : `${btnBase}background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.15);color:var(--muted)`;
-  const btnEarn  = state==='earned'
+  const btnEarn = state==='earned'
     ? `${btnBase}background:rgba(0,229,170,.2);border-color:var(--teal);color:var(--teal)`
     : `${btnBase}background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.15);color:var(--muted)`;
-  const btnNot   = state==='not_earned'
+  const btnNot  = state==='not_earned'
     ? `${btnBase}background:rgba(239,83,80,.2);border-color:var(--red);color:var(--red)`
     : `${btnBase}background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.15);color:var(--muted)`;
+  // 시스템자동일 때 달성/미달성 테두리
+  const rowBorder = state==='auto'
+    ? (isSystemEarned ? '1px solid rgba(0,229,170,.35)' : '1px solid rgba(239,83,80,.25)')
+    : '1px solid rgba(255,255,255,.04)';
+  const rowBg = state==='auto'
+    ? (isSystemEarned ? 'rgba(0,229,170,.03)' : 'transparent')
+    : 'transparent';
+  const systemBadge = state==='auto'
+    ? `<span style="font-size:9px;padding:1px 5px;border-radius:4px;font-weight:700;margin-left:4px;
+        background:${isSystemEarned?'rgba(0,229,170,.15)':'rgba(239,83,80,.12)'};
+        color:${isSystemEarned?'var(--teal)':'var(--red)'};
+        border:1px solid ${isSystemEarned?'rgba(0,229,170,.3)':'rgba(239,83,80,.3)'}"
+      >${isSystemEarned?'달성':'미달성'}</span>`
+    : '';
   return `
-    <div style="display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.04)" id="ovrow-${uid}-${ach.id}">
+    <div style="display:flex;align-items:flex-start;gap:8px;padding:7px 8px;border-bottom:${rowBorder};background:${rowBg};border-radius:4px;margin-bottom:1px" id="ovrow-${uid}-${ach.id}">
       <span style="font-size:14px;flex-shrink:0;margin-top:2px">${ach.icon}</span>
       <div style="flex:1;min-width:0">
-        <div style="font-size:12px;font-weight:700">${ach.name}${ach.legendary?' <span style="font-size:9px;color:#FFD700">★</span>':''}</div>
+        <div style="font-size:12px;font-weight:700;display:flex;align-items:center;flex-wrap:wrap;gap:4px">
+          ${ach.name}${ach.legendary?' <span style="font-size:9px;color:#FFD700">★</span>':''}${systemBadge}
+        </div>
         <div style="font-size:10px;color:var(--muted);margin-top:1px">${ach.desc}</div>
       </div>
       <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end">
-        <button style="${btnAuto}"  onclick="setAchOverride('${uid}','${ach.id}','auto')">-</button>
-        <button style="${btnEarn}"  onclick="setAchOverride('${uid}','${ach.id}','earned')">✅ 달성</button>
-        <button style="${btnNot}"   onclick="setAchOverride('${uid}','${ach.id}','not_earned')">❌ 미달성</button>
+        <button style="${btnAuto}" onclick="setAchOverride('${uid}','${ach.id}','auto')">-</button>
+        <button style="${btnEarn}" onclick="setAchOverride('${uid}','${ach.id}','earned')">✅ 달성</button>
+        <button style="${btnNot}"  onclick="setAchOverride('${uid}','${ach.id}','not_earned')">❌ 미달성</button>
         ${state==='earned' ? `<input type="date" id="ovdate-${uid}-${ach.id}" value="${dateVal}"
           style="font-size:11px;padding:2px 5px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:5px;margin-left:4px"
           onchange="saveAchOverrideDate('${uid}','${ach.id}',this.value)">` : ''}
