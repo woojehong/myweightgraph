@@ -348,6 +348,7 @@ async function render() {
 
   // 새로 달성된 업적 DB 저장
   const newlyEarned = [...validEarned].filter(id => !alreadyInDb.has(id));
+  const nowTs = new Date();
   await Promise.all(newlyEarned.map(id => {
     const ach = ACHIEVEMENTS.find(a => a.id === id);
     const ov  = adminOverrides[id];
@@ -357,6 +358,8 @@ async function render() {
       earnedAt: ov?.earnedAt || undefined,
     });
   }));
+  // 새로 달성된 업적은 storedMap에 현재 시각 반영 (최근 달성 표시용)
+  newlyEarned.forEach(id => { storedMap[id] = { ...(storedMap[id]||{}), earnedAt: { toDate: () => nowTs } }; });
 
   const totalScore = calcTotalScore(validEarned);
   const _achTier   = getTierForScore(totalScore, tiers);

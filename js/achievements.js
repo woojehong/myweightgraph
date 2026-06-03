@@ -170,9 +170,9 @@ export const ACHIEVEMENTS = [
   { id:'monthly_20x12', cat:'monthly', name:'12개월 달성',  desc:'월 20회+ 체중 기록 12개월 누적',                  score:120, icon:'🎊', legendary:true },
 
   // ── 월간 — 체중 감량 (1월 1일~) ─────────────────────────────────────
-  { id:'monthly_dec_1', cat:'monthly', name:'월간 감량 1개월', desc:'15회+ 입력 월 기준 연속 감량 1개월',      score:40, icon:'📉' },
-  { id:'monthly_dec_2', cat:'monthly', name:'월간 감량 2개월', desc:'15회+ 입력 월 기준 연속 감량 2개월',      score:60, icon:'📉' },
-  { id:'monthly_dec_3', cat:'monthly', name:'월간 감량 3개월', desc:'15회+ 입력 월 기준 연속 감량 3개월',      score:60, icon:'👑', legendary:true },
+  { id:'monthly_dec_1', cat:'monthly', name:'월간 감량 1개월', desc:'월 15회+ 체중 기록한 달 기준, 평균 체중이 전달보다 낮아진 달 1개월',  score:40, icon:'📉' },
+  { id:'monthly_dec_2', cat:'monthly', name:'월간 감량 2개월', desc:'월 15회+ 체중 기록한 달 기준, 평균 체중이 연속으로 낮아진 달 2개월', score:60, icon:'📉' },
+  { id:'monthly_dec_3', cat:'monthly', name:'월간 감량 3개월', desc:'월 15회+ 체중 기록한 달 기준, 평균 체중이 연속으로 낮아진 달 3개월', score:60, icon:'👑', legendary:true },
 
   // ── 월간 — 식단 기록 (6월 1일~) ─────────────────────────────────────
   { id:'diet_month_1', cat:'monthly', name:'월간 식단 1개월', desc:'한 달에 60끼 이상 기록한 달 달성',         score:30, icon:'🥗' },
