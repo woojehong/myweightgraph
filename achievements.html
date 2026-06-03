@@ -303,11 +303,6 @@ async function render() {
   _user = user;
   _tierData = tierData;
 
-  const _achTiers = tierData?.tiers || DEFAULT_TIERS;
-  const _achTier  = getTierForScore(totalScore, _achTiers);
-  setChipData(user, _achTier.color);
-  document.title = `${user.name} 업적 | 마웨그`;
-
   const tiers      = tierData?.tiers || DEFAULT_TIERS;
   const storedMap  = Object.fromEntries(storedRaw.map(a => [a.id, a]));
   const alreadyInDb = new Set(storedRaw.map(a => a.id));
@@ -325,6 +320,9 @@ async function render() {
   ]);
 
   const totalScore = calcTotalScore(validEarned);
+  const _achTier   = getTierForScore(totalScore, tiers);
+  setChipData(user, _achTier.color);
+  document.title = `${user.name} 업적 | 마웨그`;
   const tier     = getTierForScore(totalScore, tiers);
   const nextTier = [...tiers].sort((a,b) => a.minScore - b.minScore).find(t => t.minScore > totalScore);
 
