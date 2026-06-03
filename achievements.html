@@ -647,12 +647,7 @@ window.pickBorder = b => {
   window._selectedBorder = b;
   document.querySelectorAll('.border-slot').forEach(s => s.classList.toggle('sel', s.dataset.border === b));
 };
-window.saveProfileEdit = async () => {
 
-window.pickBorder = b => {
-  window._selectedBorder = b;
-  document.querySelectorAll('.border-slot').forEach(s => s.classList.toggle('sel', s.dataset.border === b));
-};
 window.saveProfileEdit = async () => {
   const custom    = document.getElementById('pCustomEmoji').value.trim();
   const emoji     = custom || selEmoji;
