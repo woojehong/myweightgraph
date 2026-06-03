@@ -527,4 +527,31 @@ export function calculateProgress(records, user) {
     // 운동 연속/누적
     ex_streak_2:p(maxExStreak,2), ex_streak_3:p(maxExStreak,3), ex_streak_5:p(maxExStreak,5),
     ex_10:p(exerciseCount,10), ex_20:p(exerciseCount,20), ex_30:p(exerciseCount,30),
-    ex_50:p(exerciseCount,50), ex_70:p(exerciseCount,70), ex_100:p(exerciseC
+    ex_50:p(exerciseCount,50), ex_70:p(exerciseCount,70), ex_100:p(exerciseCount,100),
+    ex_150:p(exerciseCount,150), ex_200:p(exerciseCount,200), ex_300:p(exerciseCount,300),
+  };
+}
+
+export function calcTotalScore(earnedIds) {
+  return [...earnedIds].reduce((sum, id) => {
+    const a = ACHIEVEMENTS.find(x => x.id === id);
+    return sum + (a ? a.score : 0);
+  }, 0);
+}
+
+export const DEFAULT_TIERS = [
+  { id:'iron',        name:'아이언',       minScore:0,    color:'#6B6B6B' },
+  { id:'bronze',      name:'브론즈',       minScore:80,   color:'#8C4A2F' },
+  { id:'silver',      name:'실버',         minScore:200,  color:'#82A0AA' },
+  { id:'gold',        name:'골드',         minScore:380,  color:'#C89B3C' },
+  { id:'platinum',    name:'플래티넘',     minScore:580,  color:'#009B8D' },
+  { id:'emerald',     name:'에메랄드',     minScore:700,  color:'#00A86B' },
+  { id:'diamond',     name:'다이아몬드',   minScore:800,  color:'#576BCE' },
+  { id:'master',      name:'마스터',       minScore:1000, color:'#9B59B6' },
+  { id:'grandmaster', name:'그랜드마스터', minScore:1250, color:'#CD3232' },
+  { id:'challenger',  name:'챌린저',       minScore:1500, color:'#F4C874' },
+];
+
+export function getTierForScore(score, tiers = DEFAULT_TIERS) {
+  return [...tiers].sort((a,b)=>b.minScore-a.minScore).find(t=>score>=t.minScore) || tiers[0];
+}
