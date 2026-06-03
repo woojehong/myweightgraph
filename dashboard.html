@@ -71,7 +71,7 @@
     </div>
 
     <!-- 칭호 -->
-    <div class="input-group mt-8" id="profileTitleGroup" style="display:none">
+    <div class="input-group mt-8" id="profileTitleGroup">
       <label class="input-label">칭호</label>
       <div id="profileTitleSection"></div>
     </div>
@@ -79,7 +79,7 @@
     <!-- 테두리 -->
     <div class="input-group mt-8">
       <label class="input-label">테두리</label>
-      <div id="profileBorderSection"><p style="font-size:12px;color:var(--muted);padding:4px 0">업적 달성 시 잠금해제돼요</p></div>
+      <div class="border-grid" id="profileBorderGrid"></div>
     </div>
 
     <!-- 이름 -->
@@ -189,8 +189,14 @@ async function render() {
   }
 
   content.innerHTML=`
-    <div class="chart-wrap">
+    <div class="chart-wrap" style="position:relative">
       <canvas id="mainC"></canvas>
+      <div style="position:absolute;top:8px;right:8px;display:flex;gap:4px;z-index:10">
+        <button onclick="chartZoomIn()" title="확대"
+          style="width:28px;height:28px;border-radius:6px;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1">+</button>
+        <button onclick="chartZoomOut()" title="축소"
+          style="width:28px;height:28px;border-radius:6px;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1">−</button>
+      </div>
     </div><!-- /chart-wrap -->
 
     <!-- 필터 패널 -->
@@ -268,36 +274,32 @@ window.openProfileEdit = () => {
   document.getElementById('profileHeight').value    = user.height    || '';
   document.getElementById('profileBirthYear').value = user.birthYear || '';
 
-  // 테두리 섹션
-  const unlockedBorders = user.unlockedBorders || [];
-  const borderSection = document.getElementById('profileBorderSection');
-  if (borderSection) {
-    if (unlockedBorders.length > 0) {
-      const currentBorder = user.selectedBorder || '';
-      borderSection.innerHTML = `<select class="input-field" id="profileBorderSelect">
-        <option value="">테두리 없음</option>
-        ${unlockedBorders.map(b => `<option value="${b}" ${b===currentBorder?'selected':''}>${BORDER_NAMES[b]||b}</option>`).join('')}
-      </select>`;
-    } else {
-      borderSection.innerHTML = '<p style="font-size:12px;color:var(--muted);padding:4px 0">업적 달성 시 잠금해제돼요</p>';
-    }
+
+  // 테두리 시각 그리드
+  const _unlBorders = user?.unlockedBorders || [];
+  const _curBorder = user?.selectedBorder || '';
+  window._selectedBorder = _curBorder;
+  const _bGrid = document.getElementById('profileBorderGrid');
+  if (_bGrid) {
+    const _slots = ['', ..._unlBorders];
+    _bGrid.innerHTML = _slots.map(b => `
+      <button class="border-slot ${b===_curBorder?'sel':''}" data-border="${b}" onclick="pickBorder('${b}')" title="${b?BORDER_NAMES[b]||b:'없음'}">
+        <div class="avatar-frame${b?' border-'+b:''}" style="--tier-color:#00e5aa;width:36px;height:36px">
+          <div class="border-slot-inner">👤</div>
+        </div>
+      </button>`).join('');
   }
 
-  // 칭호 섹션 (보유한 칭호만 표시)
+  // 칭호 — 항상 표시
   const earnedTitles = user.earnedTitles || [];
   const titleGroup = document.getElementById('profileTitleGroup');
   const titleSection = document.getElementById('profileTitleSection');
-  if (earnedTitles.length > 0) {
-    titleGroup.style.display = '';
-    const currentTitle = user.selectedTitle || '';
-    titleSection.innerHTML = `
-      <select class="input-field" id="profileTitleSelect">
-        <option value="">칭호 없음</option>
-        ${earnedTitles.map(t => `<option value="${t}" ${t===currentTitle?'selected':''}>${t}</option>`).join('')}
-      </select>`;
-  } else {
-    titleGroup.style.display = 'none';
-  }
+  if (titleGroup) titleGroup.style.display = '';
+  if (titleSection) titleSection.innerHTML = `
+    <select class="input-field" id="profileTitleSelect">
+      <option value="">칭호 없음</option>
+      ${earnedTitles.map(t => `<option value="${t}" ${t===user.selectedTitle?'selected':''}>${t}</option>`).join('')}
+    </select>`;
 
   // 비밀번호 섹션
   const hasPw = !!user.passwordHash;
@@ -327,6 +329,11 @@ window.pickProfileEmoji = e => {
     b.style.border = `2px solid ${isSelected ? 'var(--teal)' : 'transparent'}`;
   });
 };
+
+window.pickBorder = b => {
+  window._selectedBorder = b;
+  document.querySelectorAll('.border-slot').forEach(s => s.classList.toggle('sel', s.dataset.border === b));
+};
 window.saveProfileEdit = async () => {
   const custom    = document.getElementById('profileCustomEmoji').value.trim();
   const emoji     = custom || selectedProfileEmoji;
@@ -345,7 +352,7 @@ window.saveProfileEdit = async () => {
   const name = document.getElementById('profileName')?.value.trim() || user.name;
   if (!name) { showToast('이름을 입력해주세요','err'); return; }
   const selectedTitle = document.getElementById('profileTitleSelect')?.value || user.selectedTitle || null;
-  const selectedBorder = document.getElementById('profileBorderSelect')?.value ?? user.selectedBorder ?? null;
+  const selectedBorder = window._selectedBorder ?? user.selectedBorder ?? null;
   await updateUser(uid, { emoji, name, selectedTitle, selectedBorder, height, birthYear });
   user = { ...user, emoji, name, selectedTitle, selectedBorder, height, birthYear };
   setChipData(user, document.getElementById('chipName')?.style.color || '#00e5aa');
@@ -373,6 +380,14 @@ window.removeProfilePw = async () => {
 window.resetZoom = () => {
   const mc = document.getElementById('mainC');
   if (mc?._chartInstance) mc._chartInstance.resetZoom();
+};
+window.chartZoomIn = () => {
+  const mc = document.getElementById('mainC');
+  if (mc?._chartInstance) mc._chartInstance.zoom(1.5);
+};
+window.chartZoomOut = () => {
+  const mc = document.getElementById('mainC');
+  if (mc?._chartInstance) mc._chartInstance.zoom(0.67);
 };
 
 
@@ -425,7 +440,6 @@ function doRender() {
   const mainC=document.getElementById('mainC');
   if(mainC) {
     renderChart(records, user, mainC, null, S);
-    bindWheelScroll(mainC);
   }
 }
 
@@ -518,37 +532,4 @@ function bindToggles(stats) {
   statBinds.forEach(([id,key])=>{
     document.getElementById(id)?.addEventListener('change', async e=>{
       S={...S,[key]:e.target.checked};
-      await updateSettings({[key]:e.target.checked});
-      renderStats(stats);
-    });
-  });
-}
-
-render().catch(e=>{
-  document.getElementById('content').innerHTML=
-    `<div class="card"><p class="text-muted">오류: ${e.message}</p></div>`;
-});
-
-// 창 크기 바뀌면 두 차트 재렌더 (padding 재계산)
-let _resizeTimer;
-window.addEventListener('resize', () => {
-  clearTimeout(_resizeTimer);
-  _resizeTimer = setTimeout(() => {
-    if(document.getElementById('mainC')) doRender();
-  }, 200);
-});
-
-// 그래프 바깥 터치 시 툴팁 닫기
-document.addEventListener('touchstart', e => {
-  const c = document.getElementById('mainC');
-  if (c && !c.contains(e.target) && c._chartInstance) {
-    c._chartInstance.tooltip.setActiveElements([], {x:0,y:0});
-    c._chartInstance.update();
-  }
-}, {passive:true});
-
-</script>
-<script src="register-sw.js"></script>
-</body>
-</html>
-                                                                                             
+      awa

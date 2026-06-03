@@ -136,9 +136,9 @@ export const ACHIEVEMENTS = [
   { id:'weekly_30', cat:'weekly', name:'30주 감량',     desc:'전주 평균보다 낮아진 주 30회 누적',             score:80, icon:'🌌', legendary:true },
 
   // ── 주간 — 체중 입력 (6월 1일~) ─────────────────────────────────────
-  { id:'weekly_input_3', cat:'weekly', name:'주 3회 입력', desc:'한 주에 3회 이상 기록한 주 최초 달성',        score:10, icon:'✏️' },
-  { id:'weekly_input_5', cat:'weekly', name:'주 5회 입력', desc:'한 주에 5회 이상 기록한 주 최초 달성',        score:20, icon:'✏️' },
-  { id:'weekly_input_7', cat:'weekly', name:'주 7회 개근', desc:'한 주에 7회 모두 기록한 주 최초 달성',        score:30, icon:'🏆' },
+  { id:'weekly_input_3', cat:'weekly', name:'주 3회 입력', desc:'한 주에 3회 이상 체중을 기록한 주 최초 달성',        score:10, icon:'✏️' },
+  { id:'weekly_input_5', cat:'weekly', name:'주 5회 입력', desc:'한 주에 5회 이상 체중을 기록한 주 최초 달성',        score:20, icon:'✏️' },
+  { id:'weekly_input_7', cat:'weekly', name:'주 7회 개근', desc:'한 주에 7일 모두 체중을 기록한 주 최초 달성',        score:30, icon:'🏆' },
 
   // ── 주간 — 식단 기록 (6월 1일~) ─────────────────────────────────────
   { id:'diet_week_1',  cat:'weekly', name:'주간 식단 1회',  desc:'주 18끼 이상 기록한 주 1회 달성',            score:10, icon:'🥗' },
@@ -155,19 +155,19 @@ export const ACHIEVEMENTS = [
   { id:'ex_week_12', cat:'weekly', name:'주간 운동 12회', desc:'주 3회 이상 운동한 주 12회 누적',              score:50, icon:'💪', legendary:true },
 
   // ── 월간 — 체중 입력 (6월 1일~) ─────────────────────────────────────
-  { id:'monthly_10',    cat:'monthly', name:'월간 10회',    desc:'한 달에 10회 이상 기록한 달 달성',           score:10,  icon:'🗓️' },
-  { id:'monthly_20',    cat:'monthly', name:'월간 20회',    desc:'한 달에 20회 이상 기록한 달 달성',           score:20,  icon:'🗓️' },
-  { id:'monthly_20x2',  cat:'monthly', name:'2개월 달성',   desc:'월 20회+ 기록 2개월 누적',                   score:20,  icon:'🗓️' },
-  { id:'monthly_20x3',  cat:'monthly', name:'3개월 달성',   desc:'월 20회+ 기록 3개월 누적',                   score:30,  icon:'🗓️' },
-  { id:'monthly_20x4',  cat:'monthly', name:'4개월 달성',   desc:'월 20회+ 기록 4개월 누적',                   score:30,  icon:'🗓️' },
-  { id:'monthly_20x5',  cat:'monthly', name:'5개월 달성',   desc:'월 20회+ 기록 5개월 누적',                   score:40,  icon:'🗓️' },
-  { id:'monthly_20x6',  cat:'monthly', name:'6개월 달성',   desc:'월 20회+ 기록 6개월 누적',                   score:50,  icon:'📅' },
-  { id:'monthly_20x7',  cat:'monthly', name:'7개월 달성',   desc:'월 20회+ 기록 7개월 누적',                   score:50,  icon:'🗓️' },
-  { id:'monthly_20x8',  cat:'monthly', name:'8개월 달성',   desc:'월 20회+ 기록 8개월 누적',                   score:60,  icon:'🗓️' },
-  { id:'monthly_20x9',  cat:'monthly', name:'9개월 달성',   desc:'월 20회+ 기록 9개월 누적',                   score:60,  icon:'🍂' },
-  { id:'monthly_20x10', cat:'monthly', name:'10개월 달성',  desc:'월 20회+ 기록 10개월 누적',                  score:70,  icon:'🗓️' },
-  { id:'monthly_20x11', cat:'monthly', name:'11개월 달성',  desc:'월 20회+ 기록 11개월 누적',                  score:80,  icon:'🗓️' },
-  { id:'monthly_20x12', cat:'monthly', name:'12개월 달성',  desc:'월 20회+ 기록 12개월 누적',                  score:120, icon:'🎊', legendary:true },
+  { id:'monthly_10',    cat:'monthly', name:'월간 10회',    desc:'한 달에 10회 이상 체중을 기록한 달 달성',    score:10,  icon:'🗓️' },
+  { id:'monthly_20',    cat:'monthly', name:'월간 20회',    desc:'한 달에 20회 이상 체중을 기록한 달 달성',    score:20,  icon:'🗓️' },
+  { id:'monthly_20x2',  cat:'monthly', name:'2개월 달성',   desc:'월 20회+ 체중 기록 2개월 누적',                   score:20,  icon:'🗓️' },
+  { id:'monthly_20x3',  cat:'monthly', name:'3개월 달성',   desc:'월 20회+ 체중 기록 3개월 누적',                   score:30,  icon:'🗓️' },
+  { id:'monthly_20x4',  cat:'monthly', name:'4개월 달성',   desc:'월 20회+ 체중 기록 4개월 누적',                   score:30,  icon:'🗓️' },
+  { id:'monthly_20x5',  cat:'monthly', name:'5개월 달성',   desc:'월 20회+ 체중 기록 5개월 누적',                   score:40,  icon:'🗓️' },
+  { id:'monthly_20x6',  cat:'monthly', name:'6개월 달성',   desc:'월 20회+ 체중 기록 6개월 누적',                   score:50,  icon:'📅' },
+  { id:'monthly_20x7',  cat:'monthly', name:'7개월 달성',   desc:'월 20회+ 체중 기록 7개월 누적',                   score:50,  icon:'🗓️' },
+  { id:'monthly_20x8',  cat:'monthly', name:'8개월 달성',   desc:'월 20회+ 체중 기록 8개월 누적',                   score:60,  icon:'🗓️' },
+  { id:'monthly_20x9',  cat:'monthly', name:'9개월 달성',   desc:'월 20회+ 체중 기록 9개월 누적',                   score:60,  icon:'🍂' },
+  { id:'monthly_20x10', cat:'monthly', name:'10개월 달성',  desc:'월 20회+ 체중 기록 10개월 누적',                  score:70,  icon:'🗓️' },
+  { id:'monthly_20x11', cat:'monthly', name:'11개월 달성',  desc:'월 20회+ 체중 기록 11개월 누적',                  score:80,  icon:'🗓️' },
+  { id:'monthly_20x12', cat:'monthly', name:'12개월 달성',  desc:'월 20회+ 체중 기록 12개월 누적',                  score:120, icon:'🎊', legendary:true },
 
   // ── 월간 — 체중 감량 (1월 1일~) ─────────────────────────────────────
   { id:'monthly_dec_1', cat:'monthly', name:'월간 감량 1개월', desc:'15회+ 입력 월 기준 연속 감량 1개월',      score:40, icon:'📉' },

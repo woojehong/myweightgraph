@@ -112,12 +112,12 @@
       <div id="pEmojiGrid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-bottom:8px"></div>
       <input class="input-field" id="pCustomEmoji" placeholder="직접 입력 (예: 🦁)" maxlength="4">
     </div>
-    <div class="input-group mt-8" id="pTitleGroup" style="display:none">
+    <div class="input-group mt-8" id="pTitleGroup">
       <label class="input-label">칭호</label><div id="pTitleSection"></div>
     </div>
     <div class="input-group mt-8">
       <label class="input-label">테두리</label>
-      <div id="pBorderSection"><p style="font-size:12px;color:var(--muted);padding:4px 0">업적 달성 시 잠금해제돼요</p></div>
+      <div class="border-grid" id="pBorderGrid"></div>
     </div>
     <div class="input-group mt-8">
       <label class="input-label">이름</label>
@@ -434,19 +434,20 @@ window.openProfileEdit = () => {
   document.getElementById('pBirthYear').value    = user?.birthYear || '';
   document.getElementById('pName').value = user?.name || '';
 
-  // 테두리
-  const unlockedBorders = user?.unlockedBorders || [];
-  const pBorderSection = document.getElementById('pBorderSection');
-  if (pBorderSection) {
-    if (unlockedBorders.length > 0) {
-      const curBorder = user?.selectedBorder || '';
-      pBorderSection.innerHTML = `<select class="input-field" id="pBorderSelect">
-        <option value="">테두리 없음</option>
-        ${unlockedBorders.map(b => `<option value="${b}" ${b===curBorder?'selected':''}>${BORDER_NAMES[b]||b}</option>`).join('')}
-      </select>`;
-    } else {
-      pBorderSection.innerHTML = '<p style=\'font-size:12px;color:var(--muted);padding:4px 0\'>업적 달성 시 잠금해제돼요</p>';
-    }
+
+  // 테두리 시각 그리드
+  const _unlBorders = user?.unlockedBorders || [];
+  const _curBorder = user?.selectedBorder || '';
+  window._selectedBorder = _curBorder;
+  const _bGrid = document.getElementById('pBorderGrid');
+  if (_bGrid) {
+    const _slots = ['', ..._unlBorders];
+    _bGrid.innerHTML = _slots.map(b => `
+      <button class="border-slot ${b===_curBorder?'sel':''}" data-border="${b}" onclick="pickBorder('${b}')" title="${b?BORDER_NAMES[b]||b:'없음'}">
+        <div class="avatar-frame${b?' border-'+b:''}" style="--tier-color:#00e5aa;width:36px;height:36px">
+          <div class="border-slot-inner">👤</div>
+        </div>
+      </button>`).join('');
   }
 
   const titles = user?.earnedTitles || [];
@@ -466,6 +467,11 @@ window.pickPEmoji = e => {
     const s=b.textContent===e; b.style.background=s?'rgba(0,229,170,.15)':'transparent'; b.style.border=`2px solid ${s?'var(--teal)':'transparent'}`;
   });
 };
+
+window.pickBorder = b => {
+  window._selectedBorder = b;
+  document.querySelectorAll('.border-slot').forEach(s => s.classList.toggle('sel', s.dataset.border === b));
+};
 window.saveProfileEdit = async () => {
   const custom=document.getElementById('pCustomEmoji').value.trim();
   const emoji=custom||selEmoji;
@@ -480,7 +486,7 @@ window.saveProfileEdit = async () => {
   const name=document.getElementById('pName')?.value.trim()||user?.name;
   if(!name){showToast('이름을 입력해주세요','err');return;}
   const selectedTitle=document.getElementById('pTitleSelect')?.value||user?.selectedTitle||null;
-  const selectedBorder=document.getElementById('pBorderSelect')?.value??user?.selectedBorder??null;
+  const selectedBorder=window._selectedBorder??user?.selectedBorder??null;
   await updateUser(uid,{emoji,name,height,birthYear,selectedTitle,selectedBorder});
   user={...user,emoji,name,height,birthYear,selectedTitle,selectedBorder};
   setChipData(user, document.getElementById('chipName')?.style.color||'#00e5aa');
