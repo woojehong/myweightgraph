@@ -118,6 +118,15 @@ let tierSettings = null;
 async function init() {
   [allUsers, settings, tierSettings] = await Promise.all([getUsers(), getSettings(), getTierSettings()]);
   if (!tierSettings) tierSettings = { tiers: DEFAULT_TIERS };
+  // 저장된 tiers에 새 티어(에메랄드 등) 자동 머지
+  if (tierSettings.tiers) {
+    const sm = Object.fromEntries(tierSettings.tiers.map(t => [t.id, t]));
+    tierSettings.tiers = DEFAULT_TIERS.map(dt => ({
+      ...dt,
+      minScore: sm[dt.id]?.minScore ?? dt.minScore,
+      color:    sm[dt.id]?.color    ?? dt.color,
+    }));
+  }
   renderTabBar();
   renderApp();
 }
@@ -672,7 +681,15 @@ function achOptions(selected='') {
 function renderDataroom() {
   titleList    = tierSettings?.titles    || [];
   borderAssign = tierSettings?.borderAssign || {};
-  const tiers  = tierSettings?.tiers || DEFAULT_TIERS;
+
+  // DEFAULT_TIERS를 기준으로, 저장된 설정(minScore/color)을 덮어씌움
+  // → 새 티어(에메랄드 등)가 자동으로 포함됨
+  const savedMap = Object.fromEntries((tierSettings?.tiers || []).map(t => [t.id, t]));
+  const tiers = DEFAULT_TIERS.map(dt => ({
+    ...dt,
+    minScore: savedMap[dt.id]?.minScore ?? dt.minScore,
+    color:    savedMap[dt.id]?.color    ?? dt.color,
+  }));
   const sorted = [...tiers].sort((a,b) => b.minScore - a.minScore);
 
   // 티어 관리
