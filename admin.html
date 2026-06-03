@@ -572,6 +572,15 @@ window.toggleDR = id => {
   arrow.textContent  = open ? '▲ 접기' : '▼ 펼치기';
 };
 
+window.toggleCatDR = id => {
+  const body  = document.getElementById(`dr-body-${id}`);
+  const arrow = document.getElementById(`dr-arrow-${id}`);
+  if (!body) return;
+  const open = body.style.display === 'none';
+  body.style.display = open ? '' : 'none';
+  arrow.textContent  = open ? '▲' : '▼';
+};
+
 function achOptions(selected='') {
   return `<option value="">없음</option>` +
     LEGENDARY_ACHIEVEMENTS.map(a =>
@@ -642,31 +651,62 @@ function renderDataroom() {
     collapsibleSection('achreward', '🎖️ 업적별 보상',   buildAchRewardContent());
 }
 
+function achRewardRow(a) {
+  const curBorder = Object.entries(borderAssign).find(([,aId]) => aId === a.id)?.[0] || '';
+  const curTitle  = titleList.find(t => t.achId === a.id)?.id || '';
+  return `
+    <div style="display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04)">
+      <span style="font-size:16px;flex-shrink:0;margin-top:2px">${a.icon}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:700;line-height:1.3">
+          ${a.name}${a.legendary?' <span style="font-size:9px;color:#FFD700;font-weight:800">★ 위업</span>':''}
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px;line-height:1.4">${a.desc}</div>
+      </div>
+      <select class="input-field" style="padding:3px 5px;font-size:10px;width:130px;flex-shrink:0;margin-top:2px"
+        data-ach-border="${a.id}" onchange="saveAchBorder(this)">
+        <option value="">테두리 없음</option>
+        ${BORDER_LIST.map(b=>`<option value="${b.id}" ${curBorder===b.id?'selected':''}>${b.name}</option>`).join('')}
+      </select>
+      <select class="input-field" style="padding:3px 5px;font-size:10px;width:110px;flex-shrink:0;margin-top:2px"
+        data-ach-title="${a.id}" onchange="saveAchTitle(this)">
+        <option value="">칭호 없음</option>
+        ${titleList.map(t=>`<option value="${t.id}" ${curTitle===t.id?'selected':''}>${t.name}</option>`).join('')}
+      </select>
+    </div>`;
+}
+
+function subCollapsible(id, label, content, accent) {
+  const color = accent || 'rgba(255,255,255,.07)';
+  return `
+    <div style="border:1px solid ${color};border-radius:8px;margin-bottom:6px;overflow:hidden">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;cursor:pointer;background:rgba(255,255,255,.025)"
+           onclick="toggleCatDR('${id}')">
+        <span style="font-size:12px;font-weight:700;color:var(--text)">${label}</span>
+        <span id="dr-arrow-${id}" style="color:var(--muted);font-size:11px">▼</span>
+      </div>
+      <div id="dr-body-${id}" style="display:none;padding:0 12px 8px">${content}</div>
+    </div>`;
+}
+
 function buildAchRewardContent() {
   let html = `<p style="font-size:12px;color:var(--muted);margin-bottom:12px">각 업적에 테두리·칭호 보상을 배정하세요. 달성 시 자동 잠금해제됩니다.</p>`;
+
+  // ── 위업 모아보기 ──────────────────────────────────────────────────
+  const legendaryAchs = ACHIEVEMENTS.filter(a => a.legendary);
+  let legHtml = `<p style="font-size:11px;color:var(--muted);margin:6px 0 4px">전체 카테고리의 위업만 모아서 보는 뷰예요. 보상 설정은 여기서도 가능해요.</p>`;
+  legendaryAchs.forEach(a => { legHtml += achRewardRow(a); });
+  html += subCollapsible('achleg', '⭐ 위업 모아보기', legHtml, 'rgba(255,215,0,.25)');
+
+  // ── 카테고리별 ─────────────────────────────────────────────────────
   ACHIEVEMENT_CATEGORIES.forEach(cat => {
     const catAchs = ACHIEVEMENTS.filter(a => a.cat === cat.id);
     if (!catAchs.length) return;
-    html += `<div style="font-size:11px;font-weight:700;color:var(--muted);margin:10px 0 5px;text-transform:uppercase;letter-spacing:.04em">${cat.icon} ${cat.label}</div>`;
-    catAchs.forEach(a => {
-      const curBorder = Object.entries(borderAssign).find(([,aId]) => aId === a.id)?.[0] || '';
-      const curTitle  = titleList.find(t => t.achId === a.id)?.id || '';
-      html += `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04)">
-        <span style="font-size:16px;flex-shrink:0">${a.icon}</span>
-        <span style="flex:1;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.name}${a.legendary?' <span style="font-size:9px;color:#FFD700;font-weight:700">(위업)</span>':''}</span>
-        <select class="input-field" style="padding:3px 5px;font-size:10px;width:130px;flex-shrink:0"
-          data-ach-border="${a.id}" onchange="saveAchBorder(this)">
-          <option value="">테두리 없음</option>
-          ${BORDER_LIST.map(b=>`<option value="${b.id}" ${curBorder===b.id?'selected':''}>${b.name}</option>`).join('')}
-        </select>
-        <select class="input-field" style="padding:3px 5px;font-size:10px;width:110px;flex-shrink:0"
-          data-ach-title="${a.id}" onchange="saveAchTitle(this)">
-          <option value="">칭호 없음</option>
-          ${titleList.map(t=>`<option value="${t.id}" ${curTitle===t.id?'selected':''}>${t.name}</option>`).join('')}
-        </select>
-      </div>`;
-    });
+    let catHtml = '';
+    catAchs.forEach(a => { catHtml += achRewardRow(a); });
+    html += subCollapsible(`achcat-${cat.id}`, `${cat.icon} ${cat.label} (${catAchs.length})`, catHtml);
   });
+
   return html;
 }
 
