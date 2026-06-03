@@ -118,6 +118,10 @@
       <div class="input-group"><label class="input-label">출생연도 *</label>
         <input class="input-field" id="pBirthYear" type="number" placeholder="1990" min="1930" max="2010"></div>
     </div>
+    <div class="input-group mt-8">
+      <label class="input-label">테두리</label>
+      <div id="pBorderSection"><p style="font-size:12px;color:var(--muted);padding:4px 0">업적 달성 시 잠금해제돼요</p></div>
+    </div>
     <div class="input-group mt-8" id="pTitleGroup" style="display:none">
       <label class="input-label">칭호</label><div id="pTitleSection"></div>
     </div>
@@ -143,7 +147,16 @@ const uid = new URLSearchParams(location.search).get('user') || localStorage.get
 if (!uid) location.href='index.html';
 window.doLogout = () => { clearAuth(); localStorage.removeItem('uid'); location.href='index.html'; };
 
-const EMOJIS=['⚖️','💪','🔥','👑','🏃','🌟','🎯','😤','🦁','🐯','🐻','🐺','🦊','🐸','🐼','🦋','🍎','🥗','🥑','🎽','🏋️','🚴','🧘','💎','🌈','⚡','🎖️','🏆','🌙','☀️','💫','✨'];
+const BORDER_NAMES = {
+  'pulse-glow':'펄스 글로우','rotating-gradient':'회전 그라데이션','rainbow':'레인보우',
+  'shimmer':'샤이머','flame':'화염','ice':'얼음','lightning':'번개','neon':'네온',
+  'energy-wave':'에너지 파동','gold-shine':'골드 샤인','platinum':'플래티넘',
+  'aurora':'오로라','double-ring':'더블 링','dashed-spin':'대시 회전','corona':'코로나',
+  'gradient-shift':'그라데이션 시프트','starlight':'별빛','hologram':'홀로그램',
+  'diamond':'다이아몬드','challenger':'챌린저','plasma':'플라즈마','magma':'마그마',
+  'void-rift':'보이드 리프트','matrix':'매트릭스','cosmic':'코스믹','supernova':'슈퍼노바',
+};
+const EMOJIS=['⚖️','💪','🔥','👑','🏃','🌟','🎯','🦁','🐯','🦊','🐼','🦋','🍎','🥗','🏋️','🚴','💎','⚡','🎖️','🏆','✨'];
 let selEmoji='';
 const DAY_KO=['일','월','화','수','목','금','토'];
 let existingMap={}, allRecords=[], user=null;
@@ -412,6 +425,21 @@ window.openProfileEdit = () => {
   document.getElementById('pCustomEmoji').value  = '';
   document.getElementById('pHeight').value       = user?.height    || '';
   document.getElementById('pBirthYear').value    = user?.birthYear || '';
+  // 테두리
+  const unlockedBorders = user?.unlockedBorders || [];
+  const pBorderSection = document.getElementById('pBorderSection');
+  if (pBorderSection) {
+    if (unlockedBorders.length > 0) {
+      const curBorder = user?.selectedBorder || '';
+      pBorderSection.innerHTML = `<select class="input-field" id="pBorderSelect">
+        <option value="">테두리 없음</option>
+        ${unlockedBorders.map(b => `<option value="${b}" ${b===curBorder?'selected':''}>${BORDER_NAMES[b]||b}</option>`).join('')}
+      </select>`;
+    } else {
+      pBorderSection.innerHTML = '<p style=\'font-size:12px;color:var(--muted);padding:4px 0\'>업적 달성 시 잠금해제돼요</p>';
+    }
+  }
+
   const titles = user?.earnedTitles || [];
   const tg = document.getElementById('pTitleGroup');
   if(titles.length){ tg.style.display=''; document.getElementById('pTitleSection').innerHTML=`<select class="input-field" id="pTitleSelect"><option value="">칭호 없음</option>${titles.map(t=>`<option value="${t}" ${t===user?.selectedTitle?'selected':''}>${t}</option>`).join('')}</select>`; }
@@ -441,8 +469,9 @@ window.saveProfileEdit = async () => {
   if(pw&&pw!==pwC){showToast('비밀번호가 일치하지 않아요','err');return;}
   if(pw&&!/^\d{4}$/.test(pw)){showToast('숫자 4자리로 입력해주세요','err');return;}
   const selectedTitle=document.getElementById('pTitleSelect')?.value||user?.selectedTitle||null;
-  await updateUser(uid,{emoji,height,birthYear,selectedTitle});
-  user={...user,emoji,height,birthYear,selectedTitle};
+  const selectedBorder=document.getElementById('pBorderSelect')?.value??user?.selectedBorder??null;
+  await updateUser(uid,{emoji,height,birthYear,selectedTitle,selectedBorder});
+  user={...user,emoji,height,birthYear,selectedTitle,selectedBorder};
   setChipData(user, document.getElementById('chipName')?.style.color||'#00e5aa');
   if(pw){const h=await setUserPassword(uid,pw);saveAuth(uid,h);user.passwordHash=h;}
   closeProfileEdit();showToast('프로필 변경됨 ✓');

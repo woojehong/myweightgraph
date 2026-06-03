@@ -195,6 +195,10 @@
       <div class="input-group"><label class="input-label">출생연도 *</label>
         <input class="input-field" id="pBirthYear" type="number" placeholder="1990"></div>
     </div>
+    <div class="input-group mt-8">
+      <label class="input-label">테두리</label>
+      <div id="pBorderSection"><p style="font-size:12px;color:var(--muted);padding:4px 0">업적 달성 시 잠금해제돼요</p></div>
+    </div>
     <div class="input-group mt-8" id="pTitleGroup" style="display:none">
       <label class="input-label">칭호</label><div id="pTitleSection"></div>
     </div>
@@ -240,7 +244,7 @@ const BORDER_NAMES = {
   'gradient-shift':'그라데이션 시프트','starlight':'별빛','hologram':'홀로그램',
   'diamond':'다이아몬드','challenger':'챌린저',
 };
-const EMOJIS = ['⚖️','💪','🔥','👑','🏃','🌟','🎯','😤','🦁','🐯','🐻','🐺','🦊','🐸','🐼','🦋','🍎','🥗','🥑','🎽','🏋️','🚴','🧘','💎','🌈','⚡','🎖️','🏆','🌙','☀️','💫','✨'];
+const EMOJIS = ['⚖️','💪','🔥','👑','🏃','🌟','🎯','🦁','🐯','🦊','🐼','🦋','🍎','🥗','🏋️','🚴','💎','⚡','🎖️','🏆','✨'];
 let selEmoji = '';
 
 window.doLogout = () => { clearAuth(); localStorage.removeItem('uid'); location.href = 'index.html'; };
@@ -354,7 +358,20 @@ async function render() {
   const tier     = getTierForScore(totalScore, tiers);
   const nextTier = [...tiers].sort((a,b) => a.minScore - b.minScore).find(t => t.minScore > totalScore);
 
-  if (user.totalScore !== totalScore) await updateUser(uid, { totalScore });
+  // 잠금해제 테두리/칭호 계산 및 저장
+  const unlockedBorders = Object.entries(tierData?.borderAssign || {})
+    .filter(([, achId]) => validEarned.has(achId)).map(([bId]) => bId);
+  const newTitles = (tierData?.titles || [])
+    .filter(t => t.achId && validEarned.has(t.achId)).map(t => t.name);
+  const mergedTitles = [...new Set([...(user.earnedTitles || []), ...newTitles])];
+
+  const updates = {};
+  if (user.totalScore !== totalScore) updates.totalScore = totalScore;
+  if ([...unlockedBorders].sort().join() !== [...(user.unlockedBorders||[])].sort().join())
+    updates.unlockedBorders = unlockedBorders;
+  if (mergedTitles.join() !== [...(user.earnedTitles||[])].join())
+    updates.earnedTitles = mergedTitles;
+  if (Object.keys(updates).length) await updateUser(uid, updates);
 
   _validEarned = validEarned;
   _storedMap   = storedMap;
@@ -567,6 +584,21 @@ window.openProfileEdit = () => {
   document.getElementById('pCustomEmoji').value  = '';
   document.getElementById('pHeight').value       = _user?.height    || '';
   document.getElementById('pBirthYear').value    = _user?.birthYear || '';
+  // 테두리 섹션
+  const unlockedBorders = _user?.unlockedBorders || [];
+  const pBorderSection = document.getElementById('pBorderSection');
+  if (pBorderSection) {
+    if (unlockedBorders.length > 0) {
+      const curBorder = _user?.selectedBorder || '';
+      pBorderSection.innerHTML = `<select class="input-field" id="pBorderSelect">
+        <option value="">테두리 없음</option>
+        ${unlockedBorders.map(b=>`<option value="${b}" ${b===curBorder?'selected':''}>${BORDER_NAMES[b]||b}</option>`).join('')}
+      </select>`;
+    } else {
+      pBorderSection.innerHTML = '<p style="font-size:12px;color:var(--muted);padding:4px 0">업적 달성 시 잠금해제돼요</p>';
+    }
+  }
+
   const titles = _user?.earnedTitles || [];
   const tg = document.getElementById('pTitleGroup');
   if (titles.length) {
@@ -610,9 +642,10 @@ window.saveProfileEdit = async () => {
   const pwC = document.getElementById('pNewPwC')?.value || '';
   if (pw && pw !== pwC) { showToast('비밀번호가 일치하지 않아요','err'); return; }
   if (pw && !/^\d{4}$/.test(pw)) { showToast('숫자 4자리로 입력해주세요','err'); return; }
-  const selectedTitle = document.getElementById('pTitleSelect')?.value || _user?.selectedTitle || null;
-  await updateUser(uid, { emoji, height, birthYear, selectedTitle });
-  _user = { ..._user, emoji, height, birthYear, selectedTitle };
+  const selectedTitle  = document.getElementById('pTitleSelect')?.value  || _user?.selectedTitle  || null;
+  const selectedBorder = document.getElementById('pBorderSelect')?.value ?? _user?.selectedBorder ?? null;
+  await updateUser(uid, { emoji, height, birthYear, selectedTitle, selectedBorder });
+  _user = { ..._user, emoji, height, birthYear, selectedTitle, selectedBorder };
   setChipData(_user, document.getElementById('chipName')?.style.color || '#00e5aa');
   if (pw) { const h = await setUserPassword(uid, pw); saveAuth(uid, h); _user.passwordHash = h; }
   closeProfileEdit();

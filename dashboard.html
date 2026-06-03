@@ -238,12 +238,16 @@ async function render() {
 }
 
 // ── 프로필 이모지 수정 ────────────────────────────────────────────────
-const EMOJIS = [
-  '⚖️','💪','🔥','👑','🏃','🌟','🎯','😤',
-  '🦁','🐯','🐻','🐺','🦊','🐸','🐼','🦋',
-  '🍎','🥗','🥑','🎽','🏋️','🚴','🧘','💎',
-  '🌈','⚡','🎖️','🏆','🌙','☀️','💫','✨',
-];
+const BORDER_NAMES = {
+  'pulse-glow':'펄스 글로우','rotating-gradient':'회전 그라데이션','rainbow':'레인보우',
+  'shimmer':'샤이머','flame':'화염','ice':'얼음','lightning':'번개','neon':'네온',
+  'energy-wave':'에너지 파동','gold-shine':'골드 샤인','platinum':'플래티넘',
+  'aurora':'오로라','double-ring':'더블 링','dashed-spin':'대시 회전','corona':'코로나',
+  'gradient-shift':'그라데이션 시프트','starlight':'별빛','hologram':'홀로그램',
+  'diamond':'다이아몬드','challenger':'챌린저','plasma':'플라즈마','magma':'마그마',
+  'void-rift':'보이드 리프트','matrix':'매트릭스','cosmic':'코스믹','supernova':'슈퍼노바',
+};
+const EMOJIS = ['⚖️','💪','🔥','👑','🏃','🌟','🎯','🦁','🐯','🦊','🐼','🦋','🍎','🥗','🏋️','🚴','💎','⚡','🎖️','🏆','✨'];
 let selectedProfileEmoji = '';
 
 window.openProfileEdit = () => {
@@ -256,6 +260,21 @@ window.openProfileEdit = () => {
   document.getElementById('profileCustomEmoji').value = '';
   document.getElementById('profileHeight').value    = user.height    || '';
   document.getElementById('profileBirthYear').value = user.birthYear || '';
+
+  // 테두리 섹션
+  const unlockedBorders = user.unlockedBorders || [];
+  const borderSection = document.getElementById('profileBorderSection');
+  if (borderSection) {
+    if (unlockedBorders.length > 0) {
+      const currentBorder = user.selectedBorder || '';
+      borderSection.innerHTML = `<select class="input-field" id="profileBorderSelect">
+        <option value="">테두리 없음</option>
+        ${unlockedBorders.map(b => `<option value="${b}" ${b===currentBorder?'selected':''}>${BORDER_NAMES[b]||b}</option>`).join('')}
+      </select>`;
+    } else {
+      borderSection.innerHTML = '<p style="font-size:12px;color:var(--muted);padding:4px 0">업적 달성 시 잠금해제돼요</p>';
+    }
+  }
 
   // 칭호 섹션 (보유한 칭호만 표시)
   const earnedTitles = user.earnedTitles || [];
@@ -317,8 +336,9 @@ window.saveProfileEdit = async () => {
   if (pw && !/^\d{4}$/.test(pw)) { showToast('숫자 4자리로 입력해주세요','err'); return; }
 
   const selectedTitle = document.getElementById('profileTitleSelect')?.value || user.selectedTitle || null;
-  await updateUser(uid, { emoji, selectedTitle, height, birthYear });
-  user = { ...user, emoji, selectedTitle, height, birthYear };
+  const selectedBorder = document.getElementById('profileBorderSelect')?.value ?? user.selectedBorder ?? null;
+  await updateUser(uid, { emoji, selectedTitle, selectedBorder, height, birthYear });
+  user = { ...user, emoji, selectedTitle, selectedBorder, height, birthYear };
   setChipData(user, document.getElementById('chipName')?.style.color || '#00e5aa');
 
   if (pw) {
