@@ -532,4 +532,17 @@ function bindToggles(stats) {
   statBinds.forEach(([id,key])=>{
     document.getElementById(id)?.addEventListener('change', async e=>{
       S={...S,[key]:e.target.checked};
-      awa
+      await updateSettings({[key]:e.target.checked});
+      renderStats(stats);
+    });
+  });
+}
+
+render().catch(e => {
+  document.getElementById('content').innerHTML =
+    `<div style="padding:20px;color:var(--muted)">오류: ${e.message}</div>`;
+});
+</script>
+<script src="register-sw.js"></script>
+</body>
+</html>
