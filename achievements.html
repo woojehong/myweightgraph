@@ -176,7 +176,7 @@
       </div>
       <span style="font-size:10px;color:var(--muted)">✏️</span>
     </div>
-    <button class="btn btn-ghost btn-sm" id="logoutBtn" onclick="doLogout()">로그아웃</button>
+    <button class="btn btn-ghost btn-sm hide-mobile" id="logoutBtn" onclick="doLogout()">로그아웃</button>
   </div>
 </header>
 
@@ -186,21 +186,25 @@
     <h3>✏️ 프로필 수정</h3>
     <div class="input-group">
       <label class="input-label">이모지</label>
-      <div id="pEmojiGrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:8px"></div>
+      <div id="pEmojiGrid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-bottom:8px"></div>
       <input class="input-field" id="pCustomEmoji" placeholder="직접 입력 (예: 🦁)" maxlength="4">
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
       <div class="input-group"><label class="input-label">키 (cm) *</label>
         <input class="input-field" id="pHeight" type="number" placeholder="175"></div>
       <div class="input-group"><label class="input-label">출생연도 *</label>
         <input class="input-field" id="pBirthYear" type="number" placeholder="1990"></div>
     </div>
+    <div class="input-group mt-8" id="pTitleGroup" style="display:none">
+      <label class="input-label">칭호</label><div id="pTitleSection"></div>
+    </div>
     <div class="input-group mt-8">
       <label class="input-label">테두리</label>
       <div id="pBorderSection"><p style="font-size:12px;color:var(--muted);padding:4px 0">업적 달성 시 잠금해제돼요</p></div>
     </div>
-    <div class="input-group mt-8" id="pTitleGroup" style="display:none">
-      <label class="input-label">칭호</label><div id="pTitleSection"></div>
+    <div class="input-group mt-8">
+      <label class="input-label">이름</label>
+      <input class="input-field" id="pName" placeholder="이름" maxlength="12">
     </div>
     <div class="input-group mt-8">
       <label class="input-label" id="pPwLabel">비밀번호 변경</label>
@@ -267,8 +271,11 @@ function buildNav() {
 function setChipData(u, tierColor) {
   const tc = tierColor || '#00e5aa';
   document.getElementById('chipEmoji').textContent = u.emoji || '⚖️';
-  document.getElementById('chipName').textContent  = u.name;
+  const displayName = (u.selectedTitle ? u.selectedTitle + ' ' : '') + u.name;
+  document.getElementById('chipName').textContent  = displayName;
   document.getElementById('chipName').style.color  = tc;
+  const chipTitleEl = document.getElementById('chipTitle');
+  if (chipTitleEl) chipTitleEl.style.display = 'none';
   const wrap = document.getElementById('chipAvatarWrap');
   if (wrap) { wrap.className = `avatar-frame chip-avatar${u.selectedBorder?' border-'+u.selectedBorder:''}`; wrap.style.setProperty('--tier-color', tc); }
   const titleEl = document.getElementById('chipTitle');
@@ -584,6 +591,8 @@ window.openProfileEdit = () => {
   document.getElementById('pCustomEmoji').value  = '';
   document.getElementById('pHeight').value       = _user?.height    || '';
   document.getElementById('pBirthYear').value    = _user?.birthYear || '';
+  document.getElementById('pName').value = _user?.name || '';
+
   // 테두리 섹션
   const unlockedBorders = _user?.unlockedBorders || [];
   const pBorderSection = document.getElementById('pBorderSection');
@@ -632,8 +641,11 @@ window.pickPEmoji = e => {
 };
 
 window.saveProfileEdit = async () => {
+window.saveProfileEdit = async () => {
   const custom    = document.getElementById('pCustomEmoji').value.trim();
   const emoji     = custom || selEmoji;
+  const name      = document.getElementById('pName')?.value.trim() || _user?.name;
+  if (!name)      { showToast('이름을 입력해주세요','err'); return; }
   const height    = parseInt(document.getElementById('pHeight').value)    || null;
   const birthYear = parseInt(document.getElementById('pBirthYear').value) || null;
   if (!height)    { showToast('키를 입력해주세요','err'); return; }
@@ -644,8 +656,8 @@ window.saveProfileEdit = async () => {
   if (pw && !/^\d{4}$/.test(pw)) { showToast('숫자 4자리로 입력해주세요','err'); return; }
   const selectedTitle  = document.getElementById('pTitleSelect')?.value  || _user?.selectedTitle  || null;
   const selectedBorder = document.getElementById('pBorderSelect')?.value ?? _user?.selectedBorder ?? null;
-  await updateUser(uid, { emoji, height, birthYear, selectedTitle, selectedBorder });
-  _user = { ..._user, emoji, height, birthYear, selectedTitle, selectedBorder };
+  await updateUser(uid, { emoji, name, height, birthYear, selectedTitle, selectedBorder });
+  _user = { ..._user, emoji, name, height, birthYear, selectedTitle, selectedBorder };
   setChipData(_user, document.getElementById('chipName')?.style.color || '#00e5aa');
   if (pw) { const h = await setUserPassword(uid, pw); saveAuth(uid, h); _user.passwordHash = h; }
   closeProfileEdit();

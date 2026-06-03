@@ -54,7 +54,7 @@
       </div>
       <span id="chipEdit" style="font-size:10px;color:var(--muted)"></span>
     </div>
-    <button class="btn btn-ghost btn-sm" id="logoutBtn" style="display:none" onclick="doLogout()">로그아웃</button>
+    <button class="btn btn-ghost btn-sm hide-mobile" id="logoutBtn" style="display:none" onclick="doLogout()">로그아웃</button>
   </div>
 </header>
 
@@ -66,12 +66,30 @@
     <!-- 이모지 -->
     <div class="input-group">
       <label class="input-label">이모지</label>
-      <div id="profileEmojiGrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:8px"></div>
+      <div id="profileEmojiGrid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-bottom:8px"></div>
       <input class="input-field" id="profileCustomEmoji" placeholder="직접 입력 (예: 🦁)" maxlength="4">
     </div>
 
+    <!-- 칭호 -->
+    <div class="input-group mt-8" id="profileTitleGroup" style="display:none">
+      <label class="input-label">칭호</label>
+      <div id="profileTitleSection"></div>
+    </div>
+
+    <!-- 테두리 -->
+    <div class="input-group mt-8">
+      <label class="input-label">테두리</label>
+      <div id="profileBorderSection"><p style="font-size:12px;color:var(--muted);padding:4px 0">업적 달성 시 잠금해제돼요</p></div>
+    </div>
+
+    <!-- 이름 -->
+    <div class="input-group mt-8">
+      <label class="input-label">이름</label>
+      <input class="input-field" id="profileName" placeholder="이름" maxlength="12">
+    </div>
+
     <!-- 키 / 생년월일 -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
       <div class="input-group">
         <label class="input-label">키 (cm) *</label>
         <input class="input-field" id="profileHeight" type="number" placeholder="175" min="100" max="250">
@@ -80,18 +98,6 @@
         <label class="input-label">출생연도 *</label>
         <input class="input-field" id="profileBirthYear" type="number" placeholder="1990" min="1930" max="2010">
       </div>
-    </div>
-
-    <!-- 테두리 -->
-    <div class="input-group mt-12">
-      <label class="input-label">테두리</label>
-      <div id="profileBorderSection" style="font-size:12px;color:var(--muted);padding:8px 0">업적 달성 시 잠금해제돼요</div>
-    </div>
-
-    <!-- 칭호 -->
-    <div class="input-group mt-8" id="profileTitleGroup" style="display:none">
-      <label class="input-label">칭호</label>
-      <div id="profileTitleSection"></div>
     </div>
 
     <!-- 비밀번호 -->
@@ -258,6 +264,7 @@ window.openProfileEdit = () => {
     `<button style="font-size:22px;padding:4px;border-radius:7px;cursor:pointer;background:${e===selectedProfileEmoji?'rgba(0,229,170,.15)':'transparent'};border:2px solid ${e===selectedProfileEmoji?'var(--teal)':'transparent'};transition:all .15s" onclick="pickProfileEmoji('${e}')">${e}</button>`
   ).join('');
   document.getElementById('profileCustomEmoji').value = '';
+  document.getElementById('profileName').value      = user.name     || '';
   document.getElementById('profileHeight').value    = user.height    || '';
   document.getElementById('profileBirthYear').value = user.birthYear || '';
 
@@ -335,10 +342,12 @@ window.saveProfileEdit = async () => {
   if (pw && pw !== pwC) { showToast('비밀번호가 일치하지 않아요','err'); return; }
   if (pw && !/^\d{4}$/.test(pw)) { showToast('숫자 4자리로 입력해주세요','err'); return; }
 
+  const name = document.getElementById('profileName')?.value.trim() || user.name;
+  if (!name) { showToast('이름을 입력해주세요','err'); return; }
   const selectedTitle = document.getElementById('profileTitleSelect')?.value || user.selectedTitle || null;
   const selectedBorder = document.getElementById('profileBorderSelect')?.value ?? user.selectedBorder ?? null;
-  await updateUser(uid, { emoji, selectedTitle, selectedBorder, height, birthYear });
-  user = { ...user, emoji, selectedTitle, selectedBorder, height, birthYear };
+  await updateUser(uid, { emoji, name, selectedTitle, selectedBorder, height, birthYear });
+  user = { ...user, emoji, name, selectedTitle, selectedBorder, height, birthYear };
   setChipData(user, document.getElementById('chipName')?.style.color || '#00e5aa');
 
   if (pw) {
@@ -542,3 +551,4 @@ document.addEventListener('touchstart', e => {
 <script src="register-sw.js"></script>
 </body>
 </html>
+                                                                                             
