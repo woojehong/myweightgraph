@@ -1,7 +1,8 @@
 import { initializeApp }                              from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, doc, setDoc,
          getDoc, getDocs, deleteDoc, query,
-         orderBy, writeBatch, serverTimestamp }        from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+         orderBy, writeBatch, serverTimestamp,
+         deleteField }                                 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword,
          signOut, onAuthStateChanged }                 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { firebaseConfig, DEFAULT_GOAL }               from "./firebase-config.js";
@@ -135,6 +136,26 @@ export async function saveEarnedAchievement(userId, achievementId, data) {
 export async function invalidateAchievement(userId, achievementId, invalidated) {
   await setDoc(doc(db, 'achievements', userId, 'earned', achievementId),
     { invalidated }, { merge: true });
+}
+
+// ── 관리자 업적 강제 설정 ─────────────────────────────────────────────
+// override: 'earned' | 'not_earned' | null (null이면 필드 삭제 → 시스템 자동)
+export async function saveAdminOverride(userId, achievementId, override, earnedAt) {
+  const userRef = doc(db, 'users', userId);
+  if (override === null) {
+    await setDoc(userRef, {
+      adminOverrides: { [achievementId]: deleteField() }
+    }, { merge: true });
+  } else {
+    await setDoc(userRef, {
+      adminOverrides: {
+        [achievementId]: {
+          override,
+          earnedAt: earnedAt || null,
+        }
+      }
+    }, { merge: true });
+  }
 }
 
 // ── 티어 설정 ─────────────────────────────────────────────────────────

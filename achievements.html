@@ -223,7 +223,8 @@ import { getUser, getWeights, getEarnedAchievements, saveEarnedAchievement,
          updateUser, getTierSettings, setUserPassword } from './js/db.js';
 import { clearAuth, saveAuth } from './js/auth.js';
 import { ACHIEVEMENTS, ACHIEVEMENT_CATEGORIES, calculateEarnedIds, calcTotalScore,
-         getTierForScore, DEFAULT_TIERS, calculateProgress } from './js/achievements.js';
+         getTierForScore, DEFAULT_TIERS, calculateProgress,
+         calculateMetaEarnedIds } from './js/achievements.js';
 
 const uid = new URLSearchParams(location.search).get('user') || localStorage.getItem('uid');
 if (!uid) location.href = 'index.html';
@@ -306,18 +307,45 @@ async function render() {
   const tiers      = tierData?.tiers || DEFAULT_TIERS;
   const storedMap  = Object.fromEntries(storedRaw.map(a => [a.id, a]));
   const alreadyInDb = new Set(storedRaw.map(a => a.id));
-  const shouldEarn = calculateEarnedIds(records, user);
-  const newlyEarned = [...shouldEarn].filter(id => !alreadyInDb.has(id));
+  const adminOverrides = user.adminOverrides || {};
 
+  // 기본 업적 계산
+  const shouldEarn = calculateEarnedIds(records, user);
+
+  // 관리자 강제 적용
+  const baseEarned = new Set([
+    ...storedRaw.filter(a => !a.invalidated && shouldEarn.has(a.id)).map(a => a.id),
+    ...[...shouldEarn].filter(id => !alreadyInDb.has(id))
+  ]);
+  Object.entries(adminOverrides).forEach(([achId, ov]) => {
+    if (!ov) return;
+    if (ov.override === 'earned')     baseEarned.add(achId);
+    if (ov.override === 'not_earned') baseEarned.delete(achId);
+  });
+
+  // 메타 업적 계산 (등급·업적 개수)
+  const baseScore = calcTotalScore(baseEarned);
+  const metaEarned = calculateMetaEarnedIds(baseEarned, baseScore, tiers);
+  // 메타 업적도 관리자 강제 적용
+  Object.entries(adminOverrides).forEach(([achId, ov]) => {
+    if (!ov) return;
+    if (ov.override === 'earned')     metaEarned.add(achId);
+    if (ov.override === 'not_earned') metaEarned.delete(achId);
+  });
+
+  const validEarned = new Set([...baseEarned, ...metaEarned]);
+
+  // 새로 달성된 업적 DB 저장
+  const newlyEarned = [...validEarned].filter(id => !alreadyInDb.has(id));
   await Promise.all(newlyEarned.map(id => {
     const ach = ACHIEVEMENTS.find(a => a.id === id);
-    return saveEarnedAchievement(uid, id, { score: ach?.score || 0, invalidated: false });
+    const ov  = adminOverrides[id];
+    return saveEarnedAchievement(uid, id, {
+      score: ach?.score || 0,
+      invalidated: false,
+      earnedAt: ov?.earnedAt || undefined,
+    });
   }));
-
-  const validEarned = new Set([
-    ...storedRaw.filter(a => !a.invalidated && shouldEarn.has(a.id)).map(a => a.id),
-    ...newlyEarned
-  ]);
 
   const totalScore = calcTotalScore(validEarned);
   const _achTier   = getTierForScore(totalScore, tiers);
