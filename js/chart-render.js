@@ -66,7 +66,8 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
   const wkAvg = new Map();
   byWeek.forEach((wp, wk) => {
     if (wp.length < 4) return;
-    wkAvg.set(wk, { avg: +(wp.reduce((s, p) => s + p.w, 0) / wp.length).toFixed(2), label: wkLabel(wk), x: Math.max(...wp.map(p => p.t)) });
+    // x 위치: 해당 주의 토요일 (주 전체 입력 완료 시 위치 예상)
+    wkAvg.set(wk, { avg: +(wp.reduce((s, p) => s + p.w, 0) / wp.length).toFixed(2), label: wkLabel(wk), x: wk + 6 * 86400000 });
   });
   const sortedWks = [...byWeek.keys()].sort((a, b) => a - b);
   const weeklyData = [];
@@ -81,13 +82,12 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
   const barMax = weeklyData.length ? Math.max(...weeklyData.map(d => Math.abs(d.y)), 0.1) : 1;
 
   // ── 레이아웃 상수 ────────────────────────────────────────────────────
-  const CELL_H       = 18;   // 동적 셀 높이 최대값 (레이아웃 여백 할당용)
+  const CELL_H       = 18;
   const WEEKLY_BAR_H = 104;
   const SUB_GAP      = 6;
-  const X_AXIS_H     = 28;
   const BOTTOM_PAD   = 10;
 
-  let BAR_AREA_H = BOTTOM_PAD + X_AXIS_H;
+  let BAR_AREA_H = BOTTOM_PAD;
   if (hasWeeklyBar)      BAR_AREA_H += WEEKLY_BAR_H + SUB_GAP;
   if (showDietGraph)     BAR_AREA_H += 3 * CELL_H + SUB_GAP;
   if (showExerciseGraph) BAR_AREA_H += CELL_H + SUB_GAP;
@@ -181,10 +181,10 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
     const midY     = (top + baseline) / 2;
 
     const xPos = weeklyData.map(d => x.getPixelForValue(d.x));
-    let barW = 14;
+    let barW = 24;
     if (xPos.length > 1) {
       const gaps = xPos.slice(1).map((p, i) => p - xPos[i]).filter(g => g > 2);
-      if (gaps.length) barW = Math.max(4, Math.min(20, Math.min(...gaps) * 0.45));
+      if (gaps.length) barW = Math.max(10, Math.min(44, Math.min(...gaps) * 0.85));
     }
 
     ctx.save();
@@ -200,16 +200,14 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
     ctx.strokeStyle = 'rgba(255,255,255,0.10)'; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(chartArea.left, baseline); ctx.lineTo(chartArea.right, baseline); ctx.stroke();
 
-    // 모든 막대 위로 확장 — 감량(초록), 증량(빨강)
+    // 모든 막대 위로 확장 — 감량(초록), 증량(빨강), 직사각형
     weeklyData.forEach((d, i) => {
       const cx = xPos[i];
       if (cx < chartArea.left - barW || cx > chartArea.right + barW) return;
-      const h       = Math.max(2, Math.abs(d.y) / barMax * maxBarH);
-      const isLoss  = d.y >= 0;
+      const h      = Math.max(2, Math.abs(d.y) / barMax * maxBarH);
+      const isLoss = d.y >= 0;
       ctx.fillStyle = isLoss ? 'rgba(102,187,106,.82)' : 'rgba(239,83,80,.82)';
-      ctx.beginPath();
-      ctx.roundRect(cx - barW/2, baseline - h, barW, h, [2, 2, 0, 0]);
-      ctx.fill();
+      ctx.fillRect(cx - barW/2, baseline - h, barW, h);
     });
     ctx.restore();
 
@@ -237,10 +235,10 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
         return;
       }
       const xPos = weeklyData.map(d => x.getPixelForValue(d.x));
-      let barW = 14;
+      let barW = 24;
       if (xPos.length > 1) {
         const gaps = xPos.slice(1).map((p, i) => p - xPos[i]).filter(g => g > 2);
-        if (gaps.length) barW = Math.max(4, Math.min(20, Math.min(...gaps) * 0.45));
+        if (gaps.length) barW = Math.max(10, Math.min(44, Math.min(...gaps) * 0.85));
       }
       const hit = weeklyData.findIndex((d, i) => Math.abs(ex - xPos[i]) <= barW + 4);
       if (hit !== _barTooltipIdx) { _barTooltipIdx = hit; args.changed = true; }
@@ -405,7 +403,9 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
     type: 'line', data: { datasets },
     options: {
       responsive: true,
-      aspectRatio: isMobile ? 1.4 : 1.65,
+      aspectRatio: isMobile
+        ? Math.max(0.5, (window.innerWidth - 32) / (260 + BAR_AREA_H))
+        : 1.65,
       layout: { padding: { top: 12, right: isMobile ? 4 : 70, bottom: 4 + BAR_AREA_H, left: isMobile ? 5 : 70 } },
       plugins: {
         legend: { display: false },
