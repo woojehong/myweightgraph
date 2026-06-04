@@ -207,7 +207,7 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
 
     // 모든 막대 위로 확장 — 감량(초록), 증량(빨강), 직사각형
     // 오늘 이후 영역 클리핑 — 모든 바가 오늘 x좌표 오른쪽으로 넘어가지 않음
-    const _todayPx = x.getPixelForValue(_todayTs);
+    const _todayPx = x.getPixelForValue(_todayTs + 86400000); // 오늘 컬럼 오른쪽 끝까지 포함
     ctx.save();
     ctx.beginPath();
     ctx.rect(chartArea.left, top - 2, Math.max(0, _todayPx - chartArea.left), baseline - top + 6);
