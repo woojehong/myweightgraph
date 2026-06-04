@@ -60,6 +60,16 @@
     .ach-admin-row .ar-date{font-size:10px;color:var(--muted);}
     .invalid-btn{font-size:11px;padding:3px 8px;border-radius:6px;cursor:pointer;background:rgba(239,83,80,.12);border:1px solid rgba(239,83,80,.25);color:var(--red);}
     .invalid-btn.restore{background:rgba(0,229,170,.08);border-color:rgba(0,229,170,.25);color:var(--teal);}
+    /* 월별 아코디언 */
+    .month-accordion{margin-bottom:4px;}
+    .month-header{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;border-radius:6px;background:var(--surface2);cursor:pointer;user-select:none;font-size:12px;font-weight:700;color:var(--text);}
+    .month-header:hover{background:rgba(0,229,170,.08);}
+    .month-header .mh-meta{font-size:11px;font-weight:400;color:var(--muted);}
+    .month-header .mh-arrow{font-size:10px;color:var(--muted);transition:transform .2s;}
+    .month-header.open .mh-arrow{transform:rotate(180deg);}
+    .month-body{display:none;}
+    .month-body.open{display:block;}
+    .empty-row td{color:rgba(255,255,255,.25);}
   </style>
   <link rel="stylesheet" href="css/borders.css">
 </head>
@@ -280,18 +290,8 @@ function renderDetail(user, records, systemEarned=new Set()) {
         </div>
       </div>
       <div class="section-title">${records.length}개 기록</div>
-      <div style="max-height:400px;overflow-y:auto;margin-top:6px">
-        <table class="rec-table">
-          <thead><tr>
-            <th>날짜</th>
-            <th>체중</th>
-            <th style="width:20px"></th>
-            <th>식단 (아·점·저)</th>
-            <th>운동</th>
-            <th></th>
-          </tr></thead>
-          <tbody id="recBody">${sorted.map(r=>recRow(user.id,r)).join('')}</tbody>
-        </table>
+      <div style="margin-top:6px" id="recAccordion">
+        ${buildRecordsAccordion(user.id, records)}
       </div>
     </div>
 
@@ -306,6 +306,67 @@ function renderDetail(user, records, systemEarned=new Set()) {
       </div>
     </div>`;
 }
+
+function buildRecordsAccordion(uid, records) {
+  const recMap = {};
+  records.forEach(r => { recMap[r.date] = r; });
+
+  // 전체 날짜 범위: 최초 기록일 ~ 오늘
+  const today = new Date();
+  const todayDs = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+  const dates = [];
+  if (records.length > 0) {
+    const sorted = [...records].sort((a,b) => a.date.localeCompare(b.date));
+    let cur = new Date(sorted[0].date + 'T00:00:00');
+    const end = new Date(todayDs + 'T00:00:00');
+    while (cur <= end) {
+      const ds = `${cur.getFullYear()}-${String(cur.getMonth()+1).padStart(2,'0')}-${String(cur.getDate()).padStart(2,'0')}`;
+      dates.push(ds);
+      cur.setDate(cur.getDate() + 1);
+    }
+  }
+
+  // 월별 그룹핑 (내림차순)
+  const monthMap = {};
+  dates.forEach(ds => {
+    const ym = ds.slice(0, 7);
+    if (!monthMap[ym]) monthMap[ym] = [];
+    monthMap[ym].push(ds);
+  });
+  const months = Object.keys(monthMap).sort((a,b) => b.localeCompare(a));
+  const curYM = todayDs.slice(0, 7);
+
+  const tableHead = `<table class="rec-table"><thead><tr>
+    <th>날짜</th><th>체중</th><th style="width:20px"></th>
+    <th>식단 (아·점·저)</th><th>운동</th><th></th>
+  </tr></thead>`;
+
+  return months.map(ym => {
+    const [y, m] = ym.split('-');
+    const label = `${y}년 ${parseInt(m)}월`;
+    const daysInMonth = monthMap[ym];
+    const recordedCount = daysInMonth.filter(d => recMap[d]?.weight != null).length;
+    const isOpen = ym === curYM;
+    const rows = daysInMonth.slice().reverse().map(ds => {
+      const r = recMap[ds] || { date: ds };
+      return recRow(uid, r);
+    }).join('');
+    return `<div class="month-accordion">
+      <div class="month-header${isOpen?' open':''}" onclick="toggleMonth(this)">
+        <span>${label} <span class="mh-meta">(${recordedCount}일 기록)</span></span>
+        <span class="mh-arrow">▼</span>
+      </div>
+      <div class="month-body${isOpen?' open':''}">
+        ${tableHead}<tbody>${rows}</tbody></table>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+window.toggleMonth = el => {
+  el.classList.toggle('open');
+  el.nextElementSibling.classList.toggle('open');
+};
 
 function mealTlHtml(uid, date, mealTime, currentColor) {
   const cols = ['green','yellow','red'];
@@ -338,12 +399,14 @@ function exBtnsHtml(uid, date, exercise) {
 
 function recRow(uid, r) {
   const meal = r.meal || {};
-  return `<tr id="row-${r.date}">
+  const isEmpty = r.weight == null && !r.meal && r.exercise == null;
+  return `<tr id="row-${r.date}" class="${isEmpty?'empty-row':''}">
     <td style="color:var(--muted);font-size:12px;white-space:nowrap">${r.date}</td>
     <td>
       <div style="display:flex;align-items:center;gap:4px">
         <input class="w-edit" type="number" step="0.1"
           value="${r.weight!=null?r.weight.toFixed(1):''}"
+          placeholder="${isEmpty?'—':''}"
           onblur="saveW('${uid}','${r.date}',this)"
           onkeydown="if(event.key==='Enter')this.blur()">
         <span style="font-size:11px;color:var(--muted)">kg</span>
@@ -356,7 +419,7 @@ function recRow(uid, r) {
       </div>
     </td>
     <td>${exBtnsHtml(uid, r.date, r.exercise)}</td>
-    <td><button class="del-btn" onclick="removeW('${uid}','${r.date}')">🗑</button></td>
+    <td>${isEmpty?'':`<button class="del-btn" onclick="removeW('${uid}','${r.date}')">🗑</button>`}</td>
   </tr>`;
 }
 
@@ -368,8 +431,10 @@ window.saveW = async (uid, date, input) => {
 };
 window.removeW = async (uid, date) => {
   await deleteWeight(uid, date);
-  document.getElementById(`row-${date}`)?.remove();
   _detailRecords = _detailRecords.filter(r => r.date !== date);
+  // row 제거 대신 빈 상태로 재렌더링 (날짜는 유지)
+  const row = document.getElementById(`row-${date}`);
+  if (row) row.outerHTML = recRow(uid, { date });
   showToast('삭제됨','ok');
 };
 window.adminSetMeal = async (uid, date, mealTime, value) => {

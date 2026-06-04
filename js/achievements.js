@@ -195,11 +195,24 @@ export const ACHIEVEMENTS = [
   { id:'grade_grandmaster', cat:'grade', name:'그랜드마스터 달성',desc:'업적 점수가 그랜드마스터 기준 이상 달성',score:150,icon:'🌟', legendary:true },
   { id:'grade_challenger',  cat:'grade', name:'챌린저 달성',      desc:'업적 점수가 챌린저 기준 이상 달성',     score:200, icon:'⚡', legendary:true },
 
+  // ── 체중 연속 기록 streak (6월 1일~, 최대 30일) ──────────────────────
+  { id:'record_streak_3',  cat:'record', name:'3일 연속 기록',  desc:'체중을 3일 연속으로 기록했어요',           score:10,  icon:'📆' },
+  { id:'record_streak_7',  cat:'record', name:'7일 연속 기록',  desc:'체중을 7일 연속으로 기록했어요',           score:20,  icon:'🗓️' },
+  { id:'record_streak_14', cat:'record', name:'14일 연속 기록', desc:'체중을 14일 연속으로 기록했어요',          score:30,  icon:'📅' },
+  { id:'record_streak_30', cat:'record', name:'30일 연속 기록', desc:'체중을 30일 연속으로 기록했어요',          score:50,  icon:'🔥', legendary:true },
+
   // ── 업적 — 달성 개수 마일스톤 (메타 업적) ────────────────────────────
-  { id:'ach_10',  cat:'milestone', name:'업적 10개 달성',  desc:'업적을 10개 달성했어요',                      score:10,  icon:'🎖️' },
-  { id:'ach_50',  cat:'milestone', name:'업적 50개 달성',  desc:'업적을 50개 달성했어요',                      score:30,  icon:'🎖️' },
-  { id:'ach_100', cat:'milestone', name:'업적 100개 달성', desc:'업적을 100개 달성했어요',                     score:50,  icon:'🏆', legendary:true },
-  { id:'ach_200', cat:'milestone', name:'업적 200개 달성', desc:'업적을 200개 달성했어요',                     score:100, icon:'👑', legendary:true },
+  { id:'ach_1',   cat:'milestone', name:'첫 업적',          desc:'처음으로 업적을 달성했어요',                  score:5,   icon:'🎖️' },
+  { id:'ach_3',   cat:'milestone', name:'업적 3개 달성',    desc:'업적을 3개 달성했어요',                       score:5,   icon:'🎖️' },
+  { id:'ach_5',   cat:'milestone', name:'업적 5개 달성',    desc:'업적을 5개 달성했어요',                       score:10,  icon:'🎖️' },
+  { id:'ach_10',  cat:'milestone', name:'업적 10개 달성',   desc:'업적을 10개 달성했어요',                      score:10,  icon:'🎖️' },
+  { id:'ach_20',  cat:'milestone', name:'업적 20개 달성',   desc:'업적을 20개 달성했어요',                      score:15,  icon:'🎖️' },
+  { id:'ach_30',  cat:'milestone', name:'업적 30개 달성',   desc:'업적을 30개 달성했어요',                      score:20,  icon:'🎖️' },
+  { id:'ach_50',  cat:'milestone', name:'업적 50개 달성',   desc:'업적을 50개 달성했어요',                      score:30,  icon:'🎖️' },
+  { id:'ach_75',  cat:'milestone', name:'업적 75개 달성',   desc:'업적을 75개 달성했어요',                      score:40,  icon:'🏅' },
+  { id:'ach_100', cat:'milestone', name:'업적 100개 달성',  desc:'업적을 100개 달성했어요',                     score:50,  icon:'🏆', legendary:true },
+  { id:'ach_150', cat:'milestone', name:'업적 150개 달성',  desc:'업적을 150개 달성했어요',                     score:70,  icon:'🏆', legendary:true },
+  { id:'ach_200', cat:'milestone', name:'업적 200개 달성',  desc:'업적을 200개 달성했어요',                     score:100, icon:'👑', legendary:true },
 ];
 
 const toDs = d =>
@@ -333,12 +346,26 @@ function extractData(records, user) {
     }
   }
 
+  // ── 체중 연속 기록 streak (6월 1일~, 최대 30일 캡) ───────────────────
+  let maxRecordStreak = 0;
+  if (recordActive.length > 0) {
+    const dateSet = new Set(recordActive.map(r => r.date));
+    const first = new Date(recordActive[0].date + 'T00:00:00');
+    const last  = new Date(recordActive[recordActive.length - 1].date + 'T00:00:00');
+    let recStreak = 0;
+    for (let d = new Date(first); d <= last; d.setDate(d.getDate() + 1)) {
+      if (dateSet.has(toDs(d))) { recStreak++; maxRecordStreak = Math.max(maxRecordStreak, Math.min(recStreak, 30)); }
+      else recStreak = 0;
+    }
+  }
+
   return {
     total, refW, activeMin, lossPct, bestBmi, goal, goalPct, renewals,
     weekDec, maxWeeklyEntries, m10, m20, maxDecStreak,
     mealFullDays, mealGreenCount, mealGreenDays, mealEntryCount,
     weeklyMeal18, monthlyMeal60,
     exerciseCount, maxExStreak, weeklyEx3, monthlyEx15,
+    maxRecordStreak,
   };
 }
 
@@ -351,6 +378,7 @@ export function calculateEarnedIds(records, user) {
     mealFullDays, mealGreenCount, mealGreenDays, mealEntryCount,
     weeklyMeal18, monthlyMeal60,
     exerciseCount, maxExStreak, weeklyEx3, monthlyEx15,
+    maxRecordStreak,
   } = extractData(records, user);
 
   // 체중 기록 (6월 1일~)
@@ -430,6 +458,12 @@ export function calculateEarnedIds(records, user) {
   // 운동 — 누적 (6월 1일~)
   [10,20,30,50,70,100,150,200,300].forEach(n => { if(exerciseCount>=n) earned.add(`ex_${n}`); });
 
+  // 체중 연속 기록 streak (6월 1일~)
+  if(maxRecordStreak>=3)  earned.add('record_streak_3');
+  if(maxRecordStreak>=7)  earned.add('record_streak_7');
+  if(maxRecordStreak>=14) earned.add('record_streak_14');
+  if(maxRecordStreak>=30) earned.add('record_streak_30');
+
   return earned;
 }
 
@@ -456,9 +490,16 @@ export function calculateMetaEarnedIds(baseEarned, baseScore, tiers) {
   });
 
   const earnedCount = baseEarned.size;
+  if (earnedCount >= 1)   meta.add('ach_1');
+  if (earnedCount >= 3)   meta.add('ach_3');
+  if (earnedCount >= 5)   meta.add('ach_5');
   if (earnedCount >= 10)  meta.add('ach_10');
+  if (earnedCount >= 20)  meta.add('ach_20');
+  if (earnedCount >= 30)  meta.add('ach_30');
   if (earnedCount >= 50)  meta.add('ach_50');
+  if (earnedCount >= 75)  meta.add('ach_75');
   if (earnedCount >= 100) meta.add('ach_100');
+  if (earnedCount >= 150) meta.add('ach_150');
   if (earnedCount >= 200) meta.add('ach_200');
 
   return meta;
@@ -471,6 +512,7 @@ export function calculateProgress(records, user) {
     mealFullDays, mealGreenCount, mealGreenDays, mealEntryCount,
     weeklyMeal18, monthlyMeal60,
     exerciseCount, maxExStreak, weeklyEx3, monthlyEx15,
+    maxRecordStreak,
   } = extractData(records, user);
   const p = (cur, tgt) => ({ current: Math.min(cur, tgt), target: tgt });
   return {
@@ -507,15 +549,17 @@ export function calculateProgress(records, user) {
     ex_week_1:p(weeklyEx3,1), ex_week_2:p(weeklyEx3,2), ex_week_4:p(weeklyEx3,4),
     ex_week_8:p(weeklyEx3,8), ex_week_12:p(weeklyEx3,12),
     // 월간 기록
-    monthly_10:p(m10,1), monthly_20:p(m20,1), monthly_20x2:p(m20,2), monthly_20x3:p(m20,3),
-    monthly_20x4:p(m20,4), monthly_20x5:p(m20,5), monthly_20x6:p(m20,6), monthly_20x7:p(m20,7),
+    monthly_10:p(m10,1), monthly_20:p(m20,1),
+    monthly_20x2:p(m20,2), monthly_20x3:p(m20,3), monthly_20x4:p(m20,4),
+    monthly_20x5:p(m20,5), monthly_20x6:p(m20,6), monthly_20x7:p(m20,7),
     monthly_20x8:p(m20,8), monthly_20x9:p(m20,9), monthly_20x10:p(m20,10),
     monthly_20x11:p(m20,11), monthly_20x12:p(m20,12),
-    // 월간 감량/식단/운동
+    // 월간 감량
     monthly_dec_1:p(maxDecStreak,1), monthly_dec_2:p(maxDecStreak,2), monthly_dec_3:p(maxDecStreak,3),
+    // 월간 식단/운동
     diet_month_1:p(monthlyMeal60,1), diet_month_2:p(monthlyMeal60,2), diet_month_3:p(monthlyMeal60,3),
     ex_month_1:p(monthlyEx15,1), ex_month_2:p(monthlyEx15,2), ex_month_3:p(monthlyEx15,3),
-    // 식단 녹색/올그린/끼니
+    // 식단 녹색/올그린/전체 끼니
     diet_green_1:p(mealGreenCount,1), diet_green_5:p(mealGreenCount,5), diet_green_10:p(mealGreenCount,10),
     diet_green_20:p(mealGreenCount,20), diet_green_30:p(mealGreenCount,30), diet_green_50:p(mealGreenCount,50),
     diet_green_100:p(mealGreenCount,100),
@@ -529,29 +573,8 @@ export function calculateProgress(records, user) {
     ex_10:p(exerciseCount,10), ex_20:p(exerciseCount,20), ex_30:p(exerciseCount,30),
     ex_50:p(exerciseCount,50), ex_70:p(exerciseCount,70), ex_100:p(exerciseCount,100),
     ex_150:p(exerciseCount,150), ex_200:p(exerciseCount,200), ex_300:p(exerciseCount,300),
+    // 체중 연속 기록 streak
+    record_streak_3:p(maxRecordStreak,3), record_streak_7:p(maxRecordStreak,7),
+    record_streak_14:p(maxRecordStreak,14), record_streak_30:p(maxRecordStreak,30),
   };
-}
-
-export function calcTotalScore(earnedIds) {
-  return [...earnedIds].reduce((sum, id) => {
-    const a = ACHIEVEMENTS.find(x => x.id === id);
-    return sum + (a ? a.score : 0);
-  }, 0);
-}
-
-export const DEFAULT_TIERS = [
-  { id:'iron',        name:'아이언',       minScore:0,    color:'#6B6B6B' },
-  { id:'bronze',      name:'브론즈',       minScore:80,   color:'#8C4A2F' },
-  { id:'silver',      name:'실버',         minScore:200,  color:'#82A0AA' },
-  { id:'gold',        name:'골드',         minScore:380,  color:'#C89B3C' },
-  { id:'platinum',    name:'플래티넘',     minScore:580,  color:'#009B8D' },
-  { id:'emerald',     name:'에메랄드',     minScore:700,  color:'#00A86B' },
-  { id:'diamond',     name:'다이아몬드',   minScore:800,  color:'#576BCE' },
-  { id:'master',      name:'마스터',       minScore:1000, color:'#9B59B6' },
-  { id:'grandmaster', name:'그랜드마스터', minScore:1250, color:'#CD3232' },
-  { id:'challenger',  name:'챌린저',       minScore:1500, color:'#F4C874' },
-];
-
-export function getTierForScore(score, tiers = DEFAULT_TIERS) {
-  return [...tiers].sort((a,b)=>b.minScore-a.minScore).find(t=>score>=t.minScore) || tiers[0];
 }
