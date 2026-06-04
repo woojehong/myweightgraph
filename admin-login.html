@@ -7,20 +7,51 @@
   <meta property="og:title" content="관리자 로그인 | 마웨그">
   <meta property="og:type" content="website">
   <link rel="stylesheet" href="css/style.css">
+  <style>
+    .pin-dots{display:flex;gap:12px;justify-content:center;margin:20px 0 28px;}
+    .pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,255,255,.25);transition:all .15s;}
+    .pin-dot.filled{background:var(--teal);border-color:var(--teal);}
+    .pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:240px;margin:0 auto;}
+    .pin-btn{padding:16px;border-radius:12px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);
+             color:var(--text);font-size:20px;font-weight:600;cursor:pointer;transition:all .15s;text-align:center;}
+    .pin-btn:hover{background:rgba(0,229,170,.12);border-color:rgba(0,229,170,.3);}
+    .pin-btn:active{transform:scale(.93);}
+    .pin-btn.del{font-size:16px;color:var(--muted);}
+    .pin-shake{animation:shake .3s ease;}
+    @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+  </style>
 </head>
 <body>
 <div class="landing">
   <h1>🔐 <span>관리자</span></h1>
-  <p>관리자 계정으로 로그인하세요</p>
-  <div style="width:100%;max-width:320px">
-    <input type="hidden" id="email" value="admin@mygraph.pro">
-    <div class="input-group">
-      <label class="input-label">비밀번호</label>
-      <input class="input-field" id="password" type="password" placeholder="••••••"
-        onkeydown="if(event.key==='Enter')doLogin()">
+  <p style="margin-bottom:4px">6자리 PIN을 입력하세요</p>
+
+  <div style="width:100%;max-width:280px">
+    <div class="pin-dots" id="pinDots">
+      <div class="pin-dot" id="d0"></div>
+      <div class="pin-dot" id="d1"></div>
+      <div class="pin-dot" id="d2"></div>
+      <div class="pin-dot" id="d3"></div>
+      <div class="pin-dot" id="d4"></div>
+      <div class="pin-dot" id="d5"></div>
     </div>
-    <button class="btn btn-primary btn-full mt-8" id="loginBtn" onclick="doLogin()">로그인</button>
-    <div style="margin-top:12px;text-align:center">
+
+    <div class="pin-pad">
+      <button class="pin-btn" onclick="pinInput('1')">1</button>
+      <button class="pin-btn" onclick="pinInput('2')">2</button>
+      <button class="pin-btn" onclick="pinInput('3')">3</button>
+      <button class="pin-btn" onclick="pinInput('4')">4</button>
+      <button class="pin-btn" onclick="pinInput('5')">5</button>
+      <button class="pin-btn" onclick="pinInput('6')">6</button>
+      <button class="pin-btn" onclick="pinInput('7')">7</button>
+      <button class="pin-btn" onclick="pinInput('8')">8</button>
+      <button class="pin-btn" onclick="pinInput('9')">9</button>
+      <button class="pin-btn" onclick="pinClear()" style="font-size:13px;color:var(--muted)">전체삭제</button>
+      <button class="pin-btn" onclick="pinInput('0')">0</button>
+      <button class="pin-btn del" onclick="pinDelete()">⌫</button>
+    </div>
+
+    <div style="margin-top:20px;text-align:center">
       <a href="index.html" style="font-size:12px;color:var(--muted)">← 메인으로</a>
     </div>
   </div>
@@ -30,34 +61,70 @@
 <script type="module">
 import { adminSignIn, onAuthChange, ADMIN_UID } from './js/db.js';
 
-// 이미 로그인된 경우 바로 이동
 onAuthChange(user => {
   if (user && user.uid === ADMIN_UID) location.href = 'admin.html';
 });
 
-window.doLogin = async function() {
-  const email = document.getElementById('email').value.trim();
-  const pw    = document.getElementById('password').value;
-  const btn   = document.getElementById('loginBtn');
-  if (!pw) { showToast('비밀번호를 입력해주세요', 'err'); return; }
-  btn.disabled = true; btn.textContent = '로그인 중...';
+let pin = '';
+
+window.pinInput = function(n) {
+  if (pin.length >= 6) return;
+  pin += n;
+  updateDots();
+  if (pin.length === 6) setTimeout(doLogin, 120);
+};
+
+window.pinDelete = function() {
+  pin = pin.slice(0, -1);
+  updateDots();
+};
+
+window.pinClear = function() {
+  pin = '';
+  updateDots();
+};
+
+function updateDots() {
+  for (let i = 0; i < 6; i++) {
+    document.getElementById('d' + i).classList.toggle('filled', i < pin.length);
+  }
+}
+
+// 키보드 지원
+document.addEventListener('keydown', e => {
+  if (e.key >= '0' && e.key <= '9') window.pinInput(e.key);
+  else if (e.key === 'Backspace') window.pinDelete();
+});
+
+async function doLogin() {
+  const email = 'admin@mygraph.pro';
   try {
-    const cred = await adminSignIn(email, pw);
+    const cred = await adminSignIn(email, pin);
     if (cred.user.uid !== ADMIN_UID) {
-      showToast('관리자 계정이 아닙니다', 'err');
-      btn.disabled=false; btn.textContent='로그인'; return;
+      showError();
+      return;
     }
     location.href = 'admin.html';
   } catch(e) {
-    showToast('비밀번호가 틀렸어요', 'err');
-    btn.disabled=false; btn.textContent='로그인';
+    showError();
   }
-};
+}
+
+function showError() {
+  const dots = document.getElementById('pinDots');
+  dots.classList.add('pin-shake');
+  setTimeout(() => {
+    dots.classList.remove('pin-shake');
+    pin = '';
+    updateDots();
+  }, 350);
+  showToast('PIN이 틀렸어요', 'err');
+}
 
 function showToast(msg, type='ok') {
-  const t=document.getElementById('toast');
-  t.textContent=msg; t.className=`toast show ${type}`;
-  setTimeout(()=>t.className='toast',2500);
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = `toast show ${type}`;
+  setTimeout(() => t.className = 'toast', 2500);
 }
 </script>
 </body>

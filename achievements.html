@@ -335,8 +335,11 @@ async function render() {
   });
 
   // 메타 업적 계산 (등급·업적 개수)
-  const baseScore = calcTotalScore(baseEarned);
-  const metaEarned = calculateMetaEarnedIds(baseEarned, baseScore, tiers);
+  const baseScore  = calcTotalScore(baseEarned);
+  const metaEarned_base = calculateMetaEarnedIds(baseEarned, baseScore, tiers);
+  // 등급 판정은 base + meta 전체 점수 기준으로 재계산
+  const totalScoreForGrade = calcTotalScore(new Set([...baseEarned, ...metaEarned_base]));
+  const metaEarned = calculateMetaEarnedIds(baseEarned, totalScoreForGrade, tiers);
   // 메타 업적도 관리자 강제 적용
   Object.entries(adminOverrides).forEach(([achId, ov]) => {
     if (!ov) return;

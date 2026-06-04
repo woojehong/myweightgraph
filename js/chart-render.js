@@ -63,11 +63,18 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
   }
   const byWeek = new Map();
   pts.forEach(p => { const wk = getSun(p.date); if (!byWeek.has(wk)) byWeek.set(wk, []); byWeek.get(wk).push(p); });
+  // 이번 주 판별 (오늘이 속한 주의 일요일 00:00)
+  const _todayTs = (() => { const d = new Date(); d.setHours(0,0,0,0); return d.getTime(); })();
+  const _thisWk  = getSun(_todayTs);
   const wkAvg = new Map();
   byWeek.forEach((wp, wk) => {
-    if (wp.length < 4) return;
-    // x 위치: 해당 주의 토요일 (주 전체 입력 완료 시 위치 예상)
-    wkAvg.set(wk, { avg: +(wp.reduce((s, p) => s + p.w, 0) / wp.length).toFixed(2), label: wkLabel(wk), x: wk + 6 * 86400000 });
+    const isThisWeek = wk === _thisWk;
+    // 이번 주는 1개 이상, 나머지는 4개 이상
+    if (!isThisWeek && wp.length < 4) return;
+    if (isThisWeek  && wp.length < 1) return;
+    // x 위치: 이번 주는 오늘, 나머지는 토요일
+    const xPos = isThisWeek ? _todayTs : wk + 6 * 86400000;
+    wkAvg.set(wk, { avg: +(wp.reduce((s, p) => s + p.w, 0) / wp.length).toFixed(2), label: wkLabel(wk), x: xPos });
   });
   const sortedWks = [...byWeek.keys()].sort((a, b) => a - b);
   const weeklyData = [];
@@ -379,7 +386,64 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
       ctx.fillText('운동', chartArea.left - 3, exTop + dynH / 2);
       ctx.restore();
     }
+
+    // 셀 정보 저장 (툴팁 플러그인에서 사용)
+    _subCells = {
+      visible, cellL, cellR,
+      dietTop: showDietGraph ? (xBottom + SUB_GAP + (hasWeeklyBar ? WEEKLY_BAR_H + 2 : 0)) : null,
+      exTop:   showExerciseGraph
+        ? (xBottom + SUB_GAP + (hasWeeklyBar ? WEEKLY_BAR_H + 2 : 0) + (showDietGraph ? 3 * dynH + 2 : 0))
+        : null,
+      dynH,
+    };
   }};
+
+  // ── 서브그래프 툴팁 플러그인 ────────────────────────────────────────
+  let _subCells = null;
+  let _subTooltipDate = null;
+  const subGraphTooltipPlugin = { id: 'subGraphTooltip',
+    afterEvent(chart, args) {
+      if (!_subCells) return;
+      const { event } = args;
+      if (!['mousemove','touchstart','click','mouseleave'].includes(event.type)) return;
+      if (event.type === 'mouseleave') { _subTooltipDate = null; chart.draw(); return; }
+      const { chartArea } = chart;
+      const { visible, cellL, cellR, dietTop, exTop, dynH } = _subCells;
+      const ey = event.y;
+      // 식단 또는 운동 영역인지 확인
+      const inDiet = dietTop != null && ey >= dietTop && ey <= dietTop + 3 * dynH;
+      const inEx   = exTop  != null && ey >= exTop   && ey <= exTop  + dynH;
+      if (!inDiet && !inEx) { _subTooltipDate = null; chart.draw(); return; }
+      const ex = event.x;
+      const idx = visible.findIndex((_, i) => ex >= cellL[i] && ex <= cellR[i]);
+      const newDate = idx >= 0 ? visible[idx].date : null;
+      if (newDate !== _subTooltipDate) { _subTooltipDate = newDate; chart.draw(); }
+    },
+    afterDraw(chart) {
+      if (!_subTooltipDate || !_subCells) return;
+      const { ctx, chartArea } = chart;
+      const { visible, cellL, cellR, dietTop, exTop, dynH } = _subCells;
+      const idx = visible.findIndex(r => r.date === _subTooltipDate);
+      if (idx < 0) return;
+      const cx = (cellL[idx] + cellR[idx]) / 2;
+      const topY = (dietTop ?? exTop) - 4;
+      const text = _subTooltipDate;
+      ctx.save();
+      ctx.font = '11px sans-serif';
+      const tw = ctx.measureText(text).width;
+      const px = Math.min(Math.max(cx - tw/2 - 6, chartArea.left), chartArea.right - tw - 12);
+      const py = topY - 20;
+      ctx.fillStyle = 'rgba(30,30,30,.88)';
+      const r = 4;
+      ctx.beginPath();
+      ctx.roundRect(px, py, tw + 12, 18, r);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      ctx.fillText(text, px + 6, py + 9);
+      ctx.restore();
+    }
+  };
 
   // ── 데이터셋 ─────────────────────────────────────────────────────────
   const datasets = [
@@ -438,7 +502,7 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
       },
       interaction: { mode: 'index', intersect: false }
     },
-    plugins: [annotPlugin, weeklyBarPlugin, weeklyBarTooltipPlugin, subGraphPlugin]
+    plugins: [annotPlugin, weeklyBarPlugin, weeklyBarTooltipPlugin, subGraphPlugin, subGraphTooltipPlugin]
   });
   canvasMain._startTs = startTs;
   canvasMain._endTs   = endTs;
