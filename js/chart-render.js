@@ -206,19 +206,21 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
     ctx.beginPath(); ctx.moveTo(chartArea.left, baseline); ctx.lineTo(chartArea.right, baseline); ctx.stroke();
 
     // 모든 막대 위로 확장 — 감량(초록), 증량(빨강), 직사각형
+    // 오늘 이후 영역 클리핑 — 모든 바가 오늘 x좌표 오른쪽으로 넘어가지 않음
     const _todayPx = x.getPixelForValue(_todayTs);
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(chartArea.left, top - 2, Math.max(0, _todayPx - chartArea.left), baseline - top + 6);
+    ctx.clip();
     weeklyData.forEach((d, i) => {
       const cx = xPos[i];
       if (cx < chartArea.left - barW || cx > chartArea.right + barW) return;
       const h      = Math.max(2, Math.abs(d.y) / barMax * maxBarH);
       const isLoss = d.y >= 0;
       ctx.fillStyle = isLoss ? 'rgba(102,187,106,.82)' : 'rgba(239,83,80,.82)';
-      const barLeft  = cx - barW / 2;
-      // 이번 주 바는 오늘 x좌표까지만
-      const barRight = d.isThisWeek ? Math.min(cx + barW / 2, _todayPx) : cx + barW / 2;
-      if (barRight <= barLeft) return;
-      ctx.fillRect(barLeft, baseline - h, barRight - barLeft, h);
+      ctx.fillRect(cx - barW / 2, baseline - h, barW, h);
     });
+    ctx.restore();
     ctx.restore();
 
     ctx.save();
