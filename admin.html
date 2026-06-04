@@ -941,7 +941,6 @@ window.saveTiers = async () => {
 
 // ── 모달 헬퍼 ─────────────────────────────────────────────────────────
 function addModal(html){
-function addModal(html){
   document.getElementById('delModal').insertAdjacentHTML('beforebegin',
     `<div class="modal-bg open" id="dynModal"><div class="modal">${html}</div></div>`);
   document.getElementById('dynModal').addEventListener('click', e=>{
