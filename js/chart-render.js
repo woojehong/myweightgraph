@@ -63,18 +63,16 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
   }
   const byWeek = new Map();
   pts.forEach(p => { const wk = getSun(p.date); if (!byWeek.has(wk)) byWeek.set(wk, []); byWeek.get(wk).push(p); });
-  // 이번 주 판별 (오늘이 속한 주의 일요일 00:00)
+  // 이번 주 판별
   const _todayTs = (() => { const d = new Date(); d.setHours(0,0,0,0); return d.getTime(); })();
   const _thisWk  = getSun(_todayTs);
   const wkAvg = new Map();
   byWeek.forEach((wp, wk) => {
     const isThisWeek = wk === _thisWk;
-    // 이번 주는 1개 이상, 나머지는 4개 이상
     if (!isThisWeek && wp.length < 4) return;
     if (isThisWeek  && wp.length < 1) return;
-    // x 위치: 이번 주는 오늘, 나머지는 토요일
-    const xPos = isThisWeek ? _todayTs : wk + 6 * 86400000;
-    wkAvg.set(wk, { avg: +(wp.reduce((s, p) => s + p.w, 0) / wp.length).toFixed(2), label: wkLabel(wk), x: xPos });
+    // x 위치: 모두 토요일 (간격 일정 유지)
+    wkAvg.set(wk, { avg: +(wp.reduce((s, p) => s + p.w, 0) / wp.length).toFixed(2), label: wkLabel(wk), x: wk + 6 * 86400000, isThisWeek });
   });
   const sortedWks = [...byWeek.keys()].sort((a, b) => a - b);
   const weeklyData = [];
@@ -208,13 +206,18 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
     ctx.beginPath(); ctx.moveTo(chartArea.left, baseline); ctx.lineTo(chartArea.right, baseline); ctx.stroke();
 
     // 모든 막대 위로 확장 — 감량(초록), 증량(빨강), 직사각형
+    const _todayPx = x.getPixelForValue(_todayTs);
     weeklyData.forEach((d, i) => {
       const cx = xPos[i];
       if (cx < chartArea.left - barW || cx > chartArea.right + barW) return;
       const h      = Math.max(2, Math.abs(d.y) / barMax * maxBarH);
       const isLoss = d.y >= 0;
       ctx.fillStyle = isLoss ? 'rgba(102,187,106,.82)' : 'rgba(239,83,80,.82)';
-      ctx.fillRect(cx - barW/2, baseline - h, barW, h);
+      const barLeft  = cx - barW / 2;
+      // 이번 주 바는 오늘 x좌표까지만
+      const barRight = d.isThisWeek ? Math.min(cx + barW / 2, _todayPx) : cx + barW / 2;
+      if (barRight <= barLeft) return;
+      ctx.fillRect(barLeft, baseline - h, barRight - barLeft, h);
     });
     ctx.restore();
 
