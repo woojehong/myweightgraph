@@ -578,3 +578,27 @@ export function calculateProgress(records, user) {
     record_streak_14:p(maxRecordStreak,14), record_streak_30:p(maxRecordStreak,30),
   };
 }
+
+export function calcTotalScore(earnedIds) {
+  return [...earnedIds].reduce((sum, id) => {
+    const a = ACHIEVEMENTS.find(x => x.id === id);
+    return sum + (a ? a.score : 0);
+  }, 0);
+}
+
+export const DEFAULT_TIERS = [
+  { id:'iron',        name:'아이언',       minScore:0,    color:'#6B6B6B' },
+  { id:'bronze',      name:'브론즈',       minScore:80,   color:'#8C4A2F' },
+  { id:'silver',      name:'실버',         minScore:200,  color:'#82A0AA' },
+  { id:'gold',        name:'골드',         minScore:380,  color:'#C89B3C' },
+  { id:'platinum',    name:'플래티넘',     minScore:580,  color:'#009B8D' },
+  { id:'emerald',     name:'에메랄드',     minScore:700,  color:'#00A86B' },
+  { id:'diamond',     name:'다이아몬드',   minScore:800,  color:'#576BCE' },
+  { id:'master',      name:'마스터',       minScore:1000, color:'#9B59B6' },
+  { id:'grandmaster', name:'그랜드마스터', minScore:1250, color:'#CD3232' },
+  { id:'challenger',  name:'챌린저',       minScore:1500, color:'#F4C874' },
+];
+
+export function getTierForScore(score, tiers = DEFAULT_TIERS) {
+  return [...tiers].sort((a,b)=>b.minScore-a.minScore).find(t=>score>=t.minScore) || tiers[0];
+}
