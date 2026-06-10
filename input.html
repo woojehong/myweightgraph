@@ -176,7 +176,7 @@ function setChipData(u, tierColor) {
   const wrap = document.getElementById('chipAvatarWrap');
   if (wrap) { wrap.className = `avatar-frame chip-avatar${u?.selectedBorder?' border-'+u.selectedBorder:''}`; wrap.style.setProperty('--tier-color', tc); }
   const titleEl = document.getElementById('chipTitle');
-  if (titleEl) { titleEl.textContent = u?.selectedTitle||''; titleEl.style.color = tc; titleEl.style.display = u?.selectedTitle?'':'none'; }
+  if (titleEl) { titleEl.textContent = u?.selectedTitle||''; titleEl.style.color = tc; titleEl.style.display = u?.selectedTitle?'inline':'none'; }
   const scoreEl = document.getElementById('chipScore');
   if (scoreEl) scoreEl.textContent = ((u?.totalScore||0)>0)?`${u.totalScore} PT`:'';
 }
@@ -485,7 +485,7 @@ window.saveProfileEdit = async () => {
   if(pw&&!/^\d{4}$/.test(pw)){showToast('숫자 4자리로 입력해주세요','err');return;}
   const name=document.getElementById('pName')?.value.trim()||user?.name;
   if(!name){showToast('이름을 입력해주세요','err');return;}
-  const selectedTitle=document.getElementById('pTitleSelect')?.value||user?.selectedTitle||null;
+  const _tSel=document.getElementById('pTitleSelect'); const selectedTitle=_tSel!=null?(_tSel.value||null):(user?.selectedTitle||null);
   const selectedBorder=window._selectedBorder??user?.selectedBorder??null;
   await updateUser(uid,{emoji,name,height,birthYear,selectedTitle,selectedBorder});
   user={...user,emoji,name,height,birthYear,selectedTitle,selectedBorder};
