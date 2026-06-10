@@ -24,7 +24,8 @@
     display: flex !important;
     flex-direction: column !important;
     align-items: center !important;
-    position: relative;
+    position: sticky !important;
+    top: 0 !important;
     padding: 8px 16px 10px;
     gap: 5px;
   }
