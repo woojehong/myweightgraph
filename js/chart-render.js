@@ -489,7 +489,7 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
         },
         zoom: {
           zoom: { wheel: { enabled: true, modifierKey: 'ctrl' }, pinch: { enabled: false }, mode: 'x' },
-          pan:  { enabled: true, mode: 'x' },
+          pan:  { enabled: !isMobile, mode: 'x' },
           limits: { x: { min: startTs, max: endTs, minRange: 7*86400000 } }
         }
       },
