@@ -326,7 +326,7 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
     const n      = visible.length;
 
     // 평균 셀 간격 기반 경계 (첫/마지막 셀도 동일 크기 — 차트 끝까지 늘어나지 않음)
-    const avgSpacing = n > 1 ? (pixels[n-1] - pixels[0]) / (n - 1) : dynH;
+    const avgSpacing = n > 1 ? (pixels[n-1] - pixels[0]) / (n - 1) : CELL_H;
     const halfW      = avgSpacing / 2;
     const cellL = visible.map((_, i) =>
       i === 0 ? Math.max(chartArea.left, pixels[0] - halfW) : (pixels[i-1] + pixels[i]) / 2);
@@ -488,8 +488,8 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
           }
         },
         zoom: {
-          zoom: { wheel: { enabled: true, modifierKey: 'ctrl' }, pinch: { enabled: false }, mode: 'x' },
-          pan:  { enabled: !isMobile, mode: 'x' },
+          zoom: { wheel: { enabled: true, modifierKey: 'ctrl' }, pinch: { enabled: true }, mode: 'x' },
+          pan:  { enabled: true, mode: 'x' },
           limits: { x: { min: startTs, max: endTs, minRange: 7*86400000 } }
         }
       },

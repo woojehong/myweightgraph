@@ -11,7 +11,7 @@
   <meta property="og:title" content="데이터 입력 | 마웨그">
   <meta property="og:description" content="오늘의 체중과 식단·운동을 기록하세요.">
   <meta property="og:type" content="website">
-  <meta property="og:image" content="favicon.png">
+  <meta property="og:image" content="https://woojehong.github.io/myweightgraph/favicon.png">
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/borders.css">
   <style>
@@ -144,7 +144,7 @@
 <div class="toast" id="toast"></div>
 
 <script type="module">
-import { getUser, getWeights, setWeight, deleteWeight, parseWeight, toDateStr, updateUser, setUserPassword, setDietExercise, getTierSettings } from './js/db.js';
+import { getUser, getWeights, setWeight, parseWeight, toDateStr, updateUser, setUserPassword, setDietExercise, getTierSettings } from './js/db.js';
 import { getTierForScore, DEFAULT_TIERS } from './js/achievements.js';
 import { clearAuth, saveAuth } from './js/auth.js';
 const uid = new URLSearchParams(location.search).get('user') || localStorage.getItem('uid');
@@ -353,7 +353,8 @@ async function render() {
             placeholder="--.-"
             value="${hasSaved?val.toFixed(1):''}"
             style="border-color:${hasSaved?'var(--green)':'var(--border)'}"
-            oninput="onDayInput('${dateStr}')">
+            oninput="onDayInput('${dateStr}')"
+            onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();submitDay('${dateStr}')}">
           <span class="dc-unit">kg</span>
           <button class="dc-btn" onclick="submitDay('${dateStr}')">저장</button>
         </div>

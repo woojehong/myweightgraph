@@ -2,7 +2,7 @@
   "name": "마웨그 | My Weight Graph",
   "short_name": "마웨그",
   "description": "나만의 체중 변화 기록 앱",
-  "start_url": "/index.html",
+  "start_url": "/myweightgraph/index.html",
   "display": "standalone",
   "background_color": "#0d1117",
   "theme_color": "#0d1117",

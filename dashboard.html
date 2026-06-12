@@ -11,7 +11,7 @@
   <meta property="og:title" content="그래프 | 마웨그">
   <meta property="og:description" content="나만의 체중 변화 그래프 — 기록하고, 분석하고, 목표를 이루세요.">
   <meta property="og:type" content="website">
-  <meta property="og:image" content="favicon.png">
+  <meta property="og:image" content="https://woojehong.github.io/myweightgraph/favicon.png">
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/borders.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
@@ -441,23 +441,6 @@ function doRender() {
   if(mainC) {
     renderChart(records, user, mainC, null, S);
   }
-}
-
-function bindWheelScroll(canvas) {
-  // 이전 리스너 제거 후 재등록
-  if(canvas._wheelHandler) canvas.removeEventListener('wheel', canvas._wheelHandler, true);
-  canvas._wheelHandler = e => {
-    const chart = canvas._chartInstance;
-    if(!chart) return;
-    const xs = chart.scales.x;
-    const fullRange = (canvas._endTs - canvas._startTs);
-    const isMaxOut  = (xs.max - xs.min) >= fullRange * 0.98;
-    if(isMaxOut && e.deltaY > 0) {
-      // 줌아웃 최대 + 아래로 스크롤 → zoom 플러그인 차단, 페이지 스크롤 허용
-      e.stopImmediatePropagation();
-    }
-  };
-  canvas.addEventListener('wheel', canvas._wheelHandler, {capture:true, passive:true});
 }
 
 const fmt = d => {
