@@ -21,20 +21,12 @@
   <style>
     @media(min-width:768px){ .page { max-width: 100% !important; padding-left: 8px !important; padding-right: 8px !important; } }
 
-    /* ── 뷰 전환 + 선택 바 ─────────────────────────────────────── */
+    /* ── 선택 바 ───────────────────────────────────────────────── */
     .compare-bar{
       position:sticky; top:0; z-index:90;
       background:var(--bg); padding:10px 0 8px;
       border-bottom:1px solid var(--border);
     }
-    .view-toggle{ display:flex; gap:6px; justify-content:center; margin-bottom:10px; }
-    .view-btn{
-      flex:0 0 auto; padding:7px 16px; border-radius:20px;
-      background:var(--surface2); border:1px solid var(--border);
-      color:var(--muted); font-size:13px; font-weight:700; transition:all .15s;
-    }
-    .view-btn.active{ background:rgba(0,229,170,.14); border-color:var(--teal); color:var(--teal); }
-
     .picker{
       display:flex; gap:8px; overflow-x:auto; padding:2px 2px 6px;
       -webkit-overflow-scrolling:touch; scrollbar-width:thin;
@@ -63,20 +55,12 @@
       box-shadow:0 0 0 2px var(--bg);
     }
 
-    /* ── 그래프 그리드 ─────────────────────────────────────────── */
-    .compare-grid{ display:grid; gap:14px; margin-top:14px; }
-    .compare-grid.view-2{ grid-template-columns:1fr; }
-    .compare-grid.view-4{ grid-template-columns:repeat(2,1fr); }
-    .compare-grid.view-6{ grid-template-columns:repeat(2,1fr); }
-    @media(min-width:768px){
-      .compare-grid.view-2{ grid-template-columns:repeat(2,1fr); }
-      .compare-grid.view-4{ grid-template-columns:repeat(2,1fr); }
-      .compare-grid.view-6{ grid-template-columns:repeat(3,1fr); }
-    }
+    /* ── 그래프 그리드 (열 수는 JS가 인원수에 맞춰 자동 설정) ───── */
+    .compare-grid{ display:grid; gap:12px; margin-top:14px; grid-template-columns:1fr; }
 
     .cmp-cell{
       background:var(--surface); border:1px solid var(--border);
-      border-radius:12px; padding:10px 8px 8px; min-width:0;
+      border-radius:12px; padding:10px 4px 6px; min-width:0;
     }
     .cmp-chart{ position:relative; width:100%; }
     .cmp-empty{
@@ -89,7 +73,7 @@
     }
 
     /* ── 미니 프로필 (데스크탑 기본) ───────────────────────────── */
-    .cmp-profile{ display:flex; align-items:center; gap:8px; margin-bottom:8px; padding:0 2px; }
+    .cmp-profile{ display:flex; align-items:center; gap:9px; margin-bottom:8px; padding:0 6px; }
     .cmp-avatar{ width:32px; height:32px; flex-shrink:0; }
     .cmp-avatar-inner{
       width:26px; height:26px; border-radius:50%; background:#0d1117;
@@ -101,14 +85,14 @@
     .cmp-name{ font-size:13px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .cmp-score{ font-size:9px; color:var(--muted); }
 
-    /* ── 모바일: 미니 프로필 2배 축소 ─────────────────────────── */
+    /* ── 모바일: 미니 프로필 2배 축소 (아이콘·텍스트 간격 확보) ── */
     @media(max-width:767px){
-      .cmp-profile{ gap:4px; margin-bottom:5px; }
-      .cmp-avatar{ width:16px; height:16px; }
-      .cmp-avatar-inner{ width:13px; height:13px; font-size:8px; }
-      .cmp-title{ font-size:6px; }
-      .cmp-name{ font-size:8px; }
-      .cmp-score{ font-size:6px; }
+      .cmp-profile{ gap:8px; margin-bottom:6px; padding:0 6px; }
+      .cmp-avatar{ width:18px; height:18px; }
+      .cmp-avatar-inner{ width:14px; height:14px; font-size:9px; }
+      .cmp-title{ font-size:7px; }
+      .cmp-name{ font-size:9px; }
+      .cmp-score{ font-size:7px; }
     }
 
     /* ── 모바일: 헤더 심플화 (프로필·미입력 숨김) ─────────────── */
@@ -155,17 +139,12 @@
 
 <div class="page">
   <div class="compare-bar">
-    <div class="view-toggle" id="viewToggle">
-      <button class="view-btn active" data-v="2" onclick="setView(2)">2명</button>
-      <button class="view-btn" data-v="4" onclick="setView(4)">4명</button>
-      <button class="view-btn" data-v="6" onclick="setView(6)">6명</button>
-    </div>
     <div class="picker" id="picker">
       <div class="loading"><div class="spinner"></div></div>
     </div>
   </div>
 
-  <div class="compare-grid view-2" id="compareGrid"></div>
+  <div class="compare-grid" id="compareGrid"></div>
 </div>
 
 <nav class="bottom-nav" id="bottomNav"></nav>
@@ -200,23 +179,39 @@ function buildNav() {
 }
 
 let allUsers = [], TIERS = DEFAULT_TIERS, S = {}, curUser = null;
-let selected = [];      // 선택된 uid 배열
-let view = 2;           // 2 | 4 | 6
+let selected = [];       // 선택된 uid 배열 (표시 순서 유지)
 const weightsCache = {}; // uid -> records
 
-// 모아보기 차트 옵션: 메인 체중 + 식단 + 운동만 (주간막대·예상·이동평균·말풍선 제외)
+const STORAGE_KEY = 'compare_selected_uids';
+function loadSelected() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : null;
+  } catch (e) { return null; }
+}
+function saveSelected() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(selected)); } catch (e) {}
+}
+
+// 모아보기 차트 옵션: '내 그래프'와 동일하게 메인 + 주간막대 + 식단 + 운동 모두 표시.
+// gridCell=true → 칸 너비에 맞춰 메인 그래프가 꽉 차도록 종횡비 계산.
 function chartOpts() {
   return {
     ...S,
-    show7dayMA: false,
-    showWeeklyBar: false,
-    showPrediction: false,
+    showWeeklyBar: true,
     showDietGraph: true,
     showExerciseGraph: true,
-    showMaxMarker: false,
-    showMinMarker: false,
-    showCurMarker: true,
+    gridCell: true,
   };
+}
+
+// 선택 인원수에 따른 열 개수 자동 결정 (모바일 기준 2명까지 1열, 그 이상 2열)
+function gridCols(n) {
+  const desktop = window.matchMedia('(min-width:768px)').matches;
+  if (desktop) return n <= 1 ? 1 : (n <= 4 ? 2 : 3);
+  return n <= 2 ? 1 : 2;
 }
 
 function setChip(u) {
@@ -261,23 +256,12 @@ function renderPicker() {
 
 function togglePick(id) {
   const i = selected.indexOf(id);
-  if (i >= 0) {
-    selected.splice(i, 1);
-  } else {
-    if (selected.length >= view) { showToast(`${view}명까지 선택할 수 있어요`); return; }
-    selected.push(id);
-  }
+  if (i >= 0) selected.splice(i, 1);
+  else selected.push(id);
+  saveSelected();
   renderPicker();
   renderGrid();
 }
-
-window.setView = n => {
-  view = n;
-  if (selected.length > n) selected = selected.slice(0, n);
-  document.querySelectorAll('.view-btn').forEach(b => b.classList.toggle('active', +b.dataset.v === n));
-  renderPicker();
-  renderGrid();
-};
 
 // ── 그래프 그리드 ─────────────────────────────────────────────────────
 function destroyGridCharts() {
@@ -313,13 +297,15 @@ function cellHTML(u) {
 
 async function renderGrid() {
   const grid = document.getElementById('compareGrid');
-  grid.className = `compare-grid view-${view}`;
   destroyGridCharts();
 
   if (!selected.length) {
+    grid.style.gridTemplateColumns = '1fr';
     grid.innerHTML = `<div class="grid-empty">위에서 사용자를 선택하면<br>그래프를 한눈에 비교할 수 있어요.</div>`;
     return;
   }
+
+  grid.style.gridTemplateColumns = `repeat(${gridCols(selected.length)}, 1fr)`;
 
   // 선택된 유저들의 기록 병렬 로드 (캐시)
   await Promise.all(selected.map(async id => {
@@ -379,8 +365,16 @@ async function init() {
   setChip(curUser);
   document.title = '그래프 모아보기 | 마웨그';
 
-  // 기본 선택: 현재 사용자
-  if (users.some(u => u.id === uid)) selected = [uid];
+  // 선택 복원: 저장된 목록(존재하는 유저만) → 없으면 현재 사용자 기본 선택
+  const ids = new Set(users.map(u => u.id));
+  const saved = loadSelected();
+  if (saved) {
+    selected = saved.filter(id => ids.has(id));
+  }
+  if (!selected.length && ids.has(uid)) {
+    selected = [uid];
+  }
+  saveSelected();
 
   renderPicker();
   renderGrid();

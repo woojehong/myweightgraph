@@ -12,6 +12,7 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
     showMaxMarker     = true,
     showMinMarker     = true,
     showCurMarker     = true,
+    gridCell          = false,
   } = options;
 
   if (canvasMain._chartInstance) canvasMain._chartInstance.destroy();
@@ -472,9 +473,11 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
     type: 'line', data: { datasets },
     options: {
       responsive: true,
-      aspectRatio: isMobile
-        ? Math.max(0.5, (window.innerWidth - 32) / (260 + BAR_AREA_H))
-        : 1.65,
+      aspectRatio: gridCell
+        ? Math.max(0.45, ((canvasMain.parentElement && canvasMain.parentElement.clientWidth) || (window.innerWidth - 32)) / (240 + BAR_AREA_H))
+        : (isMobile
+            ? Math.max(0.5, (window.innerWidth - 32) / (260 + BAR_AREA_H))
+            : 1.65),
       layout: { padding: { top: 12, right: isMobile ? 4 : 70, bottom: 4 + BAR_AREA_H, left: isMobile ? 5 : 70 } },
       plugins: {
         legend: { display: false },
