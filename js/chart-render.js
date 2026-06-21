@@ -32,7 +32,8 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
 
   const fmt      = d => `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
   const isMobile = window.innerWidth < 768;
-  const Y_AXIS_W = isMobile ? 42 : 52;
+  const tight    = gridCell; // 모아보기: 좌우/하단 여백 최소화
+  const Y_AXIS_W = (isMobile || tight) ? 42 : 52;
 
   // ── 7일 이동평균 ─────────────────────────────────────────────────────
   const ma7 = pts.map(p => {
@@ -93,10 +94,36 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
   const SUB_GAP      = 6;
   const BOTTOM_PAD   = 10;
 
-  let BAR_AREA_H = BOTTOM_PAD;
-  if (hasWeeklyBar)      BAR_AREA_H += WEEKLY_BAR_H + SUB_GAP;
-  if (showDietGraph)     BAR_AREA_H += 3 * CELL_H + SUB_GAP;
-  if (showExerciseGraph) BAR_AREA_H += CELL_H + SUB_GAP;
+  // gridCell(모아보기): 식단·운동 행 높이를 칸 너비/일수로 미리 산출 → 예약 높이를 실제와 일치시켜 하단 여백 제거
+  let forcedCellH = null;
+  if (gridCell) {
+    const dated = records.filter(r => r.date).map(r => r.date).sort();
+    if (dated.length) {
+      const f = new Date(dated[0]).getTime(), l = new Date(dated[dated.length-1]).getTime();
+      const nDays = Math.max(1, Math.round((l - f) / 86400000) + 1);
+      const refW  = (canvasMain.parentElement && canvasMain.parentElement.clientWidth) || (window.innerWidth - 32);
+      const plotW = Math.max(20, refW - 5 - 4 - Y_AXIS_W);
+      forcedCellH = Math.max(6, Math.min(CELL_H, Math.round(plotW / nDays)));
+    } else {
+      forcedCellH = CELL_H;
+    }
+  }
+  const subRowH = forcedCellH != null ? forcedCellH : CELL_H;
+
+  let BAR_AREA_H;
+  if (gridCell) {
+    // 플러그인이 실제 그리는 누적 높이와 동일하게 예약 (xBottom 기준)
+    BAR_AREA_H = SUB_GAP;
+    if (hasWeeklyBar)      BAR_AREA_H += WEEKLY_BAR_H + 2;
+    if (showDietGraph)     BAR_AREA_H += 3 * subRowH + 2;
+    if (showExerciseGraph) BAR_AREA_H += subRowH;
+    BAR_AREA_H += 2;
+  } else {
+    BAR_AREA_H = BOTTOM_PAD;
+    if (hasWeeklyBar)      BAR_AREA_H += WEEKLY_BAR_H + SUB_GAP;
+    if (showDietGraph)     BAR_AREA_H += 3 * CELL_H + SUB_GAP;
+    if (showExerciseGraph) BAR_AREA_H += CELL_H + SUB_GAP;
+  }
 
   // ── x축 범위 ─────────────────────────────────────────────────────────
   const lastT  = pts[pts.length - 1].t;
@@ -170,7 +197,7 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
       dot(ctx, cpx, cpy, BLUE, 8); dot(ctx, cpx, cpy, GREEN, 5);
       drawBox(ctx, cpx, cpy, cpx-sBOFF-10, cpy+Math.round(16*scale), [`현재  ${curW.toFixed(1)} kg`, fmt(cp.date)], '20,98,152', chart, sBP, sBLH, sFont0, sFont1);
     }
-    if (!isMobile) {
+    if (!isMobile && !tight) {
       ctx.save(); ctx.fillStyle = 'rgba(235,75,75,.9)'; ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center';
       ctx.fillText(`목표 ${goal} kg`, area.right + Y_AXIS_W/2 + 5, gy(goal) + 4); ctx.restore();
     }
@@ -338,7 +365,7 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
     const avgCellW = n > 1
       ? Math.abs(cellR[n-1] - cellL[0]) / n
       : CELL_H;
-    const dynH = Math.max(6, Math.min(CELL_H, Math.round(avgCellW)));
+    const dynH = forcedCellH != null ? forcedCellH : Math.max(6, Math.min(CELL_H, Math.round(avgCellW)));
 
     // Y 시작점: x축 하단 + 주간막대 섹션 바로 아래
     const xBottom = x.bottom;
@@ -478,7 +505,7 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
         : (isMobile
             ? Math.max(0.5, (window.innerWidth - 32) / (260 + BAR_AREA_H))
             : 1.65),
-      layout: { padding: { top: 12, right: isMobile ? 4 : 70, bottom: 4 + BAR_AREA_H, left: isMobile ? 5 : 70 } },
+      layout: { padding: { top: 12, right: (isMobile || tight) ? 4 : 70, bottom: 4 + BAR_AREA_H, left: (isMobile || tight) ? 5 : 70 } },
       plugins: {
         legend: { display: false },
         tooltip: {
@@ -506,7 +533,7 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
         y2: { min: yMin, max: yMax, position: 'right', grid: { drawOnChartArea: false },
           ticks: { color: TICK, font: { size: 11 }, stepSize: 5, callback: v => v },
           border: { color: 'rgba(255,255,255,.15)' },
-          afterFit(s) { s.width = isMobile ? 0 : Y_AXIS_W; } }
+          afterFit(s) { s.width = (isMobile || tight) ? 0 : Y_AXIS_W; } }
       },
       interaction: { mode: 'index', intersect: false }
     },
