@@ -184,7 +184,8 @@ function setChipData(u, tierColor) {
 function buildNav() {
   const links=[
     {href:`input.html?user=${uid}`,        icon:'✏️',  label:'데이터 입력', id:'input'},
-    {href:`dashboard.html?user=${uid}`,    icon:'📊', label:'그래프',      id:'dashboard'},
+    {href:`dashboard.html?user=${uid}`,    icon:'📊', label:'내 그래프',   id:'dashboard'},
+    {href:`compare.html?user=${uid}`,      icon:'👥', label:'모아보기',     id:'compare'},
     {href:`achievements.html?user=${uid}`, icon:'🏆', label:'업적',        id:'achievements'},
   ];
   const nav=document.getElementById('bottomNav');
