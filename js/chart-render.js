@@ -180,7 +180,9 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
     if (showMaxMarker) {
       const mp = pts[maxIdx];
       dot(ctx, gx(mp.t), gy(mp.w), RED, 7);
-      drawBox(ctx, gx(mp.t), gy(mp.w), gx(mp.t)+12, gy(mp.w)+Math.round(14*scale), [`최고  ${maxW.toFixed(1)} kg`, fmt(mp.date)], '195,65,42', chart, sBP, sBLH, sFont0, sFont1);
+      // tight(모아보기): 점만 표시, 말풍선·리더선 생략 (값은 프로필 줄 배지로 표시)
+      if (!tight)
+        drawBox(ctx, gx(mp.t), gy(mp.w), gx(mp.t)+12, gy(mp.w)+Math.round(14*scale), [`최고  ${maxW.toFixed(1)} kg`, fmt(mp.date)], '195,65,42', chart, sBP, sBLH, sFont0, sFont1);
     }
     if (showMinMarker) {
       const lastIdx = pts.length - 1;
@@ -188,14 +190,17 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
       if (drawMinIdx.length > 0) {
         const mi = pts[drawMinIdx[drawMinIdx.length-1]], mix = gx(mi.t), miy = gy(mi.w);
         dot(ctx, mix, miy, GREEN, 7);
-        const minLines = [`최저  ${minW.toFixed(1)} kg`, ...drawMinIdx.slice(0, 2).map(i => fmt(pts[i].date))];
-        drawBox(ctx, mix, miy, mix+12, miy+Math.round(14*scale), minLines, '34,128,50', chart, sBP, sBLH, sFont0, sFont1);
+        if (!tight) {
+          const minLines = [`최저  ${minW.toFixed(1)} kg`, ...drawMinIdx.slice(0, 2).map(i => fmt(pts[i].date))];
+          drawBox(ctx, mix, miy, mix+12, miy+Math.round(14*scale), minLines, '34,128,50', chart, sBP, sBLH, sFont0, sFont1);
+        }
       }
     }
     if (showCurMarker) {
       const cp = pts[pts.length-1], cpx = gx(cp.t), cpy = gy(cp.w);
       dot(ctx, cpx, cpy, BLUE, 8); dot(ctx, cpx, cpy, GREEN, 5);
-      drawBox(ctx, cpx, cpy, cpx-sBOFF-10, cpy+Math.round(16*scale), [`현재  ${curW.toFixed(1)} kg`, fmt(cp.date)], '20,98,152', chart, sBP, sBLH, sFont0, sFont1);
+      if (!tight)
+        drawBox(ctx, cpx, cpy, cpx-sBOFF-10, cpy+Math.round(16*scale), [`현재  ${curW.toFixed(1)} kg`, fmt(cp.date)], '20,98,152', chart, sBP, sBLH, sFont0, sFont1);
     }
     if (!isMobile && !tight) {
       ctx.save(); ctx.fillStyle = 'rgba(235,75,75,.9)'; ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center';

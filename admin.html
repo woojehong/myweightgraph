@@ -7,6 +7,7 @@
   <meta property="og:title" content="관리자 | 마웨그">
   <meta property="og:type" content="website">
   <link rel="stylesheet" href="css/style.css">
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     .admin-grid{display:grid;grid-template-columns:280px 1fr;gap:16px;}
     @media(max-width:767px){.admin-grid{grid-template-columns:1fr;}}
@@ -107,6 +108,7 @@
 import { onAuthChange, adminSignOut, ADMIN_UID,
          getUsers, getUser, updateUser, deleteUser,
          getWeights, setWeight, deleteWeight, setDietExercise,
+         batchMergeWeights, toDateStr,
          getSettings, updateSettings,
          setUserPassword, parseWeight, DEFAULT_SETTINGS,
          getEarnedAchievements, invalidateAchievement,
@@ -286,6 +288,7 @@ function renderDetail(user, records, systemEarned=new Set()) {
         <div style="display:flex;gap:6px;flex-wrap:wrap">
           <button class="btn btn-primary btn-sm" onclick="window.open('dashboard.html?user=${user.id}&admin_view=1','_blank')">📊 그래프 보기</button>
           <button class="btn btn-ghost btn-sm" onclick="openEditUser('${user.id}')">✏️ 수정</button>
+          <button class="btn btn-ghost btn-sm" onclick="openImport('${user.id}')">📥 가져오기</button>
           <button class="btn btn-ghost btn-sm" onclick="openPwEdit('${user.id}','${user.name}')">🔑 비번</button>
         </div>
       </div>
@@ -558,6 +561,150 @@ window.confirmDelete=(uid,name)=>{
     document.getElementById('delModal').classList.remove('open');
     renderUserList(); showToast(`${name} 삭제 완료`,'ok');
   };
+};
+
+// ── 데이터 가져오기 (슈퍼관리자 상시) ──────────────────────────────────
+let _impRecords = [];   // 가져오기 대기 레코드 [{date, weight, ok}]
+let _impUid = null;
+
+window.openImport = uid => {
+  const u = allUsers.find(x => x.id === uid); if (!u) return;
+  _impUid = uid; _impRecords = [];
+  addModal(`
+    <div style="max-height:80vh;overflow-y:auto">
+      <h3>📥 ${u.name} — 데이터 가져오기</h3>
+      <p style="font-size:12px;color:var(--muted);margin:6px 0 12px">
+        엑셀/구글시트에서 날짜·체중 두 열을 복사해 붙여넣거나 파일을 올리세요.<br>
+        같은 날짜는 새 체중으로 교체되고, 식단·운동 기록은 보존됩니다.
+      </p>
+      <div class="input-group">
+        <label class="input-label">방법 1 — 붙여넣기</label>
+        <textarea class="paste-area" id="impPaste" style="min-height:90px" placeholder="2025-12-10&#9;124.0
+2026-01-07&#9;117.4
+..."></textarea>
+        <div class="flex-row gap-8 mt-8">
+          <button class="btn btn-ghost btn-sm" onclick="impClear()">지우기</button>
+          <button class="btn btn-primary btn-sm" onclick="impParsePaste()">미리보기</button>
+        </div>
+      </div>
+      <div class="input-group mt-12">
+        <label class="input-label">방법 2 — 파일 업로드 (.xlsx / .csv)</label>
+        <div class="dropzone" id="impDrop" onclick="document.getElementById('impFile').click()" style="padding:14px">
+          <div style="font-size:22px;margin-bottom:4px">📂</div>
+          <p style="font-size:12px">클릭하거나 파일을 드롭하세요</p>
+        </div>
+        <input type="file" id="impFile" accept=".xlsx,.xls,.csv" style="display:none" onchange="impHandleFile(event)">
+      </div>
+      <div id="impPreview" style="margin-top:10px"></div>
+      <div class="flex-row gap-8 mt-12">
+        <button class="btn btn-ghost btn-full" onclick="rmModal()">닫기</button>
+        <button class="btn btn-primary btn-full" id="impBtn" onclick="impDoImport()" disabled>가져오기</button>
+      </div>
+    </div>`);
+
+  // 드래그 앤 드롭
+  const dz = document.getElementById('impDrop');
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+  dz.addEventListener('drop', e => {
+    e.preventDefault(); dz.classList.remove('drag-over');
+    const f = e.dataTransfer.files[0];
+    if (f) impHandleFile({ target: { files: [f] } });
+  });
+};
+
+function impParseDate(raw) {
+  if (!raw) return null;
+  const s = String(raw).trim();
+  if (!s || s === '-') return null;
+  if (/^\d{5}$/.test(s)) return toDateStr(new Date((parseInt(s)-25569)*86400000));
+  const cleaned = s.replace(/[./년월]/g,'-').replace(/일/g,'').replace(/\s+/g,'');
+  const patterns = [/^(\d{4})-(\d{1,2})-(\d{1,2})$/, /^(\d{2})-(\d{1,2})-(\d{1,2})$/, /^(\d{1,2})-(\d{1,2})$/];
+  for (const p of patterns) {
+    const m = cleaned.match(p);
+    if (m) {
+      let y, mo, d;
+      if (m.length === 4) { y = m[1].length === 2 ? 2000+parseInt(m[1]) : parseInt(m[1]); mo = parseInt(m[2]); d = parseInt(m[3]); }
+      else { y = new Date().getFullYear(); mo = parseInt(m[1]); d = parseInt(m[2]); }
+      if (mo < 1 || mo > 12 || d < 1 || d > 31) return null;
+      return `${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    }
+  }
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? null : toDateStr(d);
+}
+
+function impParseRows(rows) {
+  const out = [];
+  for (const row of rows) {
+    if (!row || row.length < 2) continue;
+    let dv = null, wv = null;
+    for (let i = 0; i < row.length; i++) {
+      const cell = String(row[i]).trim();
+      if (!dv) { const d = impParseDate(cell); if (d) { dv = d; continue; } }
+      if (!wv && dv) { const w = parseWeight(cell); if (w !== null) { wv = w; break; } }
+    }
+    if (!dv) continue;
+    out.push({ date: dv, weight: wv, ok: wv !== null });
+  }
+  return out;
+}
+
+function impShowPreview(records) {
+  _impRecords = records.filter(r => r.ok);
+  const el = document.getElementById('impPreview');
+  const ok = _impRecords.length, skip = records.length - ok;
+  const btn = document.getElementById('impBtn');
+  if (!ok) {
+    el.innerHTML = '<p style="font-size:12px;color:var(--muted)">가져올 수 있는 데이터가 없어요.</p>';
+    if (btn) { btn.disabled = true; btn.textContent = '가져오기'; }
+    return;
+  }
+  el.innerHTML = `
+    <div style="font-size:12px;color:var(--teal);margin-bottom:6px">✓ ${ok}개 가져올 수 있음${skip ? ` · ${skip}개 건너뜀` : ''}</div>
+    <div style="max-height:140px;overflow-y:auto;font-size:11px;color:var(--muted);border:1px solid var(--border);border-radius:8px;padding:8px">
+      ${_impRecords.slice(0, 8).map(r => `<div>${r.date} — ${r.weight.toFixed(1)} kg</div>`).join('')}
+      ${ok > 8 ? `<div>...외 ${ok-8}개</div>` : ''}
+    </div>`;
+  if (btn) { btn.disabled = false; btn.textContent = `${ok}개 가져오기`; }
+}
+
+window.impClear = () => { const t = document.getElementById('impPaste'); if (t) t.value = ''; document.getElementById('impPreview').innerHTML = ''; _impRecords = []; const b = document.getElementById('impBtn'); if (b) { b.disabled = true; b.textContent = '가져오기'; } };
+
+window.impParsePaste = () => {
+  const text = (document.getElementById('impPaste')?.value || '').trim();
+  if (!text) { showToast('붙여넣을 데이터가 없어요', 'err'); return; }
+  impShowPreview(impParseRows(text.split('\n').map(l => l.split(/\t|,/))));
+};
+
+window.impHandleFile = e => {
+  const file = e.target.files[0]; if (!file) return;
+  if (typeof XLSX === 'undefined') { showToast('파일 라이브러리 로딩 중입니다. 잠시 후 다시 시도해주세요', 'err'); return; }
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const wb = XLSX.read(ev.target.result, { type:'array', cellDates:true });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const raw = XLSX.utils.sheet_to_json(ws, { header:1, raw:false, dateNF:'YYYY-MM-DD' });
+      impShowPreview(impParseRows(raw.filter(r => r.some(c => c))));
+    } catch (err) { showToast('파일 파싱 오류: ' + err.message, 'err'); }
+  };
+  reader.readAsArrayBuffer(file);
+};
+
+window.impDoImport = async () => {
+  if (!_impUid || !_impRecords.length) { showToast('가져올 데이터가 없어요', 'err'); return; }
+  const btn = document.getElementById('impBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '저장 중...'; }
+  try {
+    await batchMergeWeights(_impUid, _impRecords.map(r => ({ date: r.date, weight: r.weight })));
+    showToast(`${_impRecords.length}개 가져오기 완료 ✓`, 'ok');
+    rmModal();
+    selectUser(_impUid);
+  } catch (e) {
+    showToast('오류: ' + e.message, 'err');
+    if (btn) { btn.disabled = false; btn.textContent = '가져오기'; }
+  }
 };
 
 // ── 업적 강제 설정 UI ────────────────────────────────────────────────

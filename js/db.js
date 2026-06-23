@@ -120,6 +120,16 @@ export async function batchSetWeights(userId, records) {
     await batch.commit();
   }
 }
+// 병합 저장: 같은 날짜는 weight만 교체하고 식단·운동 등 기존 필드는 보존
+export async function batchMergeWeights(userId, records) {
+  for (let i=0; i<records.length; i+=499) {
+    const batch = writeBatch(db);
+    records.slice(i, i+499).forEach(r =>
+      batch.set(doc(db,'weights',userId,'records',r.date),
+        { date:r.date, weight:r.weight, updatedAt:serverTimestamp() }, { merge:true }));
+    await batch.commit();
+  }
+}
 export async function deleteWeight(userId, dateStr) {
   await deleteDoc(doc(db, 'weights', userId, 'records', dateStr));
 }

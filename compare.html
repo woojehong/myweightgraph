@@ -86,6 +86,18 @@
     .cmp-name{ font-size:13px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .cmp-score{ font-size:9px; color:var(--muted); }
 
+    /* ── 최고/최저/현재 배지 (프로필 줄 오른쪽 정렬) ───────────── */
+    .cmp-markers{ display:flex; gap:5px; margin-left:auto; flex-shrink:0; }
+    .mk{
+      display:flex; flex-direction:column; align-items:center; line-height:1.15;
+      padding:3px 7px; border-radius:7px; white-space:nowrap;
+    }
+    .mk b{ font-size:11px; font-weight:800; color:#fff; }
+    .mk span{ font-size:9px; color:rgba(255,255,255,.78); margin-top:1px; }
+    .mk-max{ background:rgba(195,65,42,.92); }
+    .mk-min{ background:rgba(34,128,50,.92); }
+    .mk-cur{ background:rgba(20,98,152,.92); }
+
     /* ── 모바일: 미니 프로필 2배 축소 (아이콘·텍스트 간격 확보) ── */
     @media(max-width:767px){
       .cmp-profile{ gap:8px; margin-bottom:6px; padding:0 6px; }
@@ -94,6 +106,10 @@
       .cmp-title{ font-size:7px; }
       .cmp-name{ font-size:9px; }
       .cmp-score{ font-size:7px; }
+      .cmp-markers{ gap:4px; }
+      .mk{ padding:2px 5px; border-radius:6px; }
+      .mk b{ font-size:9px; }
+      .mk span{ font-size:7px; }
     }
 
     /* ── 모바일: 헤더 심플화 (프로필·미입력 숨김) ─────────────── */
@@ -196,24 +212,50 @@ function saveSelected() {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(selected)); } catch (e) {}
 }
 
-// 모아보기 차트 옵션: '내 그래프'와 동일하게 메인 + 주간막대 + 식단 + 운동 모두 표시.
-// gridCell=true → 칸 너비에 맞춰 메인 그래프가 꽉 차도록 종횡비 계산.
+// 모아보기 차트 옵션: 메인 체중 + 식단 + 운동만 (주간막대 제외).
+// 최고/최저/현재는 점만 찍고(말풍선·리더선 없음) 값은 프로필 줄 배지로 표시.
+// gridCell=true → 칸 너비에 맞춰 그래프가 좌우/상하로 꽉 차도록 종횡비·여백 계산.
 function chartOpts() {
   return {
     ...S,
-    showWeeklyBar: true,
+    showWeeklyBar: false,
     showDietGraph: true,
     showExerciseGraph: true,
+    showMaxMarker: true,
+    showMinMarker: true,
+    showCurMarker: true,
     gridCell: true,
   };
 }
 
-// 선택 인원수에 따른 열 개수 자동 결정 (모바일 기준 2명까지 1열, 그 이상 2열)
+// 열 개수: 모바일은 항상 1열(1명씩 세로), 데스크탑은 한 줄에 최대 2명.
 function gridCols(n) {
   const desktop = window.matchMedia('(min-width:768px)').matches;
-  if (desktop) return n <= 1 ? 1 : (n <= 4 ? 2 : 3);
-  return n <= 2 ? 1 : 2;
+  return desktop ? (n <= 1 ? 1 : 2) : 1;
 }
+
+// 최고/최저/현재 값·날짜 산출 (배지 표시용)
+function markerStats(records) {
+  const pts = records.filter(r => r.weight != null).sort((a, b) => a.date.localeCompare(b.date));
+  if (!pts.length) return null;
+  const ws = pts.map(p => p.weight);
+  const maxW = Math.max(...ws), minW = Math.min(...ws);
+  const maxP = pts.find(p => p.weight === maxW);
+  let minP = pts[0];
+  for (let i = pts.length - 1; i >= 0; i--) { if (pts[i].weight === minW) { minP = pts[i]; break; } }
+  const curP = pts[pts.length - 1];
+  return {
+    maxW, maxDate: maxP.date,
+    minW, minDate: minP.date,
+    curW: curP.weight, curDate: curP.date,
+  };
+}
+
+// 날짜 → YY.MM.DD
+const shortDate = ds => {
+  const [y, m, d] = ds.split('-');
+  return `${y.slice(2)}.${m}.${d}`;
+};
 
 function setChip(u) {
   const tier = getTierForScore(u?.totalScore || 0, TIERS);
@@ -280,6 +322,21 @@ function cellHTML(u) {
   const body = hasData
     ? `<div class="cmp-chart"><canvas id="cv_${u.id}"></canvas></div>`
     : `<div class="cmp-empty">데이터가 부족해요</div>`;
+
+  // 최고(빨강)/최저(초록)/현재(파랑) 배지 — 프로필 줄 오른쪽
+  const m = markerStats(recs);
+  const badge = (cls, label, w, date) => `
+    <div class="mk ${cls}">
+      <b>${label} ${w.toFixed(1)}kg</b>
+      <span>${shortDate(date)}</span>
+    </div>`;
+  const markers = m ? `
+    <div class="cmp-markers">
+      ${badge('mk-max', '최고', m.maxW, m.maxDate)}
+      ${badge('mk-min', '최저', m.minW, m.minDate)}
+      ${badge('mk-cur', '현재', m.curW, m.curDate)}
+    </div>` : '';
+
   return `
     <div class="cmp-cell">
       <div class="cmp-profile">
@@ -291,6 +348,7 @@ function cellHTML(u) {
           <span class="cmp-name" style="color:${tc}">${u.name}</span>
           ${u.totalScore > 0 ? `<span class="cmp-score">${u.totalScore} PT</span>` : ''}
         </div>
+        ${markers}
       </div>
       ${body}
     </div>`;
