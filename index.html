@@ -548,7 +548,7 @@ function buildPinGrid() {
   });
 }
 function openPwModal(u){
-  pwTarget=u;pinVal='';
+  pwTarget=u;pinVal='';_pinBusy=false;
   document.getElementById('pwAvatar').textContent=u.emoji||'⚖️';
   document.getElementById('pwName').textContent=u.name;
   document.getElementById('pwErr').textContent='';
@@ -556,22 +556,32 @@ function openPwModal(u){
   document.getElementById('pwModal').classList.add('open');
 }
 window.closePwModal=()=>{document.getElementById('pwModal').classList.remove('open');pwTarget=null;pinVal='';};
+let _pinBusy = false;
 async function handlePin(key){
-  if(!pwTarget)return;
+  if(!pwTarget || _pinBusy) return;          // 검사 중에는 추가 입력 무시 (중복 처리 방지)
   if(key==='⌫'){pinVal=pinVal.slice(0,-1);}
   else if(pinVal.length<4){pinVal+=key;}
   updateDots();
   document.getElementById('pwErr').textContent='';
-  if(pinVal.length===4){
-    try{
-      const hash=await sha256(pinVal);
-      if(hash===pwTarget.passwordHash){
-        saveAuth(pwTarget.id,pwTarget.passwordHash);
-        localStorage.setItem('uid',pwTarget.id);
-        closePwModal();
-        location.href=`dashboard.html?user=${encodeURIComponent(pwTarget.id)}`;
-      }else{document.getElementById('pwErr').textContent='비밀번호가 틀렸어요';pinVal='';updateDots();}
-    }catch(e){document.getElementById('pwErr').textContent='오류: '+e.message;pinVal='';updateDots();}
+  if(pinVal.length!==4) return;
+
+  _pinBusy = true;
+  try{
+    const hash=await sha256(pinVal);
+    if(hash===pwTarget.passwordHash){
+      // 올바른 핀 → 즉시 해당 계정으로 자동 로그인
+      const dest=`dashboard.html?user=${encodeURIComponent(pwTarget.id)}`;
+      saveAuth(pwTarget.id,pwTarget.passwordHash);
+      localStorage.setItem('uid',pwTarget.id);
+      closePwModal();
+      location.href=dest;
+      return;                                 // 이동 중이므로 잠금 유지
+    }
+    document.getElementById('pwErr').textContent='비밀번호가 틀렸어요';
+    pinVal=''; updateDots(); _pinBusy=false;
+  }catch(e){
+    document.getElementById('pwErr').textContent='오류: '+e.message;
+    pinVal=''; updateDots(); _pinBusy=false;
   }
 }
 function updateDots(){document.querySelectorAll('.pw-dot').forEach((d,i)=>d.classList.toggle('filled',i<pinVal.length));}

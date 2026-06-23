@@ -14,6 +14,10 @@
     .user-list-item{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:8px;cursor:pointer;transition:background .15s;}
     .user-list-item:hover,.user-list-item.active{background:rgba(0,229,170,.08);}
     .user-list-item .av{width:34px;height:34px;border-radius:50%;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+    .ord-col{display:flex;flex-direction:column;gap:2px;flex-shrink:0;}
+    .ord-btn{width:20px;height:16px;line-height:1;padding:0;border-radius:4px;background:var(--surface2);border:1px solid var(--border);color:var(--muted);font-size:9px;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+    .ord-btn:hover:not(:disabled){background:rgba(0,229,170,.12);border-color:var(--teal);color:var(--teal);}
+    .ord-btn:disabled{opacity:.25;cursor:default;}
     .toggle-section-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;padding:10px 0 6px;border-bottom:1px solid var(--border);margin-bottom:2px;}
     .toggle-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);}
     .toggle-row:last-child{border-bottom:none;}
@@ -108,7 +112,7 @@
 import { onAuthChange, adminSignOut, ADMIN_UID,
          getUsers, getUser, updateUser, deleteUser,
          getWeights, setWeight, deleteWeight, setDietExercise,
-         batchMergeWeights, toDateStr,
+         batchMergeWeights, toDateStr, saveUserOrder,
          getSettings, updateSettings,
          setUserPassword, parseWeight, DEFAULT_SETTINGS,
          getEarnedAchievements, invalidateAchievement,
@@ -184,8 +188,14 @@ function renderApp() {
 function renderUserList() {
   const el = document.getElementById('userList');
   if (!allUsers.length) { el.innerHTML='<p class="text-muted" style="padding:10px 0;font-size:13px">사용자 없음</p>'; return; }
-  el.innerHTML = allUsers.map(u => `
+  const last = allUsers.length - 1;
+  el.innerHTML = `<div style="font-size:11px;color:var(--muted);padding:2px 2px 8px">▲▼로 순서를 바꾸면 로그인·모아보기 등 모든 목록에 적용됩니다.</div>` +
+    allUsers.map((u, idx) => `
     <div class="user-list-item ${u.id===selectedUid?'active':''}" onclick="selectUser('${u.id}')">
+      <div class="ord-col">
+        <button class="ord-btn" ${idx===0?'disabled':''} onclick="event.stopPropagation();moveUser('${u.id}',-1)">▲</button>
+        <button class="ord-btn" ${idx===last?'disabled':''} onclick="event.stopPropagation();moveUser('${u.id}',1)">▼</button>
+      </div>
       <div class="av">${u.emoji||'⚖️'}</div>
       <div style="flex:1;min-width:0">
         <div style="font-weight:700;font-size:13px">${u.name}</div>
@@ -194,6 +204,18 @@ function renderUserList() {
       <button class="del-btn" onclick="event.stopPropagation();confirmDelete('${u.id}','${u.name}')">✕</button>
     </div>`).join('');
 }
+
+window.moveUser = async (id, dir) => {
+  const i = allUsers.findIndex(u => u.id === id);
+  if (i < 0) return;
+  const j = i + dir;
+  if (j < 0 || j >= allUsers.length) return;
+  [allUsers[i], allUsers[j]] = [allUsers[j], allUsers[i]];
+  allUsers.forEach((u, k) => { u.sortOrder = k; });
+  renderUserList();
+  try { await saveUserOrder(allUsers.map(u => u.id)); showToast('순서 저장됨 ✓', 'ok'); }
+  catch (e) { showToast('오류: ' + e.message, 'err'); }
+};
 
 // ── 기능 토글 ─────────────────────────────────────────────────────────
 const FEATURE_GROUPS = [

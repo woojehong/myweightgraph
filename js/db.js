@@ -32,9 +32,36 @@ export async function adminSignOut() { return signOut(auth); }
 export function onAuthChange(cb) { return onAuthStateChanged(auth, cb); }
 
 // ── 사용자 ──────────────────────────────────────────────────────────
+// 정렬 기준: 관리자 지정 순서(sortOrder)가 있으면 우선, 없으면 계정 생성순(createdAt)
+function createdMs(u) {
+  const c = u.createdAt;
+  if (!c) return Number.MAX_SAFE_INTEGER; // createdAt 없는 구계정은 뒤로
+  if (typeof c.toMillis === 'function') return c.toMillis();
+  if (typeof c.seconds === 'number') return c.seconds * 1000;
+  const t = new Date(c).getTime();
+  return isNaN(t) ? Number.MAX_SAFE_INTEGER : t;
+}
+export function sortUsers(users) {
+  return [...users].sort((a, b) => {
+    const aHas = Number.isFinite(a.sortOrder), bHas = Number.isFinite(b.sortOrder);
+    if (aHas && bHas) return a.sortOrder - b.sortOrder;
+    if (aHas) return -1;
+    if (bHas) return 1;
+    return createdMs(a) - createdMs(b);
+  });
+}
 export async function getUsers() {
   const snap = await getDocs(collection(db, 'users'));
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  return sortUsers(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+}
+// 관리자 지정 순서 저장: 전달된 id 순서대로 sortOrder = 0,1,2...
+export async function saveUserOrder(orderedIds) {
+  for (let i = 0; i < orderedIds.length; i += 499) {
+    const batch = writeBatch(db);
+    orderedIds.slice(i, i + 499).forEach((id, j) =>
+      batch.set(doc(db, 'users', id), { sortOrder: i + j }, { merge: true }));
+    await batch.commit();
+  }
 }
 export async function getUser(userId) {
   const snap = await getDoc(doc(db, 'users', userId));
