@@ -34,13 +34,17 @@
   background: conic-gradient(var(--tier-color,#00e5aa), #ffffff, var(--tier-color,#00e5aa));
   animation: spin-border 3s linear infinite;
 }
-@keyframes spin-border { to { transform: rotate(360deg); } }
+/* 회전(빙글빙글) 비활성화 — 정적으로 유지. 색은 제자리에서 흐르게 hue-cycle 사용 */
+@keyframes spin-border { from, to { transform: none; } }
+@keyframes hue-cycle { to { filter: hue-rotate(360deg); } }
 .border-rotating-gradient .avatar { transform: rotate(0deg); }
+/* 회전 그라데이션도 회전 대신 부드러운 글로우로 */
+.border-rotating-gradient { animation: pulse-glow 2.5s ease-in-out infinite !important; }
 
 /* ── 3. 레인보우 ────────────────────────────────────────────────── */
 .border-rainbow {
   background: conic-gradient(#ff0000,#ff8800,#ffff00,#00ff00,#0088ff,#8800ff,#ff0000);
-  animation: spin-border 4s linear infinite;
+  animation: hue-cycle 6s linear infinite;
 }
 
 /* ── 4. 샤이머 ──────────────────────────────────────────────────── */
@@ -186,7 +190,13 @@
 /* ── 18. 홀로그램 ───────────────────────────────────────────────── */
 .border-hologram {
   background: conic-gradient(#ff0080, #ff8c00, #40e0d0, #ff0080, #8b00ff, #ff0080);
-  animation: spin-border 3s linear infinite, holo-brightness 2s ease-in-out infinite alternate;
+  animation: holo-shift 5s linear infinite;
+  filter: saturate(1.8);
+}
+@keyframes holo-shift {
+  0%   { filter: hue-rotate(0deg)   saturate(1.8) brightness(1.1); }
+  50%  { filter: hue-rotate(180deg) saturate(2.2) brightness(1.35); }
+  100% { filter: hue-rotate(360deg) saturate(1.8) brightness(1.1); }
 }
 @keyframes holo-brightness {
   0%   { filter: brightness(1) saturate(1.5); }
@@ -666,4 +676,96 @@
 @keyframes epic-burst-huge {
   0%,72%,100% { box-shadow: 0 0 8px 3px #ff6a00aa, 0 0 18px 6px #ffd00044; }
   84%         { box-shadow: 0 0 40px 16px #ffffffcc, 0 0 90px 40px #ff6a00aa, 0 0 150px 70px #ffd00044; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════ */
+/* ▣ 무기 모션 팩 — 테두리에서 검을 꺼내 휘두르는 모션 (회전 아님)    */
+/* 공통 키프레임: 칼을 살짝 당겼다가 빠르게 베고 다시 거둠 + 슬래시   */
+/* ═══════════════════════════════════════════════════════════════════ */
+@keyframes sword-swing {
+  0%, 48%  { transform: rotate(152deg); }
+  60%      { transform: rotate(138deg); }                 /* 당김 */
+  72%      { transform: rotate(232deg); }                 /* 베기 */
+  84%      { transform: rotate(152deg); }
+  100%     { transform: rotate(152deg); }
+}
+@keyframes slash-flash {
+  0%, 62%, 100% { opacity: 0; transform: rotate(0deg)  scale(0.96); }
+  72%           { opacity: 1; transform: rotate(64deg) scale(1.08); }
+  84%           { opacity: 0; transform: rotate(90deg) scale(1.14); }
+}
+@keyframes blade-gleam {
+  0%, 60%, 100% { box-shadow: 0 0 4px 1px rgba(220,235,255,.5); }
+  72%           { box-shadow: 0 0 16px 6px #ffffff; }
+}
+
+/* 58. 검무 — 강철 검 */
+.border-sword-slash {
+  background: conic-gradient(#2a2f3a,#5a6473,#2a2f3a,#444b59,#2a2f3a);
+  box-shadow: 0 0 7px 2px rgba(180,200,230,.4);
+  overflow: visible;
+}
+.border-sword-slash::after {
+  content:''; position:absolute; left:50%; top:50%;
+  width:3px; height:30px; margin-left:-1.5px;
+  background: linear-gradient(to top,#6b7280 0%,#cfd8e3 35%,#ffffff 85%,#ffffff 100%);
+  border-radius:1px 1px 0 0; transform-origin:50% 0;
+  z-index:6; pointer-events:none;
+  animation: sword-swing 3.4s ease-in-out infinite, blade-gleam 3.4s ease-in-out infinite;
+}
+.border-sword-slash::before {
+  content:''; position:absolute; inset:-7px; border-radius:50%;
+  background: conic-gradient(from 95deg, transparent 0deg, rgba(210,235,255,0) 22deg, rgba(225,242,255,.9) 52deg, rgba(210,235,255,0) 82deg, transparent 360deg);
+  opacity:0; z-index:5; pointer-events:none;
+  animation: slash-flash 3.4s ease-in-out infinite;
+}
+
+/* 59. 화염검 — 불타는 검 */
+.border-flame-blade {
+  background: conic-gradient(#2a0a00,#7a1f00,#2a0a00,#5c1500,#2a0a00);
+  box-shadow: 0 0 9px 3px rgba(255,90,0,.45);
+  overflow: visible;
+}
+.border-flame-blade::after {
+  content:''; position:absolute; left:50%; top:50%;
+  width:3px; height:30px; margin-left:-1.5px;
+  background: linear-gradient(to top,#7a1f00 0%,#ff5500 30%,#ff9d00 70%,#ffe08a 100%);
+  border-radius:1px 1px 0 0; transform-origin:50% 0;
+  z-index:6; pointer-events:none;
+  animation: sword-swing 3s ease-in-out infinite, blade-gleam-fire 3s ease-in-out infinite;
+}
+.border-flame-blade::before {
+  content:''; position:absolute; inset:-8px; border-radius:50%;
+  background: conic-gradient(from 95deg, transparent 0deg, rgba(255,150,0,0) 22deg, rgba(255,140,0,.9) 52deg, rgba(255,90,0,0) 82deg, transparent 360deg);
+  opacity:0; z-index:5; pointer-events:none;
+  animation: slash-flash 3s ease-in-out infinite;
+}
+@keyframes blade-gleam-fire {
+  0%, 60%, 100% { box-shadow: 0 0 6px 2px rgba(255,120,0,.6); }
+  72%           { box-shadow: 0 0 20px 8px #ffcc66, 0 0 36px 14px #ff550066; }
+}
+
+/* 60. 성스러운 대검 — 금빛 대검 */
+.border-holy-greatsword {
+  background: conic-gradient(#3a2e00,#9c7b00,#3a2e00,#6b5400,#3a2e00);
+  box-shadow: 0 0 9px 3px rgba(255,215,0,.45);
+  overflow: visible;
+}
+.border-holy-greatsword::after {
+  content:''; position:absolute; left:50%; top:50%;
+  width:4px; height:33px; margin-left:-2px;
+  background: linear-gradient(to top,#8a6d00 0%,#ffd700 35%,#fff3b0 80%,#ffffff 100%);
+  border-radius:2px 2px 0 0; transform-origin:50% 0;
+  z-index:6; pointer-events:none;
+  animation: sword-swing 3.6s ease-in-out infinite, blade-gleam-holy 3.6s ease-in-out infinite;
+}
+.border-holy-greatsword::before {
+  content:''; position:absolute; inset:-9px; border-radius:50%;
+  background: conic-gradient(from 95deg, transparent 0deg, rgba(255,235,150,0) 22deg, rgba(255,245,200,.95) 52deg, rgba(255,215,0,0) 82deg, transparent 360deg);
+  opacity:0; z-index:5; pointer-events:none;
+  animation: slash-flash 3.6s ease-in-out infinite;
+}
+@keyframes blade-gleam-holy {
+  0%, 60%, 100% { box-shadow: 0 0 6px 2px rgba(255,215,0,.6); }
+  72%           { box-shadow: 0 0 22px 9px #ffffff, 0 0 40px 16px #ffd70066; }
 }
