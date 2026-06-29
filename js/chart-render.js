@@ -198,7 +198,7 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
     }
     if (showCurMarker) {
       const cp = pts[pts.length-1], cpx = gx(cp.t), cpy = gy(cp.w);
-      dot(ctx, cpx, cpy, BLUE, 8); dot(ctx, cpx, cpy, GREEN, 5);
+      dot(ctx, cpx, cpy, BLUE, 7);
       if (!tight)
         drawBox(ctx, cpx, cpy, cpx-sBOFF-10, cpy+Math.round(16*scale), [`현재  ${curW.toFixed(1)} kg`, fmt(cp.date)], '20,98,152', chart, sBP, sBLH, sFont0, sFont1);
     }
