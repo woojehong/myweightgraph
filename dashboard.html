@@ -34,6 +34,16 @@
     .opt-sep{width:1px;height:16px;background:var(--border);flex-shrink:0;}
     .opt-label{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;white-space:nowrap;}
 
+    /* 일간/주간/월간 토글 (우측 상단) */
+    .gran-row{display:flex;gap:4px;justify-content:flex-end;margin-bottom:8px;}
+    .gran-btn{
+      padding:5px 12px;border-radius:16px;font-size:12px;font-weight:700;
+      background:var(--surface2);border:1px solid var(--border);color:var(--muted);transition:all .15s;
+    }
+    .gran-btn:hover{color:var(--text);}
+    .gran-btn.active{background:rgba(0,229,170,.14);border-color:var(--teal);color:var(--teal);}
+    @media(max-width:767px){ .gran-btn{padding:4px 10px;font-size:11px;} }
+
     /* 최고/최저/현재 요약 배지 (우측 정렬) */
     .mk-row{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap;margin-bottom:8px;}
     .mk{display:flex;flex-direction:column;align-items:center;line-height:1.15;padding:4px 9px;border-radius:8px;white-space:nowrap;}
@@ -140,7 +150,7 @@
 <script type="module">
 import { getUser, getWeights, getSettings, updateSettings, toDateStr, updateUser, setUserPassword, getTierSettings } from './js/db.js';
 import { isAuthed, clearAuth, saveAuth } from './js/auth.js';
-import { renderChart, calcStats } from './js/chart-render.js';
+import { renderChart, calcStats, aggregateRecords } from './js/chart-render.js';
 import { getTierForScore, DEFAULT_TIERS } from './js/achievements.js';
 
 const uid = new URLSearchParams(location.search).get('user') || localStorage.getItem('uid');
@@ -165,7 +175,39 @@ function buildNav(uid) {
   });
 }
 
-let S={}, user=null, records=[];
+let S={}, user=null, records=[], stats=null;
+
+// 일간/주간/월간 — 항상 '일간'으로 시작 (새로고침 시 초기화, 저장 안 함)
+let viewMode = 'day';
+const viewRecords = () => aggregateRecords(records, viewMode);
+// 주간·월간에서는 평균선만 표시 (7일평균·예상·주간막대·식단/운동 숨김)
+const viewOpts = () => viewMode === 'day' ? S : {
+  ...S, show7dayMA:false, showPrediction:false,
+  showWeeklyBar:false, showDietGraph:false, showExerciseGraph:false,
+};
+
+function granRowHtml() {
+  const b = (m, label) =>
+    `<button class="gran-btn ${viewMode===m?'active':''}" data-m="${m}" onclick="setViewMode('${m}')">${label}</button>`;
+  return `<div class="gran-row">${b('day','일간')}${b('week','주간')}${b('month','월간')}</div>`;
+}
+
+window.setViewMode = m => {
+  if (viewMode === m) return;
+  viewMode = m;
+  document.querySelectorAll('.gran-btn').forEach(x => x.classList.toggle('active', x.dataset.m === m));
+  refreshView();
+};
+
+// 현재 단위 기준으로 그래프·마커·스탯 모두 갱신 (마커/스탯도 평균 기준)
+function refreshView() {
+  const vr = viewRecords();
+  stats = calcStats(vr, user);
+  const mk = document.getElementById('mkRowWrap');
+  if (mk) mk.innerHTML = markerRowHtml(vr);
+  doRender();
+  renderStats(stats);
+}
 
 // 최고(빨강)/최저(초록)/현재(파랑) 요약 배지 — 우측 상단
 function markerRowHtml(recs) {
@@ -207,7 +249,7 @@ async function render() {
   setChipData(user, _tier.color);
   document.title = `${user.name} | 마웨그`;
 
-  const stats   = calcStats(records, user);
+  stats = calcStats(records, user);
   const content = document.getElementById('content');
 
   if (!stats || records.filter(r=>r.weight).length < 2) {
@@ -224,7 +266,8 @@ async function render() {
   }
 
   content.innerHTML=`
-    ${markerRowHtml(records)}
+    ${granRowHtml()}
+    <div id="mkRowWrap">${markerRowHtml(records)}</div>
     <div class="chart-wrap" style="position:relative">
       <canvas id="mainC"></canvas>
       <div style="position:absolute;top:8px;right:8px;display:flex;gap:4px;z-index:10">
@@ -279,9 +322,8 @@ async function render() {
 
     `;
 
-  doRender();
-  renderStats(stats);
-  bindToggles(stats);
+  refreshView();
+  bindToggles();
   checkTodayAlert();
 }
 
@@ -489,7 +531,7 @@ function checkTodayAlert() {
 function doRender() {
   const mainC=document.getElementById('mainC');
   if(mainC) {
-    renderChart(records, user, mainC, null, S);
+    renderChart(viewRecords(), user, mainC, null, viewOpts());
   }
 }
 
@@ -520,7 +562,7 @@ function renderStats(stats) {
   sg.innerHTML = cards.join('');
 }
 
-function bindToggles(stats) {
+function bindToggles() {
   // 그래프 토글
   const bind=(id, key, extra)=>{
     document.getElementById(id)?.addEventListener('change', async e=>{

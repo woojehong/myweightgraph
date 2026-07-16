@@ -27,6 +27,16 @@
       background:var(--bg); padding:10px 0 8px;
       border-bottom:1px solid var(--border);
     }
+    /* 일간/주간/월간 토글 (우측 상단 · 전체 공통 적용) */
+    .gran-row{ display:flex; gap:4px; justify-content:flex-end; margin-bottom:8px; }
+    .gran-btn{
+      padding:5px 12px; border-radius:16px; font-size:12px; font-weight:700;
+      background:var(--surface2); border:1px solid var(--border); color:var(--muted); transition:all .15s;
+    }
+    .gran-btn:hover{ color:var(--text); }
+    .gran-btn.active{ background:rgba(0,229,170,.14); border-color:var(--teal); color:var(--teal); }
+    @media(max-width:767px){ .gran-btn{ padding:4px 10px; font-size:11px; } }
+
     .picker{
       display:flex; gap:8px; overflow-x:auto; padding:2px 2px 6px;
       -webkit-overflow-scrolling:touch; scrollbar-width:thin;
@@ -156,6 +166,11 @@
 
 <div class="page">
   <div class="compare-bar">
+    <div class="gran-row">
+      <button class="gran-btn active" data-m="day"   onclick="setViewMode('day')">일간</button>
+      <button class="gran-btn"        data-m="week"  onclick="setViewMode('week')">주간</button>
+      <button class="gran-btn"        data-m="month" onclick="setViewMode('month')">월간</button>
+    </div>
     <div class="picker" id="picker">
       <div class="loading"><div class="spinner"></div></div>
     </div>
@@ -170,7 +185,7 @@
 <script type="module">
 import { getUser, getUsers, getWeights, getSettings, getTierSettings } from './js/db.js';
 import { isAuthed, clearAuth } from './js/auth.js';
-import { renderChart } from './js/chart-render.js';
+import { renderChart, aggregateRecords } from './js/chart-render.js';
 import { getTierForScore, DEFAULT_TIERS } from './js/achievements.js';
 
 const uid = new URLSearchParams(location.search).get('user') || localStorage.getItem('uid');
@@ -199,6 +214,15 @@ let allUsers = [], TIERS = DEFAULT_TIERS, S = {}, curUser = null;
 let selected = [];       // 선택된 uid 배열 (표시 순서 유지)
 const weightsCache = {}; // uid -> records
 
+// 일간/주간/월간 — 항상 '일간'으로 시작 (새로고침 시 초기화, 저장 안 함)
+let viewMode = 'day';
+window.setViewMode = m => {
+  if (viewMode === m) return;
+  viewMode = m;
+  document.querySelectorAll('.gran-btn').forEach(x => x.classList.toggle('active', x.dataset.m === m));
+  renderGrid();
+};
+
 const STORAGE_KEY = 'compare_selected_uids';
 function loadSelected() {
   try {
@@ -216,7 +240,7 @@ function saveSelected() {
 // 최고/최저/현재는 점만 찍고(말풍선·리더선 없음) 값은 프로필 줄 배지로 표시.
 // gridCell=true → 칸 너비에 맞춰 그래프가 좌우/상하로 꽉 차도록 종횡비·여백 계산.
 function chartOpts() {
-  return {
+  const base = {
     ...S,
     showWeeklyBar: false,
     showDietGraph: true,
@@ -226,6 +250,11 @@ function chartOpts() {
     showCurMarker: true,
     gridCell: true,
   };
+  // 주간·월간은 평균선만 (식단/운동·이동평균·예상 숨김)
+  if (viewMode !== 'day') {
+    return { ...base, showDietGraph:false, showExerciseGraph:false, show7dayMA:false, showPrediction:false };
+  }
+  return base;
 }
 
 // 열 개수: 모바일은 항상 1열(1명씩 세로), 데스크탑은 한 줄에 최대 2명.
@@ -317,7 +346,7 @@ function cellHTML(u) {
   const tier = getTierForScore(u.totalScore || 0, TIERS);
   const tc = tier.color;
   const bClass = u.selectedBorder ? ' border-' + u.selectedBorder : '';
-  const recs = weightsCache[u.id] || [];
+  const recs = aggregateRecords(weightsCache[u.id] || [], viewMode);
   const hasData = recs.filter(r => r.weight != null).length >= 2;
   const body = hasData
     ? `<div class="cmp-chart"><canvas id="cv_${u.id}"></canvas></div>`
@@ -378,7 +407,7 @@ async function renderGrid() {
   const opts = chartOpts();
   users.forEach(u => {
     const cv = document.getElementById('cv_' + u.id);
-    const recs = weightsCache[u.id] || [];
+    const recs = aggregateRecords(weightsCache[u.id] || [], viewMode);
     if (cv && recs.filter(r => r.weight != null).length >= 2) {
       try { renderChart(recs, u, cv, null, opts); } catch (e) {}
     }

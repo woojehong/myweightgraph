@@ -1,5 +1,44 @@
 // chart-render.js
 
+// ── 일간/주간/월간 집계 ────────────────────────────────────────────────
+// mode: 'day' | 'week' | 'month'
+// 'day'  → 원본 그대로 반환 (식단·운동 등 부가 필드 유지)
+// 'week' → 일요일 시작 주 단위 평균 (기록이 1개라도 있으면 집계)
+// 'month'→ 달력 월 단위 평균
+// 반환: [{ date, weight }] — date는 해당 구간의 시작일(주=일요일, 월=1일)
+export function aggregateRecords(records, mode = 'day') {
+  if (mode === 'day') return records;
+  const pts = records.filter(r => r.weight != null && r.date);
+  if (!pts.length) return [];
+
+  const bucketStart = ds => {
+    const dt = new Date(ds);
+    if (mode === 'week') {
+      const s = new Date(dt);
+      s.setDate(s.getDate() - s.getDay());   // 일요일로 정렬
+      s.setHours(0, 0, 0, 0);
+      return s;
+    }
+    return new Date(dt.getFullYear(), dt.getMonth(), 1);
+  };
+  const fmtKey = d =>
+    `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+
+  const buckets = new Map();
+  pts.forEach(r => {
+    const k = fmtKey(bucketStart(r.date));
+    if (!buckets.has(k)) buckets.set(k, []);
+    buckets.get(k).push(r.weight);
+  });
+
+  return [...buckets.entries()]
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([date, ws]) => ({
+      date,
+      weight: +(ws.reduce((s, v) => s + v, 0) / ws.length).toFixed(1),
+    }));
+}
+
 export function renderChart(records, userProfile, canvasMain, canvasBar = null, options = {}) {
   const goal = userProfile?.goal ?? 80;
   const {
