@@ -39,6 +39,23 @@ export function aggregateRecords(records, mode = 'day') {
     }));
 }
 
+// ── 기간 라벨 ──────────────────────────────────────────────────────────
+// mode 'day'   → 2026.06.24
+// mode 'week'  → 2026년 6월 4주차   (해당 주 일요일 기준)
+// mode 'month' → 2026년 6월
+export function periodLabel(dateLike, mode = 'day') {
+  const d = dateLike instanceof Date ? dateLike : new Date(dateLike);
+  if (mode === 'month') return `${d.getFullYear()}년 ${d.getMonth()+1}월`;
+  if (mode === 'week') {
+    const first = new Date(d.getFullYear(), d.getMonth(), 1);
+    const firstSun = new Date(first);
+    firstSun.setDate(firstSun.getDate() - firstSun.getDay());
+    const n = Math.round((d - firstSun) / (7 * 86400000)) + 1;
+    return `${d.getFullYear()}년 ${d.getMonth()+1}월 ${n}주차`;
+  }
+  return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+}
+
 export function renderChart(records, userProfile, canvasMain, canvasBar = null, options = {}) {
   const goal = userProfile?.goal ?? 80;
   const {
@@ -52,6 +69,7 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
     showMinMarker     = true,
     showCurMarker     = true,
     gridCell          = false,
+    labelMode         = 'day',   // 마커·툴팁 라벨 표기 단위
   } = options;
 
   if (canvasMain._chartInstance) canvasMain._chartInstance.destroy();
@@ -70,6 +88,7 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
   const minIndices = ws.reduce((a, w, i) => w === minW ? [...a, i] : a, []);
 
   const fmt      = d => `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+  const lbl      = d => periodLabel(d, labelMode);   // 일간=날짜, 주간/월간=기간 표기
   const isMobile = window.innerWidth < 768;
   const tight    = gridCell; // 모아보기: 좌우/하단 여백 최소화
   const Y_AXIS_W = (isMobile || tight) ? 42 : 52;
@@ -221,7 +240,7 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
       dot(ctx, gx(mp.t), gy(mp.w), RED, 7);
       // tight(모아보기): 점만 표시, 말풍선·리더선 생략 (값은 프로필 줄 배지로 표시)
       if (!tight)
-        drawBox(ctx, gx(mp.t), gy(mp.w), gx(mp.t)+12, gy(mp.w)+Math.round(14*scale), [`최고  ${maxW.toFixed(1)} kg`, fmt(mp.date)], '195,65,42', chart, sBP, sBLH, sFont0, sFont1);
+        drawBox(ctx, gx(mp.t), gy(mp.w), gx(mp.t)+12, gy(mp.w)+Math.round(14*scale), [`최고  ${maxW.toFixed(1)} kg`, lbl(mp.date)], '195,65,42', chart, sBP, sBLH, sFont0, sFont1);
     }
     if (showMinMarker) {
       const lastIdx = pts.length - 1;
@@ -230,7 +249,7 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
         const mi = pts[drawMinIdx[drawMinIdx.length-1]], mix = gx(mi.t), miy = gy(mi.w);
         dot(ctx, mix, miy, GREEN, 7);
         if (!tight) {
-          const minLines = [`최저  ${minW.toFixed(1)} kg`, ...drawMinIdx.slice(0, 2).map(i => fmt(pts[i].date))];
+          const minLines = [`최저  ${minW.toFixed(1)} kg`, ...drawMinIdx.slice(0, 2).map(i => lbl(pts[i].date))];
           drawBox(ctx, mix, miy, mix+12, miy+Math.round(14*scale), minLines, '34,128,50', chart, sBP, sBLH, sFont0, sFont1);
         }
       }
@@ -239,7 +258,7 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
       const cp = pts[pts.length-1], cpx = gx(cp.t), cpy = gy(cp.w);
       dot(ctx, cpx, cpy, BLUE, 7);
       if (!tight)
-        drawBox(ctx, cpx, cpy, cpx-sBOFF-10, cpy+Math.round(16*scale), [`현재  ${curW.toFixed(1)} kg`, fmt(cp.date)], '20,98,152', chart, sBP, sBLH, sFont0, sFont1);
+        drawBox(ctx, cpx, cpy, cpx-sBOFF-10, cpy+Math.round(16*scale), [`현재  ${curW.toFixed(1)} kg`, lbl(cp.date)], '20,98,152', chart, sBP, sBLH, sFont0, sFont1);
     }
     if (!isMobile && !tight) {
       ctx.save(); ctx.fillStyle = 'rgba(235,75,75,.9)'; ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center';
@@ -557,7 +576,7 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
           backgroundColor: 'rgba(10,18,32,.95)', titleColor: '#fff', bodyColor: 'rgba(255,255,255,.75)', padding: 9,
           filter: item => item.dataset.label !== '목표' && item.parsed.y != null,
           callbacks: {
-            title: items => { if (!items.length) return ''; const maxX = Math.max(...items.map(i => i.parsed.x)); return fmt(new Date(maxX)); },
+            title: items => { if (!items.length) return ''; const maxX = Math.max(...items.map(i => i.parsed.x)); return lbl(new Date(maxX)); },
             label: item => ` ${item.dataset.label}: ${item.parsed.y?.toFixed(1)} kg`
           }
         },

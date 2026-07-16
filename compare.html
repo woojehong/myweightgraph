@@ -185,7 +185,7 @@
 <script type="module">
 import { getUser, getUsers, getWeights, getSettings, getTierSettings } from './js/db.js';
 import { isAuthed, clearAuth } from './js/auth.js';
-import { renderChart, aggregateRecords } from './js/chart-render.js';
+import { renderChart, aggregateRecords, periodLabel } from './js/chart-render.js';
 import { getTierForScore, DEFAULT_TIERS } from './js/achievements.js';
 
 const uid = new URLSearchParams(location.search).get('user') || localStorage.getItem('uid');
@@ -249,6 +249,7 @@ function chartOpts() {
     showMinMarker: true,
     showCurMarker: true,
     gridCell: true,
+    labelMode: viewMode,
   };
   // 주간·월간은 평균선만 (식단/운동·이동평균·예상 숨김)
   if (viewMode !== 'day') {
@@ -280,8 +281,9 @@ function markerStats(records) {
   };
 }
 
-// 날짜 → YY.MM.DD
+// 일간=YY.MM.DD, 주간=0000년 0월 0주차, 월간=0000년 0월
 const shortDate = ds => {
+  if (viewMode !== 'day') return periodLabel(ds, viewMode);
   const [y, m, d] = ds.split('-');
   return `${y.slice(2)}.${m}.${d}`;
 };

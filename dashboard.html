@@ -150,7 +150,7 @@
 <script type="module">
 import { getUser, getWeights, getSettings, updateSettings, toDateStr, updateUser, setUserPassword, getTierSettings } from './js/db.js';
 import { isAuthed, clearAuth, saveAuth } from './js/auth.js';
-import { renderChart, calcStats, aggregateRecords } from './js/chart-render.js';
+import { renderChart, calcStats, aggregateRecords, periodLabel } from './js/chart-render.js';
 import { getTierForScore, DEFAULT_TIERS } from './js/achievements.js';
 
 const uid = new URLSearchParams(location.search).get('user') || localStorage.getItem('uid');
@@ -181,10 +181,10 @@ let S={}, user=null, records=[], stats=null;
 let viewMode = 'day';
 const viewRecords = () => aggregateRecords(records, viewMode);
 // 주간·월간에서는 평균선만 표시 (7일평균·예상·주간막대·식단/운동 숨김)
-const viewOpts = () => viewMode === 'day' ? S : {
-  ...S, show7dayMA:false, showPrediction:false,
-  showWeeklyBar:false, showDietGraph:false, showExerciseGraph:false,
-};
+const viewOpts = () => viewMode === 'day'
+  ? { ...S, labelMode:'day' }
+  : { ...S, labelMode:viewMode, show7dayMA:false, showPrediction:false,
+      showWeeklyBar:false, showDietGraph:false, showExerciseGraph:false };
 
 function granRowHtml() {
   const b = (m, label) =>
@@ -219,7 +219,10 @@ function markerRowHtml(recs) {
   let minP = pts[0];
   for (let i = pts.length - 1; i >= 0; i--) { if (pts[i].weight === minW) { minP = pts[i]; break; } }
   const curP = pts[pts.length - 1];
-  const sd = ds => { const [y, m, d] = ds.split('-'); return `${y.slice(2)}.${m}.${d}`; };
+  // 일간=YY.MM.DD, 주간=0000년 0월 0주차, 월간=0000년 0월
+  const sd = ds => viewMode === 'day'
+    ? (([y, m, d]) => `${y.slice(2)}.${m}.${d}`)(ds.split('-'))
+    : periodLabel(ds, viewMode);
   const b = (cls, label, w, date) => `<div class="mk ${cls}"><b>${label} ${w.toFixed(1)}kg</b><span>${sd(date)}</span></div>`;
   return `<div class="mk-row">
     ${b('mk-max', '최고', maxW, maxP.date)}
