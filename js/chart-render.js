@@ -549,7 +549,12 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
   ];
   if (show7dayMA)
     datasets.push({ label: '7일 이동평균', data: ma7, borderColor: ORANGE, backgroundColor: 'transparent', borderWidth: 1.8, borderDash: [7,4], pointRadius: 0, tension: .3, order: 2 });
-  datasets.push({ label: '실제 체중', data: pts.map(p => ({ x: p.t, y: p.w })), borderColor: TEAL, backgroundColor: 'transparent', borderWidth: 2.2, pointRadius: 0, pointHoverRadius: 5, tension: .15, spanGaps: false, order: 1 });
+  // 일간은 점이 수백 개라 숨기고, 주간·월간은 각 지점이 보이도록 점 표시
+  const mainPointR = labelMode === 'day' ? 0 : (gridCell ? 2.6 : 3.6);
+  datasets.push({ label: '실제 체중', data: pts.map(p => ({ x: p.t, y: p.w })), borderColor: TEAL, backgroundColor: 'transparent', borderWidth: 2.2,
+    pointRadius: mainPointR, pointHoverRadius: 5,
+    pointBackgroundColor: TEAL, pointBorderColor: BG, pointBorderWidth: mainPointR ? 1.5 : 0,
+    tension: .15, spanGaps: false, order: 1 });
   if (showPrediction && predData.length > 1)
     datasets.push({ label: '예상 체중', data: predData, borderColor: PURPLE, backgroundColor: 'transparent', borderWidth: 1.5, borderDash: [4,6], pointRadius: 3, pointHoverRadius: 6, pointBackgroundColor: PURPLE, tension: .2, order: 3 });
 
