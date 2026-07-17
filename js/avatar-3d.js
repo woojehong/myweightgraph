@@ -1,8 +1,11 @@
 import * as THREE from './vendor/three/three.module.js';
 import { GLTFLoader } from './vendor/three/loaders/GLTFLoader.js';
+import { DRACOLoader } from './vendor/three/loaders/DRACOLoader.js';
 
-const MODEL_URL = './assets/avatar-3d/maweg-avatar.glb';
+const MODEL_URL = './assets/avatar-3d/maweg-avatar-real.glb';
 const loader = new GLTFLoader();
+const dracoLoader = new DRACOLoader();
+loader.setDRACOLoader(dracoLoader);
 let modelPromise;
 const mounted = new WeakMap();
 
@@ -41,7 +44,9 @@ function selectedId(value, transform) {
 }
 
 function applyAvatar(scene, avatar = {}) {
+  const realBody = !!scene.getObjectByName('TopBodybasic');
   Object.entries(SLOT).forEach(([slot, [prefix, transform]]) => {
+    if (realBody && (slot === 'top' || slot === 'bottom')) return;
     const selected = selectedId(avatar[slot], transform);
     scene.traverse(obj => {
       if (obj.name.startsWith(prefix)) {
@@ -49,6 +54,18 @@ function applyAvatar(scene, avatar = {}) {
       }
     });
   });
+  if (realBody) {
+    const body = avatar.body || 'basic';
+    scene.traverse(obj => {
+      if (obj.name.startsWith('TopBody')) obj.visible = avatar.top !== 'bare-chest' && obj.name.startsWith(`TopBody${body}`);
+      if (obj.name.startsWith('BottomBody')) obj.visible = obj.name.startsWith(`BottomBody${body}`);
+    });
+    const topPalette = { 'white-tee':0xdde4e8,'top-02':0x111722,'top-03':0x00b89b,'top-04':0x891329,'top-05':0x174c9d,'top-06':0x29643d,'top-07':0xd39b2f,'top-08':0x8b99a8,'top-09':0x4a227d,'top-10':0x5a2f1d };
+    const bottomPalette = { 'black-track':0x10151d,'bottom-02':0x172c55,'bottom-03':0x24543a,'bottom-04':0x55331e,'bottom-05':0x89939f,'bottom-06':0x161a21,'bottom-07':0x233d70,'bottom-08':0x2f5137,'bottom-09':0x9b7429,'bottom-10':0x29313b };
+    const recolor = (prefix, color) => scene.traverse(obj => { if (obj.visible && obj.isMesh && obj.name.startsWith(prefix)) obj.material.color.setHex(color); });
+    recolor('TopBody', topPalette[avatar.top] || topPalette['white-tee']);
+    recolor('BottomBody', bottomPalette[avatar.bottom] || bottomPalette['black-track']);
+  }
   applyPose(scene, avatar.pose || 'neutral');
 }
 
@@ -86,7 +103,7 @@ function buildRenderer(host, scene, avatar) {
   const key = new THREE.DirectionalLight(0xffffff, 3.1); key.position.set(-2,-3,4); world.add(key);
   const rim = new THREE.DirectionalLight(0x00e5b0, 2.0); rim.position.set(2,1,2); world.add(rim);
   const camera = new THREE.PerspectiveCamera(28, 1, .01, 50);
-  camera.position.set(0,1.12,7.0); camera.lookAt(0,1.10,0);
+  camera.position.set(0,.92,4.35); camera.lookAt(0,.90,0);
 
   let raf = 0, start = performance.now(), burst = 0;
   const resize = () => {
