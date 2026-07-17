@@ -1,6 +1,7 @@
 import * as THREE from './vendor/three/three.module.js';
 import { GLTFLoader } from './vendor/three/loaders/GLTFLoader.js';
 import { DRACOLoader } from './vendor/three/loaders/DRACOLoader.js';
+import { clone as cloneSkeleton } from './vendor/three/utils/SkeletonUtils.js';
 
 const MODEL_URL = './assets/avatar-3d/maweg-avatar-real.glb';
 const loader = new GLTFLoader();
@@ -23,12 +24,12 @@ const SLOT = {
 };
 
 function sourceModel() {
-  if (!modelPromise) modelPromise = loader.loadAsync(MODEL_URL).then(gltf => gltf.scene);
+  if (!modelPromise) modelPromise = loader.loadAsync(MODEL_URL);
   return modelPromise;
 }
 
 function cloneGraph(source) {
-  const clone = source.clone(true);
+  const clone = cloneSkeleton(source);
   clone.traverse(obj => {
     if (obj.isMesh) {
       obj.material = obj.material.clone();
@@ -89,23 +90,27 @@ function applyPose(scene, pose) {
   Object.entries(POSES[pose] || POSES.neutral).forEach(([name, xyz]) => node(name)?.rotation.set(...xyz));
 }
 
-function buildRenderer(host, scene, avatar) {
+function buildRenderer(host, scene, avatar, animations=[]) {
   const renderer = new THREE.WebGLRenderer({antialias:true, alpha:true, powerPreference:'high-performance'});
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.65));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.18;
+  renderer.toneMappingExposure = .98;
   host.append(renderer.domElement);
 
   const world = new THREE.Scene();
   world.add(scene);
   world.add(new THREE.HemisphereLight(0xbfefff, 0x07101a, 2.2));
-  const key = new THREE.DirectionalLight(0xffffff, 3.1); key.position.set(-2,-3,4); world.add(key);
-  const rim = new THREE.DirectionalLight(0x00e5b0, 2.0); rim.position.set(2,1,2); world.add(rim);
+  const key = new THREE.DirectionalLight(0xffffff, 2.15); key.position.set(-2,-3,4); world.add(key);
+  const rim = new THREE.DirectionalLight(0x00e5b0, .75); rim.position.set(2,1,2); world.add(rim);
   const camera = new THREE.PerspectiveCamera(28, 1, .01, 50);
   camera.position.set(0,.92,4.35); camera.lookAt(0,.90,0);
 
-  let raf = 0, start = performance.now(), burst = 0;
+  const mixer = new THREE.AnimationMixer(scene);
+  const clipName = value => value === 'idle' ? 'Idle' : value === 'salute' ? 'Salute' : value?.startsWith('anim-') ? `Action${value.slice(-2)}` : 'Idle';
+  const idleClip = THREE.AnimationClip.findByName(animations,'Idle');
+  if (idleClip) mixer.clipAction(idleClip).play();
+  let raf = 0, start = performance.now(), last=start, burst = 0;
   const resize = () => {
     const w = Math.max(1, host.clientWidth), h = Math.max(1, host.clientHeight);
     renderer.setSize(w,h,false); camera.aspect=w/h; camera.updateProjectionMatrix();
@@ -113,6 +118,7 @@ function buildRenderer(host, scene, avatar) {
   const ro = new ResizeObserver(resize); ro.observe(host); resize();
   const tick = now => {
     const t=(now-start)/1000;
+    mixer.update(Math.min(.05,(now-last)/1000));last=now;
     scene.position.y = Math.sin(t*1.7)*.009;
     const effect=scene.getObjectByName(`Effecteffect-${avatar.effect}`) || scene.getObjectByName(`Effect${avatar.effect}`);
     if(effect){effect.rotation.y=t*.42;effect.scale.setScalar(1+Math.sin(t*2.2)*.025)}
@@ -123,16 +129,21 @@ function buildRenderer(host, scene, avatar) {
     renderer.render(world,camera); raf=requestAnimationFrame(tick);
   };
   raf=requestAnimationFrame(tick);
-  return {renderer,scene,world,camera,ro,play(){burst=performance.now()+950},destroy(){cancelAnimationFrame(raf);ro.disconnect();renderer.dispose()}};
+  return {renderer,scene,world,camera,ro,play(){
+    const clip=THREE.AnimationClip.findByName(animations,clipName(avatar.animation));
+    if(clip){mixer.stopAllAction();const action=mixer.clipAction(clip);action.reset();action.setLoop(THREE.LoopOnce,1);action.clampWhenFinished=true;action.play();}
+    else burst=performance.now()+950;
+  },destroy(){cancelAnimationFrame(raf);ro.disconnect();mixer.stopAllAction();renderer.dispose()}};
 }
 
 export async function mountAvatar3D(host, avatar = {}) {
   if (!host || mounted.has(host)) return mounted.get(host);
   host.classList.add('avatar-3d-loading');
   const pending = (async () => { try {
-    const scene = cloneGraph(await sourceModel());
+    const gltf = await sourceModel();
+    const scene = cloneGraph(gltf.scene);
     applyAvatar(scene, avatar);
-    const api=buildRenderer(host,scene,avatar);
+    const api=buildRenderer(host,scene,avatar,gltf.animations);
     mounted.set(host,api); host.classList.remove('avatar-3d-loading'); host.classList.add('avatar-3d-ready');
     return api;
   } catch (error) {

@@ -8,12 +8,12 @@ OUT = ROOT / "assets/avatar-3d/source/human-base-review.png"
 bpy.ops.wm.read_factory_settings(use_empty=True)
 with bpy.data.libraries.load(str(SOURCE), link=False) as (src, dst):
     dst.objects = [n for n in src.objects if n in {
-        "GEO-body_male_stylized", "GEO-body_male_stylized.eye.L", "GEO-body_male_stylized.eye.R"
+        "GEO-body_male_realistic", "GEO-body_male_realistic.eye.L", "GEO-body_male_realistic.eye.R"
     }]
 for obj in dst.objects:
     if obj: bpy.context.collection.objects.link(obj)
 
-body=bpy.data.objects.get("GEO-body_male_stylized")
+body=bpy.data.objects.get("GEO-body_male_realistic")
 for obj in bpy.context.scene.objects:
     if obj.type=='MESH':
         for p in obj.data.polygons:p.use_smooth=True
