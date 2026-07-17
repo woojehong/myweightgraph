@@ -76,7 +76,9 @@
     .cmp-cell canvas{ display:block; }
     .cmp-chart{ position:relative; width:100%; }
     .cmp-content{display:grid;grid-template-columns:minmax(0,1fr) 88px;align-items:stretch;min-width:0}
-    .cmp-avatar-stage{position:relative;display:flex;align-items:flex-end;justify-content:center;overflow:hidden;border-left:1px solid rgba(255,255,255,.07);background:radial-gradient(ellipse at 50% 70%,rgba(0,229,170,.1),transparent 68%);cursor:pointer}
+    .cmp-content.avatar-hidden{grid-template-columns:minmax(0,1fr)}
+    .cmp-content.avatar-hidden .cmp-avatar-stage{display:none}
+    .cmp-avatar-stage{position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;border-left:1px solid rgba(255,255,255,.07);background:radial-gradient(ellipse at 50% 50%,rgba(0,229,170,.1),transparent 68%);cursor:pointer}
     .cmp-avatar-stage .avatar-v2{width:82px;height:164px;max-width:100%}
     .cmp-avatar-stage::after{content:'▶';position:absolute;right:5px;bottom:5px;width:18px;height:18px;border-radius:50%;display:grid;place-items:center;background:rgba(8,13,20,.8);border:1px solid rgba(255,255,255,.14);color:var(--muted);font-size:8px;z-index:5}
     .cmp-empty{
@@ -174,6 +176,7 @@
 <div class="page">
   <div class="compare-bar">
     <div class="gran-row">
+      <button class="gran-btn" id="avToggle" type="button" onclick="toggleAvatars()" style="margin-right:auto">🧍 아바타</button>
       <button class="gran-btn active" data-m="day"   onclick="setViewMode('day')">일간</button>
       <button class="gran-btn"        data-m="week"  onclick="setViewMode('week')">주간</button>
       <button class="gran-btn"        data-m="month" onclick="setViewMode('month')">월간</button>
@@ -210,6 +213,7 @@ function buildNav() {
     { href:`compare.html?user=${uid}`,      icon:'👥', label:'모아보기',     id:'compare' },
     { href:`achievements.html?user=${uid}`, icon:'🏆', label:'업적',         id:'achievements' },
     { href:`shop.html?user=${uid}`,         icon:'🛍️', label:'상점',         id:'shop' },
+    { href:`dressroom.html?user=${uid}`,    icon:'⚔️', label:'드레스룸',     id:'dressroom' },
   ];
   const nav = document.getElementById('bottomNav');
   links.forEach(l => {
@@ -226,6 +230,9 @@ const weightsCache = {}; // uid -> records
 
 // 일간/주간/월간 — 항상 '일간'으로 시작 (새로고침 시 초기화, 저장 안 함)
 let viewMode = 'day';
+let showAvatars = localStorage.getItem('compare_show_avatars_v2') !== '0';
+function syncAvatarToggle(){document.getElementById('avToggle')?.classList.toggle('active',showAvatars)}
+window.toggleAvatars=()=>{showAvatars=!showAvatars;try{localStorage.setItem('compare_show_avatars_v2',showAvatars?'1':'0')}catch(e){}syncAvatarToggle();renderGrid()};
 window.setViewMode = m => {
   if (viewMode === m) return;
   viewMode = m;
@@ -393,7 +400,7 @@ function cellHTML(u) {
         </div>
         ${markers}
       </div>
-      <div class="cmp-content">
+      <div class="cmp-content ${showAvatars?'':'avatar-hidden'}">
         ${body}
         <button class="cmp-avatar-stage" type="button" data-avatar-user="${esc(u.id)}" aria-label="${esc(u.name)} 아바타 모션 재생">
           ${renderAvatarV2(u.avatarV2,{size:88,label:`${u.name} 아바타`})}
@@ -488,6 +495,7 @@ async function init() {
   }
   saveSelected();
 
+  syncAvatarToggle();
   renderPicker();
   renderGrid();
 }

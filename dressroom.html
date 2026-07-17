@@ -22,7 +22,6 @@
     .dr-cat:hover{background:rgba(255,255,255,.04);color:var(--text)}.dr-cat.active{border-color:rgba(0,229,170,.45);background:rgba(0,229,170,.09);color:var(--teal)}.dr-cat i{font-style:normal;width:18px;text-align:center}
     .dr-stage{position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;background:radial-gradient(ellipse at 50% 45%,rgba(42,70,88,.42),transparent 54%),linear-gradient(180deg,#101824 0%,#090d14 68%,#05070a 100%)}
     .dr-stage::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px),linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px);background-size:54px 54px;mask-image:linear-gradient(to bottom,transparent,#000 35%,#000)}
-    .dr-stage::after{content:'';position:absolute;width:420px;height:78px;bottom:5%;border:1px solid rgba(0,229,170,.24);border-radius:50%;background:radial-gradient(ellipse,rgba(0,229,170,.1),transparent 67%);transform:perspective(180px) rotateX(64deg)}
     #avatarStage{position:relative;z-index:2;display:flex;align-items:flex-end;justify-content:center;width:100%;height:100%;padding:30px 10px 22px;cursor:grab}#avatarStage:active{cursor:grabbing}
     #avatarStage .avatar-v2{height:min(76vh,720px);width:min(62vw,610px)}
     .stage-name{position:absolute;left:20px;bottom:18px;z-index:4}.stage-name strong{display:block;font-size:18px}.stage-name span{font-size:11px;color:var(--teal)}
@@ -52,6 +51,7 @@
     <aside class="dr-items"><div class="dr-item-head"><strong id="slotTitle">체형</strong><span id="slotDesc">장착할 외형을 선택하세요.</span></div><div class="dr-item-grid" id="itemGrid"></div></aside>
   </main>
 </div>
+<nav class="bottom-nav" id="bottomNav"></nav>
 <div class="dr-toast" id="toast"></div>
 <script type="module">
 import { getUser, updateUser } from './js/db.js';
@@ -63,10 +63,22 @@ if (!uid) location.href = 'index.html';
 let user = null, draft = normalizeAvatarV2(), activeSlot = 'body', toastTimer;
 const byId = id => document.getElementById(id);
 
+function buildNav(){
+  const links=[
+    {href:`input.html?user=${uid}`,icon:'✍️',label:'입력',id:'input'},
+    {href:`dashboard.html?user=${uid}`,icon:'📈',label:'내 그래프',id:'dashboard'},
+    {href:`compare.html?user=${uid}`,icon:'📊',label:'모아보기',id:'compare'},
+    {href:`achievements.html?user=${uid}`,icon:'🏆',label:'업적',id:'achievements'},
+    {href:`shop.html?user=${uid}`,icon:'🛍️',label:'상점',id:'shop'},
+    {href:`dressroom.html?user=${uid}`,icon:'⚔️',label:'드레스룸',id:'dressroom'},
+  ];
+  byId('bottomNav').innerHTML=links.map(link=>`<a href="${link.href}" class="${link.id==='dressroom'?'active':''}"><span class="icon">${link.icon}</span>${link.label}</a>`).join('');
+}
+
 function toast(message){const el=byId('toast');el.textContent=message;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),2200)}
 function renderStage(){byId('avatarStage').innerHTML=renderAvatarV2(draft,{size:560,label:`${user?.name||''} 아바타`});}
 function renderCategories(){byId('categoryList').innerHTML=AVATAR_V2_CATEGORIES.map(c=>`<button class="dr-cat ${c.id===activeSlot?'active':''}" type="button" data-slot="${esc(c.id)}"><i>${c.icon}</i><span>${esc(c.name)}</span></button>`).join('');byId('categoryList').querySelectorAll('[data-slot]').forEach(b=>b.onclick=()=>{activeSlot=b.dataset.slot;renderCategories();renderItems()})}
-function itemIcon(item){if(item.slot==='body')return `<img src="${esc(item.asset)}" alt="" style="height:42px;width:42px;object-fit:contain;object-position:center top">`;if(item.slot==='animation')return '▶';if(item.id===null)return '∅';return {face:'◉',hair:'⌁',headgear:'♢',top:'▱',bottom:'▥',shoes:'⌞',rightHand:'╱',leftHand:'╲',effect:'✦'}[item.slot]||'◇'}
+function itemIcon(item){if(item.slot==='body')return `<img src="${esc(item.asset)}" alt="" style="height:42px;width:42px;object-fit:contain;object-position:center top">`;if(item.slot==='animation')return '▶';if(item.id===null)return '∅';return {face:'◉',hair:'⌁',headgear:'♢',top:'▱',bottom:'▥',shoes:'⌞',rightHand:'╱',leftHand:'╲',pose:'♙',effect:'✦'}[item.slot]||'◇'}
 function renderItems(){const cat=AVATAR_V2_CATEGORIES.find(c=>c.id===activeSlot);byId('slotTitle').textContent=cat?.name||'';const items=AVATAR_V2_ITEMS.filter(i=>i.slot===activeSlot);byId('itemGrid').innerHTML=items.map((item,index)=>{const owned=ownedAvatarV2Item(user,item)&&!item.locked;const selected=draft[activeSlot]===item.id;return `<button class="dr-item ${selected?'selected':''} ${owned?'':'locked'}" type="button" data-index="${index}"><span class="dr-item-icon">${itemIcon(item)}</span><b>${esc(item.name)}</b><small>${esc(item.note)}</small>${item.price?`<small class="dr-price">🪙 ${item.price.toLocaleString('ko-KR')}</small>`:''}</button>`}).join('');byId('itemGrid').querySelectorAll('[data-index]').forEach(b=>b.onclick=()=>{const item=items[Number(b.dataset.index)];draft[activeSlot]=item.id;renderStage();renderItems();if(!ownedAvatarV2Item(user,item)||item.locked)toast('미보유 아이템은 미리보기만 가능합니다.')})}
 function currentLocked(){return AVATAR_V2_CATEGORIES.map(c=>AVATAR_V2_ITEMS.find(i=>i.slot===c.id&&i.id===draft[c.id])).filter(Boolean).find(i=>!ownedAvatarV2Item(user,i)||i.locked)}
 
@@ -80,6 +92,7 @@ async function init(){user=await getUser(uid);if(!user)throw new Error('사용�
 renderCategories();
 renderItems();
 renderStage();
+buildNav();
 init().catch(e=>toast(e.message));
 </script>
 </body>

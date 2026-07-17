@@ -2,6 +2,15 @@
 .avatar-v2 img{position:relative;z-index:2;display:block;width:auto;height:100%;max-width:100%;object-fit:contain;object-position:center bottom;filter:drop-shadow(0 16px 18px rgba(0,0,0,.48));transform-origin:50% 92%}
 .avatar-v2-floor{position:absolute;z-index:1;left:13%;right:13%;bottom:1.5%;height:5%;border-radius:50%;background:radial-gradient(ellipse,rgba(0,229,170,.22),rgba(0,0,0,.35) 58%,transparent 72%);transform:perspective(80px) rotateX(60deg)}
 .avatar-v2-aura{position:absolute;z-index:0;inset:4% 2% 3%;border-radius:46%;background:radial-gradient(ellipse at 50% 46%,rgba(0,229,170,.12),transparent 66%);opacity:.75}
+.avatar-pose-relaxed img{transform:translateY(1%) scale(.99)}
+.avatar-pose-lean-left img{transform:translateX(-3%) rotate(-2deg)}
+.avatar-pose-lean-right img{transform:translateX(3%) rotate(2deg)}
+.avatar-pose-hero img{transform:scale(1.025,1.01)}
+.avatar-pose-guard img{transform:translateY(1.5%) rotate(-1deg) scale(.985)}
+.avatar-pose-victory img{transform:translateY(-2%) scale(1.015)}
+.avatar-pose-runner img{transform:translateX(2%) rotate(3deg) scale(.98)}
+.avatar-pose-power img{transform:scale(1.04,1.015)}
+.avatar-pose-cool img{transform:translateX(-2%) rotate(-1.4deg)}
 .avatar-v2-playing.avatar-play-salute img{animation:avatar-v2-salute 1s cubic-bezier(.22,.8,.22,1)}
 .avatar-v2-playing.avatar-play-idle img{animation:avatar-v2-pulse 1s ease-in-out}
 @keyframes avatar-v2-salute{0%,100%{transform:translateY(0) rotate(0)}25%{transform:translateY(-6px) rotate(-1.5deg)}50%{transform:translateY(-2px) rotate(1.5deg)}72%{transform:translateY(-4px) rotate(-.8deg)}}

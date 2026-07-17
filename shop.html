@@ -14,6 +14,7 @@
   <meta property="og:image" content="https://woojehong.github.io/myweightgraph/favicon.png">
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/borders.css">
+  <link rel="stylesheet" href="css/avatar-v2.css">
   <style>
     /* ── coin wallet ─────────────────────────────────────────────── */
     .wallet {
@@ -182,6 +183,7 @@ import { esc } from './js/util.js';
 import { RARITY_INFO, getShopBorders, ACH_TITLE_REWARDS } from './js/borders-data.js';
 import { getTierForScore, DEFAULT_TIERS } from './js/achievements.js';
 import { SHOP_TITLES } from './js/shop-data.js';
+import { AVATAR_V2_CATEGORIES, AVATAR_V2_ITEMS, renderAvatarV2, normalizeAvatarV2, ownedAvatarV2Item } from './js/avatar-v2.js';
 
 const uid = new URLSearchParams(location.search).get('user') || localStorage.getItem('uid');
 if (!uid) location.href = 'index.html';
@@ -196,6 +198,8 @@ let coins = 0;
 let curTab = 'borders';   // borders | titles
 let pending = null;       // { kind, id, name, price } — kind: border | title
 let _titleRefs = [];      // stable index list for onclick handlers
+let _tiers = DEFAULT_TIERS;
+let _tier = DEFAULT_TIERS[0];
 
 window.doLogout = () => { clearAuth(); localStorage.removeItem('uid'); location.href = 'index.html'; };
 
@@ -204,6 +208,8 @@ window.doLogout = () => { clearAuth(); localStorage.removeItem('uid'); location.
 const arr = v => Array.isArray(v) ? v : [];
 const ownsBorder = id => arr(_user.purchasedBorders).includes(id) || arr(_user.unlockedBorders).includes(id);
 const ownsTitle  = t  => arr(_user.purchasedTitles).includes(t) || arr(_user.earnedTitles).includes(t);
+const tierIndex = id => _tiers.findIndex(t => t.id === id);
+const tierEligible = item => !item.minTier || tierIndex(_tier.id) >= tierIndex(item.minTier);
 const fmtCoin    = n => n.toLocaleString('ko-KR');
 
 function showToast(msg, type = 'ok') {
@@ -253,6 +259,7 @@ function buildNav() {
     { href: `compare.html?user=${uid}`,      icon: '👥', label: '모아보기',     id: 'compare' },
     { href: `achievements.html?user=${uid}`, icon: '🏆', label: '업적',        id: 'achievements' },
     { href: `shop.html?user=${uid}`,         icon: '🛍️', label: '상점',        id: 'shop' },
+    { href: `dressroom.html?user=${uid}`,    icon: '⚔️', label: '드레스룸',    id: 'dressroom' },
   ];
   const nav = document.getElementById('bottomNav');
   nav.innerHTML = '';
@@ -365,12 +372,42 @@ function renderTitlesTab() {
     ${rewardRows}`;
 }
 
+function avatarPreview(item) {
+  if (item.slot === 'body') return renderAvatarV2({ ...normalizeAvatarV2(_user.avatarV2), body:item.id }, { size:64, label:item.name });
+  const icon = AVATAR_V2_CATEGORIES.find(c => c.id === item.slot)?.icon || '◇';
+  return `<div style="font-size:30px;color:var(--teal)">${icon}</div>`;
+}
+
+function avatarCard(item) {
+  const owned = ownedAvatarV2Item(_user,item) && !item.locked;
+  const eligible = tierEligible(item);
+  let button;
+  if (owned) button = `<a class="sc-btn equip" href="dressroom.html?user=${uid}">드레스룸</a>`;
+  else if (!eligible) button = `<button class="sc-btn lock" disabled>💠 다이아 이상</button>`;
+  else if (item.locked) button = `<button class="sc-btn lock" disabled>준비 중</button>`;
+  else button = buyBtnHtml(`openBuyAvatar('${esc(item.slot)}','${esc(item.id)}')`,item.price);
+  return `<div class="shop-card ${owned?'equipped':''} ${eligible?'':'locked'}">
+    <div class="sc-prev">${avatarPreview(item)}</div>
+    <div class="sc-name">${esc(item.name)}</div>
+    <div class="sc-note">${esc(item.note||'')}</div>
+    ${item.minTier?'<div class="sc-rarity" style="color:#8da2ff">💠 다이아 이상</div>':''}
+    ${button}</div>`;
+}
+
+function renderAvatarShopTab() {
+  return AVATAR_V2_CATEGORIES.map(category => {
+    const items=AVATAR_V2_ITEMS.filter(item=>item.slot===category.id&&item.price>0);
+    if(!items.length)return '';
+    return `<div class="rarity-head"><span>${category.icon} ${esc(category.name)}</span><span class="rh-line"></span><span>${items.length}개</span></div><div class="shop-grid">${items.map(avatarCard).join('')}</div>`;
+  }).join('');
+}
+
 /* ── tab switching / main render ─────────────────────────────────── */
 
 function renderTab() {
   const el = document.getElementById('tabContent');
   if (!el) return;
-  el.innerHTML = curTab === 'borders' ? renderBordersTab() : renderTitlesTab();
+  el.innerHTML = curTab === 'borders' ? renderBordersTab() : curTab === 'titles' ? renderTitlesTab() : renderAvatarShopTab();
   document.querySelectorAll('.shop-tab').forEach(b =>
     b.classList.toggle('active', b.dataset.tab === curTab));
 }
@@ -428,6 +465,11 @@ window.openBuyTitle = idx => {
   openBuyModal({ kind: 'title', id: t.name, name: t.name, price: t.price },
     `<span class="tr-badge">${esc(t.name)}</span>`);
 };
+window.openBuyAvatar = (slot,id) => {
+  const item=AVATAR_V2_ITEMS.find(candidate=>candidate.slot===slot&&String(candidate.id)===String(id));
+  if(!item||ownedAvatarV2Item(_user,item)||!tierEligible(item)||item.locked)return;
+  openBuyModal({kind:'avatar',id:`${slot}:${id}`,name:item.name,price:item.price},avatarPreview(item));
+};
 window.confirmBuy = async () => {
   if (!pending) return;
   const { kind, id, price } = pending;
@@ -441,6 +483,8 @@ window.confirmBuy = async () => {
   } else if (kind === 'title') {
     upd.purchasedTitles  = pushUnique(_user.purchasedTitles, id);
     upd.earnedTitles     = pushUnique(_user.earnedTitles, id);
+  } else if (kind === 'avatar') {
+    upd.avatarItemsV2 = pushUnique(_user.avatarItemsV2, id);
   } else {
     window.closeBuy();
     return;
@@ -476,9 +520,9 @@ async function init() {
   _user = user;
   coins = Number.isFinite(user.coins) ? user.coins : 0;
 
-  const tiers = tierData?.tiers || DEFAULT_TIERS;
-  const tier  = getTierForScore(user.totalScore || 0, tiers);
-  setChip(user, tier.color);
+  _tiers = tierData?.tiers || DEFAULT_TIERS;
+  _tier  = getTierForScore(user.totalScore || 0, _tiers);
+  setChip(user, _tier.color);
   document.title = `${user.name} 상점 | 마웨그`;
 
   document.getElementById('content').innerHTML = `
@@ -493,6 +537,7 @@ async function init() {
     <div class="shop-tabs">
       <button class="shop-tab active" data-tab="borders" onclick="setTab('borders')">🖼️ 테두리</button>
       <button class="shop-tab" data-tab="titles" onclick="setTab('titles')">🏷️ 칭호</button>
+      <button class="shop-tab" data-tab="avatar" onclick="setTab('avatar')">⚔️ 아바타</button>
     </div>
     <div id="tabContent" class="mt-12"></div>`;
 
