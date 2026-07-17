@@ -11,11 +11,15 @@ def material(name,color,metal=0,rough=.58):
     m=bpy.data.materials.new(name);m.use_nodes=True
     p=m.node_tree.nodes.get('Principled BSDF');p.inputs['Base Color'].default_value=(*color,1);p.inputs['Metallic'].default_value=metal;p.inputs['Roughness'].default_value=rough
     return m
-skin=material('Skin',(0.58,.30,.18),0,.72); white=material('Basic White Tee',(.78,.84,.88),0,.78); black=material('Black Training Pants',(.018,.025,.035),.02,.72)
-hairmat=material('Natural Black Hair',(.012,.018,.025),.04,.52); eye=material('Eyes',(.015,.025,.03),.05,.24); teal=material('Maweg Teal',(0,.72,.58),.35,.28)
+skin=material('Skin',(0.48,.245,.135),0,.58)
+skin_bsdf=skin.node_tree.nodes.get('Principled BSDF')
+if skin_bsdf.inputs.get('Subsurface Weight'):skin_bsdf.inputs['Subsurface Weight'].default_value=.075
+if skin_bsdf.inputs.get('Coat Weight'):skin_bsdf.inputs['Coat Weight'].default_value=.08
+white=material('Basic White Tee',(.72,.78,.82),0,.88); black=material('Black Training Pants',(.012,.018,.028),.01,.82)
+hairmat=material('Natural Black Hair',(.006,.010,.016),.02,.34); eye=material('Iris Dark Brown',(.018,.010,.006),.02,.18); sclera=material('Sclera',(.74,.70,.64),0,.32); teal=material('Maweg Teal',(0,.72,.58),.35,.28)
 
 with bpy.data.libraries.load(str(SOURCE),link=False) as (src,dst):
-    dst.objects=[n for n in src.objects if n=='GEO-body_male_realistic']
+    dst.objects=[n for n in src.objects if n in {'GEO-body_male_realistic','GEO-body_male_realistic.eye.L','GEO-body_male_realistic.eye.R'}]
 for o in dst.objects:
     if o:bpy.context.collection.objects.link(o)
 base=bpy.data.objects['GEO-body_male_realistic'];base.name='BodySource';base.data.materials.clear();base.data.materials.append(skin)
@@ -23,6 +27,11 @@ source_offset=base.location.copy()
 for imported in dst.objects:
     if imported: imported.location-=source_offset
 for m in list(base.modifiers):base.modifiers.remove(m)
+real_eyes=[]
+for side in ('L','R'):
+    o=bpy.data.objects.get(f'GEO-body_male_realistic.eye.{side}')
+    if o:
+        o.name=f'Eye.{side}';o.data.materials.clear();o.data.materials.append(sclera);real_eyes.append(o)
 
 # Humanoid armature matched to the base mesh's relaxed A-pose.
 bpy.ops.object.armature_add(enter_editmode=True,location=(0,0,0));rig=bpy.context.object;rig.name='MawegRig';arm=rig.data;arm.name='MawegSkeleton'
@@ -82,6 +91,15 @@ def clothing_shell(body,name,zmin,zmax,mat,thickness=.012,region='top'):
         return (x<.31 or z>1.30) if region=='top' else x<.29
     remove=[v for v in bm.verts if not keep(v)]
     bmesh.ops.delete(bm,geom=remove,context='VERTS');bm.to_mesh(o.data);bm.free()
+    # Snap the torso hems to clean horizontal garment boundaries. Raw vertex
+    # deletion leaves a visibly serrated silhouette in WebGL.
+    for v in o.data.vertices:
+        if region=='top':
+            if v.co.z<zmin+.055:v.co.z=zmin+.025
+            elif v.co.z>zmax-.035 and abs(v.co.x)<.13:v.co.z=zmax-.012
+        else:
+            if v.co.z<zmin+.045:v.co.z=zmin+.018
+            elif v.co.z>zmax-.045:v.co.z=zmax-.018
     if region=='top':
         for v in o.data.vertices:v.co.x*=1.045;v.co.y*=1.10
     sol=o.modifiers.new('Garment thickness','SOLIDIFY');sol.thickness=thickness;sol.offset=1
@@ -90,14 +108,26 @@ for kind,body in variants.items():
     clothing_shell(body,f'TopBody.{kind}',.91,1.50,white,.014,'top')
     clothing_shell(body,f'BottomBody.{kind}',.10,.97,black,.016,'bottom')
 
-def hair_shell(body,index,zcut,ycut):
-    o=body.copy();o.data=body.data.copy();bpy.context.collection.objects.link(o);o.name=f'Hair.hair-{index:02d}';o.data.materials.clear();o.data.materials.append(hairmat)
-    bm=bmesh.new();bm.from_mesh(o.data)
-    remove=[v for v in bm.verts if not (v.co.z>zcut or (v.co.z>zcut-.08 and v.co.y>ycut))]
-    bmesh.ops.delete(bm,geom=remove,context='VERTS');bm.to_mesh(o.data);bm.free()
-    sol=o.modifiers.new('Hair volume','SOLIDIFY');sol.thickness=.012;sol.offset=1
-    return o
-for i,(zc,yc) in enumerate([(1.70,-.055),(1.68,-.08),(1.66,-.03),(1.72,-.10),(1.69,.00),(1.67,-.12),(1.71,-.02),(1.65,.02),(1.70,-.14),(1.66,-.07)],1):hair_shell(variants['basic'],i,zc,yc)
+hair_parts=[]
+def hair_piece(name,loc,scale,rot=(0,0,0)):
+    bpy.ops.mesh.primitive_uv_sphere_add(segments=24,ring_count=12,radius=1,location=loc,rotation=rot)
+    o=bpy.context.object;o.name=name;o.scale=scale;bpy.ops.object.transform_apply(location=False,rotation=False,scale=True);o.data.materials.append(hairmat)
+    for polygon in o.data.polygons:polygon.use_smooth=True
+    hair_parts.append(o);return o
+for i in range(1,11):
+    prefix=f'Hair.hair-{i:02d}'
+    # Scalp volume sits above the brow instead of cutting across the eyes.
+    hair_piece(prefix+'.crown',(0,.006,1.805),(.139,.123,.092))
+    sweep=(-1 if i%2 else 1)
+    for j in range(4):
+        x=(j-1.5)*.047
+        z=1.755+abs(j-1.5)*.008+(i%3)*.003
+        hair_piece(prefix+f'.fringe{j}',(x,-.108,z),(.043,.030,.047),(sweep*.05,0,sweep*(j-1.5)*.10))
+    if i in {3,4,7,9}:
+        hair_piece(prefix+'.side.L',(.125,-.015,1.710),(.030,.052,.080),(0,.18,0))
+        hair_piece(prefix+'.side.R',(-.125,-.015,1.710),(.030,.052,.080),(0,-.18,0))
+    if i in {5,8,10}:
+        hair_piece(prefix+'.top',(sweep*.025,.005,1.870),(.085,.075,.060),(0,sweep*.18,0))
 
 def uv(name,loc,scale,mat,parent=None):
     bpy.ops.mesh.primitive_uv_sphere_add(segments=40,ring_count=20,location=loc);o=bpy.context.object;o.name=name;o.scale=scale;bpy.ops.object.transform_apply(location=False,rotation=False,scale=True);o.data.materials.append(mat)
@@ -116,11 +146,11 @@ def torus(name,loc,major,minor,mat,rot=(0,0,0)):
 
 for i in range(1,11):
     faceroot=bpy.data.objects.new(f'Face.face-{i:02d}',None);bpy.context.collection.objects.link(faceroot);faceroot.parent=rig
-    spacing=.044+(i%3)*.004;eye_z=1.680+(i%2)*.004
-    uv(f'Face.face-{i:02d}.pupil.L',(spacing,-.238,eye_z),(.014,.008,.012),eye,faceroot)
-    uv(f'Face.face-{i:02d}.pupil.R',(-spacing,-.238,eye_z),(.014,.008,.012),eye,faceroot)
-    uv(f'Face.face-{i:02d}.brow.L',(spacing,-.234,eye_z+.043),(.038,.006,.007),hairmat,faceroot)
-    uv(f'Face.face-{i:02d}.brow.R',(-spacing,-.234,eye_z+.043),(.038,.006,.007),hairmat,faceroot)
+    spacing=.030+(i%3)*.003;eye_z=1.677+(i%2)*.002
+    uv(f'Face.face-{i:02d}.pupil.L',(spacing,-.127,eye_z),(.008,.003,.008),eye,faceroot)
+    uv(f'Face.face-{i:02d}.pupil.R',(-spacing,-.127,eye_z),(.008,.003,.008),eye,faceroot)
+    uv(f'Face.face-{i:02d}.brow.L',(spacing,-.185,eye_z+.046),(.030,.004,.006),hairmat,faceroot)
+    uv(f'Face.face-{i:02d}.brow.R',(-spacing,-.185,eye_z+.046),(.030,.004,.006),hairmat,faceroot)
 
 # Ten actual meshes in every equipment category. Names are the browser slot contract.
 accent=[teal,material('Steel',(.34,.42,.50),.8,.25),material('Gold',(.85,.47,.05),.82,.22),material('Crimson',(.52,.025,.04),.35,.32),material('Arcane',(.18,.035,.55),.45,.25)]
@@ -157,6 +187,8 @@ for obj in list(bpy.context.scene.objects):
     elif obj.name.startswith('RightHand'):bind_to_bone(obj,'hand.R')
     elif obj.name.startswith('Shoes') and obj.name.endswith('.L'):bind_to_bone(obj,'foot.L')
     elif obj.name.startswith('Shoes') and obj.name.endswith('.R'):bind_to_bone(obj,'foot.R')
+for obj in real_eyes:bind_to_bone(obj,'head')
+for obj in hair_parts:bind_to_bone(obj,'head')
 
 # Stable equipment sockets.
 for name,bone_name in [('Socket.Head','head'),('Socket.Hand.L','hand.L'),('Socket.Hand.R','hand.R')]:
