@@ -74,6 +74,7 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
     showCurMarker     = true,
     gridCell          = false,
     labelMode         = 'day',   // 마커·툴팁 라벨 표기 단위
+    padRight          = 0,       // 우측 추가 여백 (아바타 표시 영역 등)
   } = options;
 
   if (canvasMain._chartInstance) canvasMain._chartInstance.destroy();
@@ -577,7 +578,7 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
         : (isMobile
             ? Math.max(0.5, (window.innerWidth - 32) / (260 + BAR_AREA_H))
             : 1.65),
-      layout: { padding: { top: 12, right: (isMobile || tight) ? 4 : 70, bottom: 4 + BAR_AREA_H, left: (isMobile || tight) ? 5 : 70 } },
+      layout: { padding: { top: 12, right: ((isMobile || tight) ? 4 : 70) + padRight, bottom: 4 + BAR_AREA_H, left: (isMobile || tight) ? 5 : 70 } },
       plugins: {
         legend: { display: false },
         tooltip: {
