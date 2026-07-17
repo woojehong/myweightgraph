@@ -1,4 +1,4 @@
-const CACHE = 'weight-v53';
+const CACHE = 'weight-v54';
 const ASSETS = [
   './index.html', './dashboard.html', './input.html', './import.html',
   './achievements.html', './compare.html', './shop.html', './guide.html', './dressroom.html',
@@ -13,6 +13,11 @@ const ASSETS = [
   './manifest.json', './favicon.png',
   './register-sw.js',
 ];
+for (const slot of ['hair','headgear','top','bottom','shoes','right','left']) {
+  for (let index = 1; index <= 10; index += 1) {
+    ASSETS.push(`./assets/avatar-v2/items/${slot}-${String(index).padStart(2,'0')}.png`);
+  }
+}
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS).catch(() => {})));

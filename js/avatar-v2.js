@@ -79,6 +79,16 @@ export function avatarV2Asset(value) {
   return avatarV2Item('body', avatar.body)?.asset || AVATAR_V2_ITEMS[0].asset;
 }
 
+const itemNumber = id => String(id || '').match(/(\d+)$/)?.[1];
+export function avatarV2LayerAsset(slot, id) {
+  if (id == null || id === 'default') return null;
+  const number = itemNumber(id);
+  if (!number) return null;
+  const sourceSlot = slot === 'rightHand' ? 'right' : slot === 'leftHand' ? 'left' : slot;
+  if (!['hair','headgear','top','bottom','shoes','right','left'].includes(sourceSlot)) return null;
+  return `assets/avatar-v2/items/${sourceSlot}-${number.padStart(2,'0')}.png`;
+}
+
 export function renderAvatarV2(value, options = {}) {
   const avatar = normalizeAvatarV2(value);
   const size = Math.max(80, Number(options.size) || 280);
@@ -86,14 +96,24 @@ export function renderAvatarV2(value, options = {}) {
   const classes = ['avatar-v2', options.className || '', `avatar-pose-${avatar.pose || 'neutral'}`, `avatar-motion-${avatar.animation || 'idle'}`].filter(Boolean).join(' ');
   const avatarData = esc(encodeURIComponent(JSON.stringify(avatar)));
   const itemClass = slot => `${slot}-${String(avatar[slot] ?? 'none').replace(/[^a-z0-9-]/gi,'')}`;
-  return `<div class="${classes} ${itemClass('hair')} ${itemClass('headgear')} ${itemClass('top')} ${itemClass('bottom')} ${itemClass('shoes')} ${itemClass('rightHand')} ${itemClass('leftHand')} ${itemClass('effect')}" style="--avatar-v2-size:${size}px" data-avatar="${avatarData}" data-avatar-motion="${esc(avatar.animation || 'idle')}">
+  const layer = (slot, className) => {
+    const asset = avatarV2LayerAsset(slot, avatar[slot]);
+    return asset ? `<img class="avatar-v2-item ${className}" src="${esc(asset)}" alt="" aria-hidden="true" draggable="false">` : '';
+  };
+  const shoeLayer = avatar.shoes && itemNumber(avatar.shoes) !== itemNumber(avatar.bottom)
+    ? layer('shoes','avatar-v2-shoes-layer') : '';
+  return `<div class="${classes} ${itemClass('body')} ${itemClass('face')} ${itemClass('hair')} ${itemClass('headgear')} ${itemClass('top')} ${itemClass('bottom')} ${itemClass('shoes')} ${itemClass('rightHand')} ${itemClass('leftHand')} ${itemClass('effect')}" style="--avatar-v2-size:${size}px" data-avatar="${avatarData}" data-avatar-motion="${esc(avatar.animation || 'idle')}">
     <div class="avatar-v2-aura" aria-hidden="true"></div>
     <div class="avatar-v2-effect-layer" aria-hidden="true"></div>
     <img class="avatar-v2-body" src="${esc(avatarV2Asset(avatar))}" alt="${label}" draggable="false">
-    <div class="avatar-v2-hair-layer" aria-hidden="true"></div>
-    <div class="avatar-v2-headgear-layer" aria-hidden="true"></div>
-    <div class="avatar-v2-right-layer" aria-hidden="true"></div>
-    <div class="avatar-v2-left-layer" aria-hidden="true"></div>
+    ${layer('top','avatar-v2-top-layer')}
+    ${layer('bottom','avatar-v2-bottom-layer')}
+    ${shoeLayer}
+    ${layer('hair','avatar-v2-hair-layer')}
+    <div class="avatar-v2-face-layer" aria-hidden="true"></div>
+    ${layer('headgear','avatar-v2-headgear-layer')}
+    ${layer('rightHand','avatar-v2-right-layer')}
+    ${layer('leftHand','avatar-v2-left-layer')}
     <div class="avatar-v2-floor" aria-hidden="true"></div>
   </div>`;
 }

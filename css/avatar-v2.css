@@ -2,10 +2,20 @@
 .avatar-v2-body{position:relative;z-index:3;display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;filter:drop-shadow(0 22px 22px rgba(0,0,0,.42));transform-origin:50% 91%}
 .avatar-v2-floor{position:absolute;z-index:1;left:13%;right:13%;bottom:1%;height:4.8%;border-radius:50%;background:radial-gradient(ellipse,rgba(0,229,176,.2),rgba(2,11,18,.42) 58%,transparent 72%);transform:perspective(90px) rotateX(62deg)}
 .avatar-v2-aura{position:absolute;z-index:0;inset:7% 3% 2%;border-radius:44%;background:radial-gradient(ellipse at 50% 48%,rgba(0,229,176,.11),transparent 64%);opacity:.8}
-.avatar-v2-effect-layer,.avatar-v2-hair-layer,.avatar-v2-headgear-layer,.avatar-v2-right-layer,.avatar-v2-left-layer{position:absolute;z-index:4;inset:0;pointer-events:none;transform-origin:50% 91%}
-.avatar-v2-effect-layer{z-index:2}.avatar-v2-hair-layer{z-index:4}.avatar-v2-headgear-layer{z-index:5}.avatar-v2-right-layer,.avatar-v2-left-layer{z-index:6}
-.avatar-v2-hair-layer{display:none}
-.avatar-v2-headgear-layer,.avatar-v2-right-layer,.avatar-v2-left-layer{display:none}
+.avatar-v2-effect-layer{position:absolute;z-index:2;inset:0;pointer-events:none;transform-origin:50% 91%}
+.avatar-v2-item{position:absolute;display:block;object-fit:contain;pointer-events:none;filter:drop-shadow(0 8px 9px rgba(0,0,0,.34));transform-origin:50% 91%}
+.avatar-v2-top-layer{z-index:4;left:16%;top:18%;width:68%;height:37%}
+.avatar-v2-bottom-layer{z-index:4;left:14%;top:43%;width:72%;height:50%}.avatar-v2-shoes-layer{z-index:5;left:25%;top:80%;width:50%;height:15%}
+.body-toned .avatar-v2-top-layer{left:13%;width:74%}.body-power .avatar-v2-top-layer,.body-physique .avatar-v2-top-layer{left:9%;width:82%}.body-slim .avatar-v2-top-layer{left:18%;width:64%}
+.body-toned .avatar-v2-bottom-layer{left:12%;width:76%}.body-power .avatar-v2-bottom-layer,.body-physique .avatar-v2-bottom-layer{left:9%;width:82%}.body-slim .avatar-v2-bottom-layer{left:18%;width:64%}
+.avatar-v2-hair-layer{z-index:5;left:38%;top:-.5%;width:24%;height:18%}
+.avatar-v2-headgear-layer{z-index:6;left:38%;top:4.5%;width:24%;height:16%}
+.avatar-v2-face-layer{position:absolute;z-index:6;left:43%;top:8.2%;width:14%;height:10%;pointer-events:none}
+.avatar-v2[class*="face-face-"] .avatar-v2-face-layer::before,.avatar-v2[class*="face-face-"] .avatar-v2-face-layer::after{content:"";position:absolute;top:29%;width:35%;height:4%;border-radius:50%;background:rgba(36,22,18,.7)}
+.avatar-v2[class*="face-face-"] .avatar-v2-face-layer::before{left:7%;transform:rotate(-4deg)}.avatar-v2[class*="face-face-"] .avatar-v2-face-layer::after{right:7%;transform:rotate(4deg)}
+.face-face-03 .avatar-v2-face-layer::before,.face-face-03 .avatar-v2-face-layer::after{height:6%;transform:rotate(0)}.face-face-04 .avatar-v2-face-layer::before{transform:rotate(-10deg)}.face-face-04 .avatar-v2-face-layer::after{transform:rotate(10deg)}.face-face-05 .avatar-v2-face-layer::before,.face-face-05 .avatar-v2-face-layer::after{top:25%;width:38%}.face-face-06 .avatar-v2-face-layer::before{box-shadow:18px 28px 0 -1px rgba(112,57,43,.38)}.face-face-07 .avatar-v2-face-layer::after{box-shadow:-16px 25px 0 -1px rgba(112,57,43,.34)}.face-face-08 .avatar-v2-face-layer::before,.face-face-08 .avatar-v2-face-layer::after{opacity:.45}.face-face-09 .avatar-v2-face-layer::before{transform:rotate(7deg)}.face-face-09 .avatar-v2-face-layer::after{transform:rotate(-7deg)}.face-face-10 .avatar-v2-face-layer::before,.face-face-10 .avatar-v2-face-layer::after{height:7%;background:rgba(24,16,14,.8)}
+.avatar-v2-right-layer{z-index:7;right:18%;top:29%;width:25%;height:49%;transform:rotate(5deg)}
+.avatar-v2-left-layer{z-index:7;left:18%;top:29%;width:25%;height:49%;transform:rotate(-5deg)}
 
 /* Additional hairstyles are clean silhouette accents over the approved painted base. */
 .avatar-v2[class*="hair-hair-"] .avatar-v2-hair-layer::before{content:"";position:absolute;left:39.5%;top:4.6%;width:21%;height:10%;border-radius:48% 52% 36% 38%;background:linear-gradient(145deg,#172332 0,#05080d 62%,#24394a);filter:drop-shadow(0 2px 1px rgba(74,212,205,.24))}
