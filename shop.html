@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
   <title>상점 | 마웨그</title>
   <meta property="og:title" content="상점 | 마웨그">
-  <meta property="og:description" content="코인으로 테두리, 칭호, 아바타를 꾸며보세요.">
+  <meta property="og:description" content="코인으로 테두리와 칭호를 꾸며보세요.">
   <meta property="og:type" content="website">
   <meta property="og:image" content="https://woojehong.github.io/myweightgraph/favicon.png">
   <link rel="stylesheet" href="css/style.css">
@@ -412,7 +412,7 @@ function renderTab() {
     b.classList.toggle('active', b.dataset.tab === curTab));
 }
 
-window.setTab = tab => { curTab = tab; renderTab(); };
+window.setTab = tab => { curTab = tab === 'avatar' ? 'borders' : tab; renderTab(); };
 
 /* ── equip actions ───────────────────────────────────────────────── */
 

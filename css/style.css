@@ -432,6 +432,22 @@ input  { font-family: inherit; outline: none; }
   display: flex; flex-direction: column; align-items: center; gap: 8px;
   z-index: 900; pointer-events: none;
 }
+
+/* Retired full-character avatar feature. Keep legacy profile emoji frames intact. */
+.avatar-v2,
+.cmp-avatar-stage,
+.profile-avatar-stage,
+.profile-dressroom-link,
+#avToggle,
+a[href*="dressroom.html"],
+.shop-tab[data-tab="avatar"] {
+  display: none !important;
+}
+
+.cmp-content,
+.cmp-content.avatar-hidden {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
 .achv-pop {
   display: flex; align-items: center; gap: 12px;
   background: linear-gradient(135deg, rgba(13,26,23,.97), rgba(9,17,23,.97));

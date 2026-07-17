@@ -1,24 +1,15 @@
-const CACHE = 'weight-v54';
+const CACHE = 'weight-v55';
 const ASSETS = [
   './index.html', './dashboard.html', './input.html', './import.html',
-  './achievements.html', './compare.html', './shop.html', './guide.html', './dressroom.html',
-  './css/style.css', './css/borders.css', './css/avatar-v2.css',
+  './achievements.html', './compare.html', './shop.html', './guide.html',
+  './css/style.css', './css/borders.css',
   './js/firebase-config.js', './js/db.js', './js/auth.js',
   './js/chart-render.js', './js/achievements.js', './js/achievements-engine.js',
   './js/borders-data.js', './js/shop-data.js', './js/avatar-v2.js', './js/util.js',
   './js/daily-rewards.js',
-  './assets/avatar-v2/body-basic.png', './assets/avatar-v2/body-slim.png',
-  './assets/avatar-v2/body-toned.png', './assets/avatar-v2/body-power.png',
-  './assets/avatar-v2/body-physique.png',
   './manifest.json', './favicon.png',
   './register-sw.js',
 ];
-for (const slot of ['hair','headgear','top','bottom','shoes','right','left']) {
-  for (let index = 1; index <= 10; index += 1) {
-    ASSETS.push(`./assets/avatar-v2/items/${slot}-${String(index).padStart(2,'0')}.png`);
-  }
-}
-
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS).catch(() => {})));
   self.skipWaiting();

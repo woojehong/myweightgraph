@@ -90,6 +90,8 @@ export function avatarV2LayerAsset(slot, id) {
 }
 
 export function renderAvatarV2(value, options = {}) {
+  return '';
+  /* Legacy renderer retained below only to preserve stored-data compatibility.
   const avatar = normalizeAvatarV2(value);
   const size = Math.max(80, Number(options.size) || 280);
   const label = esc(options.label || '아바타');
@@ -115,7 +117,7 @@ export function renderAvatarV2(value, options = {}) {
     ${layer('rightHand','avatar-v2-right-layer')}
     ${layer('leftHand','avatar-v2-left-layer')}
     <div class="avatar-v2-floor" aria-hidden="true"></div>
-  </div>`;
+  </div>`; */
 }
 
 export function ownedAvatarV2Item(user, item) {
@@ -124,10 +126,5 @@ export function ownedAvatarV2Item(user, item) {
 }
 
 export function playAvatarV2(element, motion) {
-  if (!element) return;
-  const chosen = motion || element.dataset.avatarMotion || 'idle';
-  element.classList.remove('avatar-v2-playing', 'avatar-play-salute');
-  void element.offsetWidth;
-  element.classList.add('avatar-v2-playing', `avatar-play-${chosen}`);
-  window.setTimeout(() => element.classList.remove('avatar-v2-playing', `avatar-play-${chosen}`), 1050);
+  return;
 }
