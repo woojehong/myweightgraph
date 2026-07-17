@@ -1,12 +1,15 @@
-const CACHE = 'weight-v48';
+const CACHE = 'weight-v49';
 const ASSETS = [
   './index.html', './dashboard.html', './input.html', './import.html',
-  './achievements.html', './compare.html', './shop.html', './guide.html',
-  './css/style.css', './css/borders.css',
+  './achievements.html', './compare.html', './shop.html', './guide.html', './dressroom.html',
+  './css/style.css', './css/borders.css', './css/avatar-v2.css',
   './js/firebase-config.js', './js/db.js', './js/auth.js',
   './js/chart-render.js', './js/achievements.js', './js/achievements-engine.js',
-  './js/borders-data.js', './js/shop-data.js', './js/util.js',
+  './js/borders-data.js', './js/shop-data.js', './js/avatar-v2.js', './js/util.js',
   './js/daily-rewards.js',
+  './assets/avatar-v2/body-basic.png', './assets/avatar-v2/body-slim.png',
+  './assets/avatar-v2/body-toned.png', './assets/avatar-v2/body-power.png',
+  './assets/avatar-v2/body-physique.png',
   './manifest.json', './favicon.png',
   './register-sw.js',
 ];

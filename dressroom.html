@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <meta name="theme-color" content="#080c13">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/avatar-v2.css">
+  <title>드레스룸 | 마웨그</title>
+  <style>
+    body{background:#080c13;overflow-x:hidden}
+    .dressroom{min-height:100vh;display:grid;grid-template-rows:auto 1fr;color:var(--text)}
+    .dr-top{height:58px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:0 18px;border-bottom:1px solid rgba(255,255,255,.09);background:rgba(8,12,19,.96);position:relative;z-index:10}
+    .dr-back{justify-self:start}.dr-save{justify-self:end}.dr-brand{text-align:center}.dr-brand strong{display:block;font-size:15px;letter-spacing:.12em}.dr-brand span{font-size:9px;color:var(--muted);letter-spacing:.18em}
+    .dr-main{display:grid;grid-template-columns:210px minmax(300px,1fr) 310px;min-height:calc(100vh - 58px)}
+    .dr-cats,.dr-items{background:rgba(13,18,27,.92);padding:18px 12px}
+    .dr-cats{border-right:1px solid rgba(255,255,255,.08)}.dr-items{border-left:1px solid rgba(255,255,255,.08)}
+    .dr-section-label{font-size:10px;color:var(--muted);letter-spacing:.12em;margin:0 8px 10px}
+    .dr-cat{width:100%;display:flex;align-items:center;gap:10px;padding:10px 12px;margin-bottom:4px;border:1px solid transparent;border-radius:8px;background:transparent;color:var(--muted);text-align:left;cursor:pointer}
+    .dr-cat:hover{background:rgba(255,255,255,.04);color:var(--text)}.dr-cat.active{border-color:rgba(0,229,170,.45);background:rgba(0,229,170,.09);color:var(--teal)}.dr-cat i{font-style:normal;width:18px;text-align:center}
+    .dr-stage{position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;background:radial-gradient(ellipse at 50% 45%,rgba(42,70,88,.42),transparent 54%),linear-gradient(180deg,#101824 0%,#090d14 68%,#05070a 100%)}
+    .dr-stage::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px),linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px);background-size:54px 54px;mask-image:linear-gradient(to bottom,transparent,#000 35%,#000)}
+    .dr-stage::after{content:'';position:absolute;width:420px;height:78px;bottom:5%;border:1px solid rgba(0,229,170,.24);border-radius:50%;background:radial-gradient(ellipse,rgba(0,229,170,.1),transparent 67%);transform:perspective(180px) rotateX(64deg)}
+    #avatarStage{position:relative;z-index:2;display:flex;align-items:flex-end;justify-content:center;width:100%;height:100%;padding:30px 10px 22px;cursor:grab}#avatarStage:active{cursor:grabbing}
+    #avatarStage .avatar-v2{height:min(76vh,720px);width:min(62vw,610px)}
+    .stage-name{position:absolute;left:20px;bottom:18px;z-index:4}.stage-name strong{display:block;font-size:18px}.stage-name span{font-size:11px;color:var(--teal)}
+    .stage-tools{position:absolute;right:18px;bottom:18px;z-index:4;display:flex;gap:6px}
+    .dr-item-head{padding:2px 8px 14px;border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:12px}.dr-item-head strong{display:block;font-size:18px}.dr-item-head span{font-size:11px;color:var(--muted)}
+    .dr-item-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.dr-item{position:relative;min-height:92px;padding:10px;border:1px solid rgba(255,255,255,.09);border-radius:9px;background:rgba(255,255,255,.025);color:var(--text);text-align:left;cursor:pointer}.dr-item:hover{border-color:rgba(255,255,255,.22)}.dr-item.selected{border-color:var(--teal);background:rgba(0,229,170,.08);box-shadow:inset 0 0 0 1px rgba(0,229,170,.18)}
+    .dr-item.locked::after{content:'잠금';position:absolute;right:7px;top:7px;font-size:9px;color:#ffd166;border:1px solid rgba(255,209,102,.32);border-radius:10px;padding:2px 6px}.dr-item-icon{height:35px;display:flex;align-items:center;font-size:22px;color:var(--teal)}.dr-item b,.dr-item small{display:block}.dr-item small{color:var(--muted);margin-top:3px}.dr-price{color:#ffd166!important}
+    .dr-toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,18px);padding:10px 16px;border:1px solid rgba(0,229,170,.4);border-radius:9px;background:#111a25;color:var(--text);opacity:0;pointer-events:none;transition:.2s;z-index:30}.dr-toast.show{opacity:1;transform:translate(-50%,0)}
+    @media(max-width:900px){.dr-main{grid-template-columns:78px minmax(0,1fr) 260px}.dr-cat{justify-content:center;padding:10px 4px}.dr-cat span{display:none}.dr-cats{padding:14px 8px}.dr-section-label{display:none}}
+    @media(max-width:680px){.dr-top{height:52px;padding:0 10px}.dr-main{display:flex;flex-direction:column;min-height:calc(100vh - 52px)}.dr-stage{height:54vh;min-height:390px;order:0}.dr-cats{order:1;border:0;border-top:1px solid rgba(255,255,255,.08);display:flex;overflow-x:auto;padding:8px}.dr-cat{flex:0 0 54px;margin:0 3px}.dr-items{order:2;border:0;border-top:1px solid rgba(255,255,255,.08);padding:14px 12px 28px}.dr-item-grid{grid-template-columns:repeat(2,1fr)}#avatarStage .avatar-v2{height:48vh;width:78vw}.stage-name{left:12px;bottom:10px}.stage-tools{right:10px;bottom:10px}.dr-brand span{display:none}}
+  </style>
+</head>
+<body>
+<div class="dressroom">
+  <header class="dr-top">
+    <button class="btn btn-ghost btn-sm dr-back" type="button" id="backBtn">← 프로필</button>
+    <div class="dr-brand"><strong>DRESS ROOM</strong><span>AVATAR CUSTOMIZATION</span></div>
+    <button class="btn btn-primary btn-sm dr-save" type="button" id="saveBtn">변경 저장</button>
+  </header>
+  <main class="dr-main">
+    <aside class="dr-cats"><div class="dr-section-label">CUSTOMIZE</div><div id="categoryList"></div></aside>
+    <section class="dr-stage" aria-label="아바타 미리보기">
+      <div id="avatarStage"></div>
+      <div class="stage-name"><strong id="avatarName">불러오는 중</strong><span id="avatarTitle">기본 아바타</span></div>
+      <div class="stage-tools"><button class="btn btn-ghost btn-sm" type="button" id="motionBtn">▶ 모션</button><button class="btn btn-ghost btn-sm" type="button" id="resetBtn">↺ 초기화</button></div>
+    </section>
+    <aside class="dr-items"><div class="dr-item-head"><strong id="slotTitle">체형</strong><span id="slotDesc">장착할 외형을 선택하세요.</span></div><div class="dr-item-grid" id="itemGrid"></div></aside>
+  </main>
+</div>
+<div class="dr-toast" id="toast"></div>
+<script type="module">
+import { getUser, updateUser } from './js/db.js';
+import { esc } from './js/util.js';
+import { DEFAULT_AVATAR_V2, AVATAR_V2_CATEGORIES, AVATAR_V2_ITEMS, normalizeAvatarV2, renderAvatarV2, ownedAvatarV2Item, playAvatarV2 } from './js/avatar-v2.js';
+
+const uid = new URLSearchParams(location.search).get('user') || localStorage.getItem('uid');
+if (!uid) location.href = 'index.html';
+let user = null, draft = normalizeAvatarV2(), activeSlot = 'body', toastTimer;
+const byId = id => document.getElementById(id);
+
+function toast(message){const el=byId('toast');el.textContent=message;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),2200)}
+function renderStage(){byId('avatarStage').innerHTML=renderAvatarV2(draft,{size:560,label:`${user?.name||''} 아바타`});}
+function renderCategories(){byId('categoryList').innerHTML=AVATAR_V2_CATEGORIES.map(c=>`<button class="dr-cat ${c.id===activeSlot?'active':''}" type="button" data-slot="${esc(c.id)}"><i>${c.icon}</i><span>${esc(c.name)}</span></button>`).join('');byId('categoryList').querySelectorAll('[data-slot]').forEach(b=>b.onclick=()=>{activeSlot=b.dataset.slot;renderCategories();renderItems()})}
+function itemIcon(item){if(item.slot==='body')return `<img src="${esc(item.asset)}" alt="" style="height:42px;width:42px;object-fit:contain;object-position:center top">`;if(item.slot==='animation')return '▶';if(item.id===null)return '∅';return {face:'◉',hair:'⌁',headgear:'♢',top:'▱',bottom:'▥',shoes:'⌞',rightHand:'╱',leftHand:'╲',effect:'✦'}[item.slot]||'◇'}
+function renderItems(){const cat=AVATAR_V2_CATEGORIES.find(c=>c.id===activeSlot);byId('slotTitle').textContent=cat?.name||'';const items=AVATAR_V2_ITEMS.filter(i=>i.slot===activeSlot);byId('itemGrid').innerHTML=items.map((item,index)=>{const owned=ownedAvatarV2Item(user,item)&&!item.locked;const selected=draft[activeSlot]===item.id;return `<button class="dr-item ${selected?'selected':''} ${owned?'':'locked'}" type="button" data-index="${index}"><span class="dr-item-icon">${itemIcon(item)}</span><b>${esc(item.name)}</b><small>${esc(item.note)}</small>${item.price?`<small class="dr-price">🪙 ${item.price.toLocaleString('ko-KR')}</small>`:''}</button>`}).join('');byId('itemGrid').querySelectorAll('[data-index]').forEach(b=>b.onclick=()=>{const item=items[Number(b.dataset.index)];draft[activeSlot]=item.id;renderStage();renderItems();if(!ownedAvatarV2Item(user,item)||item.locked)toast('미보유 아이템은 미리보기만 가능합니다.')})}
+function currentLocked(){return AVATAR_V2_CATEGORIES.map(c=>AVATAR_V2_ITEMS.find(i=>i.slot===c.id&&i.id===draft[c.id])).filter(Boolean).find(i=>!ownedAvatarV2Item(user,i)||i.locked)}
+
+byId('backBtn').onclick=()=>history.length>1?history.back():location.href=`achievements.html?user=${encodeURIComponent(uid)}`;
+byId('motionBtn').onclick=()=>playAvatarV2(byId('avatarStage').querySelector('.avatar-v2'),draft.animation);
+byId('resetBtn').onclick=()=>{draft=normalizeAvatarV2(DEFAULT_AVATAR_V2);renderStage();renderItems();toast('기본 외형으로 되돌렸습니다.')};
+byId('avatarStage').onclick=()=>playAvatarV2(byId('avatarStage').querySelector('.avatar-v2'),draft.animation);
+byId('saveBtn').onclick=async()=>{const locked=currentLocked();if(locked){toast(`${locked.name}은 아직 보유하지 않은 아이템입니다.`);return}byId('saveBtn').disabled=true;try{await updateUser(uid,{avatarV2:draft});user.avatarV2={...draft};toast('아바타를 저장했습니다.')}catch(e){toast('저장 실패: '+e.message)}finally{byId('saveBtn').disabled=false}};
+
+async function init(){user=await getUser(uid);if(!user)throw new Error('사용자를 찾을 수 없습니다.');draft=normalizeAvatarV2(user.avatarV2);byId('avatarName').textContent=user.name||'사용자';byId('avatarTitle').textContent=user.selectedTitle||'기본 아바타';renderCategories();renderItems();renderStage()}
+renderCategories();
+renderItems();
+renderStage();
+init().catch(e=>toast(e.message));
+</script>
+</body>
+</html>

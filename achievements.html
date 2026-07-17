@@ -14,6 +14,7 @@
   <meta property="og:image" content="https://woojehong.github.io/myweightgraph/favicon.png">
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/borders.css">
+  <link rel="stylesheet" href="css/avatar-v2.css">
   <style>
     /* ── 게임 프로필 카드 ──────────────────────────────────────────── */
     .profile-card {
@@ -33,6 +34,10 @@
       background: repeating-linear-gradient(-55deg, transparent, transparent 40px, rgba(255,255,255,.015) 40px, rgba(255,255,255,.015) 41px);
     }
     .profile-inner { position: relative; z-index: 1; }
+    .profile-avatar-stage{height:260px;display:flex;align-items:flex-end;justify-content:center;margin:-12px auto 4px;cursor:pointer;position:relative}
+    .profile-avatar-stage .avatar-v2{height:255px;width:220px}
+    .profile-avatar-stage::after{content:'클릭하여 모션 재생';position:absolute;bottom:5px;font-size:9px;color:var(--muted);letter-spacing:.04em}
+    .profile-dressroom-link{display:inline-flex;align-items:center;justify-content:center;margin:2px 0 14px;padding:7px 14px;border:1px solid rgba(0,229,170,.35);border-radius:18px;color:var(--teal);font-size:11px;text-decoration:none;background:rgba(0,229,170,.06)}
     .profile-title-badge {
       display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: .1em;
       color: var(--tc); border: 1px solid rgba(255,255,255,.2); background: rgba(255,255,255,.06);
@@ -184,6 +189,7 @@
 <div class="modal-bg" id="profileModal">
   <div class="modal" style="max-height:90vh;overflow-y:auto">
     <h3>✏️ 프로필 수정</h3>
+    <a class="btn btn-primary btn-full" href="dressroom.html" style="margin-bottom:12px">⚔ 아바타 드레스룸 입장</a>
     <div class="input-group">
       <label class="input-label">이모지</label>
       <div id="pEmojiGrid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-bottom:8px"></div>
@@ -233,6 +239,7 @@ import { ACHIEVEMENTS, ACHIEVEMENT_CATEGORIES,
          calculateProgress, calculateMetaProgress } from './js/achievements.js';
 import { syncAchievements, queueAchievementPopups } from './js/achievements-engine.js';
 import { BORDER_NAMES, ACH_BORDER_REWARDS, ACH_TITLE_REWARDS } from './js/borders-data.js';
+import { renderAvatarV2, playAvatarV2 } from './js/avatar-v2.js';
 import { esc } from './js/util.js';
 const VISIBLE_ACHIEVEMENTS = ACHIEVEMENTS.filter(a =>
   a.cat !== 'steps' && !a.id.startsWith('mood_') && !a.id.startsWith('journal_'));
@@ -358,6 +365,7 @@ async function render() {
       <div class="profile-glow" style="--tc-glow:${tier.color}30"></div>
       <div class="profile-lines"></div>
       <div class="profile-inner">
+        <button class="profile-avatar-stage" id="profileAvatarStage" type="button" aria-label="아바타 모션 재생">${renderAvatarV2(user.avatarV2,{size:220,label:`${user.name} 아바타`})}</button>
         ${user.selectedTitle ? `<div class="profile-title-badge">${esc(user.selectedTitle)}</div><br>` : ''}
         <div class="profile-name">${esc(user.name)}</div>
         <div class="profile-tier">
@@ -391,6 +399,7 @@ async function render() {
             </div>
           </div>
         </div>
+        <a class="profile-dressroom-link" href="dressroom.html?user=${encodeURIComponent(uid)}">⚔ 드레스룸에서 아바타 수정</a>
         ${nextTier ? `
           <div class="profile-progress-section">
             <div class="profile-progress-labels">
@@ -436,6 +445,9 @@ async function render() {
     if (scoreEl) countUp(scoreEl, totalScore, 900);
     const fill = document.getElementById('tierProgFill');
     if (fill) setTimeout(() => { fill.style.width = tierProg + '%'; }, 80);
+  });
+  document.getElementById('profileAvatarStage')?.addEventListener('click', e => {
+    playAvatarV2(e.currentTarget.querySelector('.avatar-v2'));
   });
 
   buildCatList(validEarned);
