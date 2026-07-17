@@ -114,28 +114,6 @@
     .tr-btn-wrap { flex-shrink: 0; width: 92px; }
     .tr-btn-wrap .sc-btn { padding: 8px 4px; }
 
-    /* ── avatar tab ──────────────────────────────────────────────── */
-    .avatar-stage {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 16px; padding: 18px 12px 12px; text-align: center;
-      position: relative; overflow: hidden;
-    }
-    .avatar-stage::before {
-      content: ''; position: absolute; inset: 0; pointer-events: none;
-      background: radial-gradient(ellipse 70% 55% at 50% 20%, rgba(0,229,170,.08) 0%, transparent 70%);
-    }
-    .avatar-stage svg { position: relative; filter: drop-shadow(0 10px 18px rgba(0,0,0,.45)); }
-    .avatar-stage .as-caption { font-size: 11px; color: var(--muted); margin-top: 6px; position: relative; }
-    .slot-tabs { display: flex; gap: 6px; margin: 14px 0 10px; }
-    .slot-tab {
-      flex: 1; padding: 8px 2px; border-radius: 8px; font-size: 12px; font-weight: 700;
-      background: var(--surface); border: 1px solid var(--border); color: var(--muted);
-      white-space: nowrap; transition: all .15s;
-    }
-    .slot-tab.active { background: rgba(79,195,247,.1); border-color: rgba(79,195,247,.45); color: var(--blue); }
-    .av-prev { width: 72px; height: 72px; display: flex; align-items: center; justify-content: center; }
-    .av-prev.none { border: 1px dashed var(--border); border-radius: 12px; color: var(--muted); font-size: 20px; width: 64px; height: 64px; margin: 4px; }
-
     /* ── buy modal ───────────────────────────────────────────────── */
     .buy-preview { text-align: center; margin-bottom: 12px; }
     .buy-name { font-size: 15px; font-weight: 800; text-align: center; margin-bottom: 10px; word-break: keep-all; }
@@ -204,7 +182,6 @@ import { esc } from './js/util.js';
 import { RARITY_INFO, getShopBorders, ACH_TITLE_REWARDS } from './js/borders-data.js';
 import { getTierForScore, DEFAULT_TIERS } from './js/achievements.js';
 import { SHOP_TITLES } from './js/shop-data.js';
-import { AVATAR_SLOTS, DEFAULT_AVATAR, getItemsBySlot, getAvatarItem, renderAvatarSVG } from './js/avatar-data.js';
 
 const uid = new URLSearchParams(location.search).get('user') || localStorage.getItem('uid');
 if (!uid) location.href = 'index.html';
@@ -216,9 +193,8 @@ const RARITY_ORDER   = Object.keys(RARITY_INFO); // common → mythic
 
 let _user = null;
 let coins = 0;
-let curTab = 'borders';   // borders | titles | avatar
-let curSlot = 'skin';
-let pending = null;       // { kind, id, name, price } — kind: border | title | avatar
+let curTab = 'borders';   // borders | titles
+let pending = null;       // { kind, id, name, price } — kind: border | title
 let _titleRefs = [];      // stable index list for onclick handlers
 
 window.doLogout = () => { clearAuth(); localStorage.removeItem('uid'); location.href = 'index.html'; };
@@ -228,8 +204,6 @@ window.doLogout = () => { clearAuth(); localStorage.removeItem('uid'); location.
 const arr = v => Array.isArray(v) ? v : [];
 const ownsBorder = id => arr(_user.purchasedBorders).includes(id) || arr(_user.unlockedBorders).includes(id);
 const ownsTitle  = t  => arr(_user.purchasedTitles).includes(t) || arr(_user.earnedTitles).includes(t);
-const ownsAvItem = it => it.price === 0 || arr(_user.avatarItems).includes(it.id);
-const curAvatar  = () => ({ ...DEFAULT_AVATAR, acc: null, ...(_user.avatar || {}) });
 const fmtCoin    = n => n.toLocaleString('ko-KR');
 
 function showToast(msg, type = 'ok') {
@@ -391,83 +365,17 @@ function renderTitlesTab() {
     ${rewardRows}`;
 }
 
-/* ── avatar tab ──────────────────────────────────────────────────── */
-
-function avatarItemCard(it) {
-  const av       = curAvatar();
-  const owned    = ownsAvItem(it);
-  const equipped = av[it.slot] === it.id;
-  const previewAv = it.slot === 'skin'
-    ? { skin: it.id, hair: null, outfit: null, acc: null }
-    : { skin: av.skin, hair: null, outfit: null, acc: null, [it.slot]: it.id };
-  let btn;
-  if (equipped) {
-    btn = it.slot === 'skin'
-      ? `<button class="sc-btn on">✓ 장착중</button>`
-      : `<button class="sc-btn on" onclick="equipAvatar('${esc(it.slot)}','')">✓ 장착중</button>`;
-  } else if (owned) {
-    btn = `<button class="sc-btn equip" onclick="equipAvatar('${esc(it.slot)}','${esc(it.id)}')">장착</button>`;
-  } else {
-    btn = buyBtnHtml(`openBuyAvatar('${esc(it.id)}')`, it.price);
-  }
-  return `
-    <div class="shop-card ${equipped ? 'equipped' : ''}">
-      <div class="av-prev">${renderAvatarSVG(previewAv, 72)}</div>
-      <div class="sc-name">${esc(it.name)}</div>
-      ${it.price === 0 ? '<div class="sc-note">무료</div>' : `<div class="sc-note">🪙 ${fmtCoin(it.price)}</div>`}
-      ${btn}
-    </div>`;
-}
-
-function noneCard(slot) {
-  const equipped = !curAvatar()[slot];
-  return `
-    <div class="shop-card ${equipped ? 'equipped' : ''}">
-      <div class="av-prev none">✕</div>
-      <div class="sc-name">없음</div>
-      <div class="sc-note">기본</div>
-      ${equipped
-        ? `<button class="sc-btn on">✓ 장착중</button>`
-        : `<button class="sc-btn equip" onclick="equipAvatar('${esc(slot)}','')">장착</button>`}
-    </div>`;
-}
-
-function renderAvatarTab() {
-  const av = curAvatar();
-  const slotTabs = AVATAR_SLOTS.map(s =>
-    `<button class="slot-tab ${curSlot === s.id ? 'active' : ''}" onclick="setSlot('${esc(s.id)}')">${esc(s.name)}</button>`).join('');
-  const slotDef = AVATAR_SLOTS.find(s => s.id === curSlot);
-  const cards = [
-    ...(slotDef && !slotDef.required ? [noneCard(curSlot)] : []),
-    ...getItemsBySlot(curSlot).map(avatarItemCard),
-  ].join('');
-  return `
-    <div class="avatar-stage">
-      ${renderAvatarSVG(av, 180)}
-      <div class="as-caption">${esc(_user.name || '')}의 아바타</div>
-    </div>
-    <div class="slot-tabs">${slotTabs}</div>
-    <div class="shop-grid">${cards}</div>`;
-}
-
 /* ── tab switching / main render ─────────────────────────────────── */
 
 function renderTab() {
   const el = document.getElementById('tabContent');
   if (!el) return;
-  if (curTab === 'avatar') curTab = 'borders';
-  el.innerHTML = curTab === 'borders' ? renderBordersTab()
-               : curTab === 'titles'  ? renderTitlesTab()
-               : renderAvatarTab();
+  el.innerHTML = curTab === 'borders' ? renderBordersTab() : renderTitlesTab();
   document.querySelectorAll('.shop-tab').forEach(b =>
     b.classList.toggle('active', b.dataset.tab === curTab));
 }
 
-window.setTab = tab => {
-  if (tab === 'avatar') { showToast('아바타 상점은 개편 준비 중입니다.'); return; }
-  curTab = tab; renderTab();
-};
-window.setSlot = slot => { curSlot = slot; renderTab(); };
+window.setTab = tab => { curTab = tab; renderTab(); };
 
 /* ── equip actions ───────────────────────────────────────────────── */
 
@@ -489,17 +397,6 @@ window.equipTitleIdx = async idx => {
   setChip(_user, document.getElementById('chipName').style.color);
   renderTab();
   showToast(v ? '칭호 장착 완료 ✓' : '칭호 해제됨');
-};
-
-window.equipAvatar = async (slot, id) => {
-  const av = curAvatar();
-  av[slot] = id || null;
-  if (slot === 'skin' && !av.skin) av.skin = DEFAULT_AVATAR.skin;
-  try { await updateUser(uid, { avatar: av }); }
-  catch (e) { showToast('저장 실패: ' + e.message, 'err'); return; }
-  _user.avatar = av;
-  renderTab();
-  showToast(id ? '아바타 적용 완료 ✓' : '해제됨');
 };
 
 /* ── purchase flow ───────────────────────────────────────────────── */
@@ -531,13 +428,6 @@ window.openBuyTitle = idx => {
   openBuyModal({ kind: 'title', id: t.name, name: t.name, price: t.price },
     `<span class="tr-badge">${esc(t.name)}</span>`);
 };
-window.openBuyAvatar = id => {
-  const it = getAvatarItem(id);
-  if (!it || ownsAvItem(it)) return;
-  const prevAv = { skin: curAvatar().skin, hair: null, outfit: null, acc: null, [it.slot]: it.id };
-  openBuyModal({ kind: 'avatar', id, name: it.name, price: it.price }, renderAvatarSVG(prevAv, 90));
-};
-
 window.confirmBuy = async () => {
   if (!pending) return;
   const { kind, id, price } = pending;
@@ -552,7 +442,8 @@ window.confirmBuy = async () => {
     upd.purchasedTitles  = pushUnique(_user.purchasedTitles, id);
     upd.earnedTitles     = pushUnique(_user.earnedTitles, id);
   } else {
-    upd.avatarItems      = pushUnique(_user.avatarItems, id);
+    window.closeBuy();
+    return;
   }
 
   const btn = document.getElementById('buyConfirmBtn');

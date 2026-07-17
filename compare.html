@@ -83,23 +83,6 @@
       font-size:13px; padding:48px 16px;
     }
 
-    /* ── 그래프 칸 아바타 (우측 전용 여백에 서 있음 — 데이터 비침범) ── */
-    .cmp-walker{ position:absolute; z-index:6; cursor:pointer;
-                 filter:drop-shadow(0 3px 5px rgba(0,0,0,.55)); }
-    .cmp-walker svg{ width:100%; height:100%; display:block; }
-    .cmp-walker-bubble{
-      position:absolute; bottom:calc(100% + 6px); right:-4px;
-      background:rgba(10,18,32,.96); border:1px solid rgba(0,229,170,.45);
-      border-radius:10px; padding:5px 9px; font-size:11px; font-weight:700;
-      color:var(--teal); white-space:nowrap; pointer-events:none;
-      opacity:0; transform:translateY(4px); transition:opacity .18s, transform .18s;
-    }
-    .cmp-walker-bubble::after{
-      content:''; position:absolute; top:100%; right:14px;
-      border:5px solid transparent; border-top-color:rgba(0,229,170,.45);
-    }
-    .cmp-walker-bubble.show{ opacity:1; transform:translateY(0); }
-
     /* ── 미니 프로필 (데스크탑 기본) ───────────────────────────── */
     .cmp-profile{ display:flex; align-items:center; gap:9px; margin-bottom:8px; padding:0 6px; flex-wrap:wrap; }
     .cmp-avatar{ width:32px; height:32px; flex-shrink:0; }
@@ -108,9 +91,6 @@
       display:flex; align-items:center; justify-content:center;
       font-size:15px; position:relative; z-index:1; overflow:hidden;
     }
-    /* 프로필 원 안에 아바타 얼굴이 보이도록 확대 배치 */
-    .cmp-face{ width:145%; height:145%; margin-top:18%; flex-shrink:0; }
-    .cmp-face svg{ width:100%; height:100%; display:block; }
     .cmp-info{ display:flex; flex-direction:column; line-height:1.25; min-width:0; }
     .cmp-title{ font-size:9px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .cmp-name{ font-size:13px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -187,7 +167,6 @@
 <div class="page">
   <div class="compare-bar">
     <div class="gran-row">
-      <button class="gran-btn" id="avToggle" onclick="toggleAvatars()" style="margin-right:auto">🧍 아바타</button>
       <button class="gran-btn active" data-m="day"   onclick="setViewMode('day')">일간</button>
       <button class="gran-btn"        data-m="week"  onclick="setViewMode('week')">주간</button>
       <button class="gran-btn"        data-m="month" onclick="setViewMode('month')">월간</button>
@@ -208,7 +187,6 @@ import { getUser, getUsers, getWeights, getSettings, getTierSettings } from './j
 import { isAuthed, clearAuth } from './js/auth.js';
 import { renderChart, aggregateRecords, periodLabel } from './js/chart-render.js';
 import { getTierForScore, DEFAULT_TIERS } from './js/achievements.js';
-import { renderAvatarSVG, DEFAULT_AVATAR } from './js/avatar-data.js';
 import { esc } from './js/util.js';
 
 const uid = new URLSearchParams(location.search).get('user') || localStorage.getItem('uid');
@@ -247,72 +225,6 @@ window.setViewMode = m => {
   renderGrid();
 };
 
-// ── 아바타 보이기/숨기기 토글 (기기별 기억) ──────────────────────────
-let showAvatars = localStorage.getItem('compare_show_avatars') !== '0';
-function syncAvToggle() {
-  document.getElementById('avToggle')?.classList.toggle('active', showAvatars);
-}
-window.toggleAvatars = () => {
-  showAvatars = !showAvatars;
-  try { localStorage.setItem('compare_show_avatars', showAvatars ? '1' : '0'); } catch (e) {}
-  syncAvToggle();
-  renderGrid();
-};
-
-// ── 그래프 칸 아바타 (walker) ─────────────────────────────────────────
-// 차트 우측 전용 여백(padRight)에 세워서 데이터 선·점을 가리지 않는다.
-// 높이는 현재 체중의 y좌표와 동일선상 → 감량하면 목표선을 향해 내려간다.
-const walkerRegistry = new Map(); // canvasId -> { el, weight, goal }
-const walkerSize = () => window.matchMedia('(min-width:768px)').matches ? 40 : 32;
-
-function positionWalker(chart) {
-  const info = walkerRegistry.get(chart.canvas.id);
-  if (!info || !info.el.isConnected) return;
-  const y = chart.scales?.y, area = chart.chartArea;
-  if (!y || !area) return;
-  const size = walkerSize();
-  const py = Math.max(area.top, Math.min(y.getPixelForValue(info.weight), area.bottom));
-  info.el.style.width  = size + 'px';
-  info.el.style.height = size + 'px';
-  info.el.style.left   = Math.round(area.right + 3) + 'px';
-  info.el.style.top    = Math.round(py - size + 4) + 'px';
-}
-
-// 줌/팬/리사이즈 후에도 위치가 따라가도록 차트 그리기 뒤에 재배치
-Chart.register({
-  id: 'mwgWalker',
-  afterDraw(chart) { positionWalker(chart); },
-});
-
-function attachWalker(u, cv, recs) {
-  const pts = recs.filter(r => r.weight != null).sort((a, b) => a.date.localeCompare(b.date));
-  if (!pts.length || !cv?._chartInstance) return;
-  const curW = pts[pts.length - 1].weight;
-  const wrap = cv.closest('.cmp-chart');
-  if (!wrap) return;
-
-  const el = document.createElement('div');
-  el.className = 'cmp-walker';
-  const goal = u.goal;
-  const reached = goal && curW <= goal;
-  const msg = !goal ? `현재 ${curW.toFixed(1)}kg`
-    : reached ? '🎉 목표 달성!'
-    : `목표까지 -${(curW - goal).toFixed(1)}kg!`;
-  el.innerHTML = `${renderAvatarSVG(u.avatar || DEFAULT_AVATAR, walkerSize())}
-    <div class="cmp-walker-bubble">${esc(u.name)} · ${msg}</div>`;
-  el.addEventListener('click', e => {
-    e.stopPropagation();
-    const b = el.querySelector('.cmp-walker-bubble');
-    if (!b) return;
-    b.classList.add('show');
-    clearTimeout(el._bubbleT);
-    el._bubbleT = setTimeout(() => b.classList.remove('show'), 2500);
-  });
-  wrap.appendChild(el);
-  walkerRegistry.set(cv.id, { el, weight: curW, goal });
-  positionWalker(cv._chartInstance);
-}
-
 const STORAGE_KEY = 'compare_selected_uids';
 function loadSelected() {
   try {
@@ -340,7 +252,6 @@ function chartOpts() {
     showCurMarker: true,
     gridCell: true,
     labelMode: viewMode,
-    padRight: showAvatars ? walkerSize() + 10 : 0,
   };
   // 주간·월간은 평균선만 (식단/운동·이동평균·예상 숨김)
   if (viewMode !== 'day') {
@@ -430,7 +341,6 @@ function togglePick(id) {
 
 // ── 그래프 그리드 ─────────────────────────────────────────────────────
 function destroyGridCharts() {
-  walkerRegistry.clear();
   document.querySelectorAll('#compareGrid canvas').forEach(c => {
     if (c._chartInstance) { try { c._chartInstance.destroy(); } catch (e) {} }
   });
@@ -460,10 +370,8 @@ function cellHTML(u) {
       ${badge('mk-cur', '현재', m.curW, m.curDate)}
     </div>` : '';
 
-  // 아바타를 장착한 유저는 프로필 원에 아바타 얼굴, 아니면 기존 이모지
-  const faceInner = u.avatar
-    ? `<div class="cmp-face">${renderAvatarSVG(u.avatar, 40)}</div>`
-    : (u.emoji || '⚖️');
+  // 사용자 프로필 이모지
+  const faceInner = u.emoji || '⚖️';
   return `
     <div class="cmp-cell">
       <div class="cmp-profile">
@@ -509,7 +417,6 @@ async function renderGrid() {
     if (cv && recs.filter(r => r.weight != null).length >= 2) {
       try {
         renderChart(recs, u, cv, null, opts);
-        if (showAvatars) attachWalker(u, cv, recs);
       }
       catch (e) { console.warn('renderChart failed for', u.id, e); }
     }
@@ -565,7 +472,6 @@ async function init() {
   }
   saveSelected();
 
-  syncAvToggle();
   renderPicker();
   renderGrid();
 }

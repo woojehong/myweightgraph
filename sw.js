@@ -1,11 +1,11 @@
-const CACHE = 'weight-v47';
+const CACHE = 'weight-v48';
 const ASSETS = [
   './index.html', './dashboard.html', './input.html', './import.html',
   './achievements.html', './compare.html', './shop.html', './guide.html',
   './css/style.css', './css/borders.css',
   './js/firebase-config.js', './js/db.js', './js/auth.js',
   './js/chart-render.js', './js/achievements.js', './js/achievements-engine.js',
-  './js/borders-data.js', './js/shop-data.js', './js/avatar-data.js', './js/util.js',
+  './js/borders-data.js', './js/shop-data.js', './js/util.js',
   './js/daily-rewards.js',
   './manifest.json', './favicon.png',
   './register-sw.js',
