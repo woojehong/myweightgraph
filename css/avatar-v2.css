@@ -1,23 +1,34 @@
-.avatar-v2{position:relative;width:var(--avatar-v2-size);height:calc(var(--avatar-v2-size)*1.18);display:flex;align-items:flex-end;justify-content:center;isolation:isolate;user-select:none}
-.avatar-3d-host{position:absolute;z-index:4;inset:0;overflow:hidden;opacity:0;transition:opacity .28s ease}
-.avatar-3d-host canvas{display:block;width:100%;height:100%;outline:0}
-.avatar-3d-host.avatar-3d-ready{opacity:1}
-.avatar-3d-host.avatar-3d-ready~img,.avatar-3d-host.avatar-3d-ready~.avatar-v2-floor{opacity:0}
-.avatar-3d-host.avatar-3d-failed{display:none}
-.avatar-v2 img{position:relative;z-index:2;display:block;width:auto;height:100%;max-width:100%;object-fit:contain;object-position:center bottom;filter:drop-shadow(0 16px 18px rgba(0,0,0,.48));transform-origin:50% 92%}
-.avatar-v2-floor{position:absolute;z-index:1;left:13%;right:13%;bottom:1.5%;height:5%;border-radius:50%;background:radial-gradient(ellipse,rgba(0,229,170,.22),rgba(0,0,0,.35) 58%,transparent 72%);transform:perspective(80px) rotateX(60deg)}
-.avatar-v2-aura{position:absolute;z-index:0;inset:4% 2% 3%;border-radius:46%;background:radial-gradient(ellipse at 50% 46%,rgba(0,229,170,.12),transparent 66%);opacity:.75}
-.avatar-pose-relaxed img{transform:translateY(1%) scale(.99)}
-.avatar-pose-lean-left img{transform:translateX(-3%) rotate(-2deg)}
-.avatar-pose-lean-right img{transform:translateX(3%) rotate(2deg)}
-.avatar-pose-hero img{transform:scale(1.025,1.01)}
-.avatar-pose-guard img{transform:translateY(1.5%) rotate(-1deg) scale(.985)}
-.avatar-pose-victory img{transform:translateY(-2%) scale(1.015)}
-.avatar-pose-runner img{transform:translateX(2%) rotate(3deg) scale(.98)}
-.avatar-pose-power img{transform:scale(1.04,1.015)}
-.avatar-pose-cool img{transform:translateX(-2%) rotate(-1.4deg)}
-.avatar-v2-playing.avatar-play-salute img{animation:avatar-v2-salute 1s cubic-bezier(.22,.8,.22,1)}
-.avatar-v2-playing.avatar-play-idle img{animation:avatar-v2-pulse 1s ease-in-out}
-@keyframes avatar-v2-salute{0%,100%{transform:translateY(0) rotate(0)}25%{transform:translateY(-6px) rotate(-1.5deg)}50%{transform:translateY(-2px) rotate(1.5deg)}72%{transform:translateY(-4px) rotate(-.8deg)}}
-@keyframes avatar-v2-pulse{0%,100%{transform:scale(1)}45%{transform:scale(1.012,.995)}}
-@media(prefers-reduced-motion:reduce){.avatar-v2-playing img{animation:none!important}}
+.avatar-v2{position:relative;width:var(--avatar-v2-size);height:calc(var(--avatar-v2-size)*1.78);display:flex;align-items:flex-end;justify-content:center;isolation:isolate;user-select:none;--avatar-accent:#00e5b0}
+.avatar-v2-body{position:relative;z-index:3;display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;filter:drop-shadow(0 22px 22px rgba(0,0,0,.42));transform-origin:50% 91%}
+.avatar-v2-floor{position:absolute;z-index:1;left:13%;right:13%;bottom:1%;height:4.8%;border-radius:50%;background:radial-gradient(ellipse,rgba(0,229,176,.2),rgba(2,11,18,.42) 58%,transparent 72%);transform:perspective(90px) rotateX(62deg)}
+.avatar-v2-aura{position:absolute;z-index:0;inset:7% 3% 2%;border-radius:44%;background:radial-gradient(ellipse at 50% 48%,rgba(0,229,176,.11),transparent 64%);opacity:.8}
+.avatar-v2-effect-layer,.avatar-v2-hair-layer,.avatar-v2-headgear-layer,.avatar-v2-right-layer,.avatar-v2-left-layer{position:absolute;z-index:4;inset:0;pointer-events:none;transform-origin:50% 91%}
+.avatar-v2-effect-layer{z-index:2}.avatar-v2-hair-layer{z-index:4}.avatar-v2-headgear-layer{z-index:5}.avatar-v2-right-layer,.avatar-v2-left-layer{z-index:6}
+.avatar-v2-hair-layer{display:none}
+.avatar-v2-headgear-layer,.avatar-v2-right-layer,.avatar-v2-left-layer{display:none}
+
+/* Additional hairstyles are clean silhouette accents over the approved painted base. */
+.avatar-v2[class*="hair-hair-"] .avatar-v2-hair-layer::before{content:"";position:absolute;left:39.5%;top:4.6%;width:21%;height:10%;border-radius:48% 52% 36% 38%;background:linear-gradient(145deg,#172332 0,#05080d 62%,#24394a);filter:drop-shadow(0 2px 1px rgba(74,212,205,.24))}
+.hair-hair-03 .avatar-v2-hair-layer::before{height:7%;top:6%;border-radius:48% 52% 24% 24%}.hair-hair-04 .avatar-v2-hair-layer::before{height:13%;top:3%;border-radius:60% 42% 48% 30%}.hair-hair-05 .avatar-v2-hair-layer::before{left:37%;width:26%;height:8%;transform:skewX(-12deg)}
+.hair-hair-06 .avatar-v2-hair-layer::before{top:2.8%;height:14%;border-radius:52% 52% 22% 22%}.hair-hair-07 .avatar-v2-hair-layer::before{left:38%;width:24%;height:11%;transform:rotate(-4deg)}.hair-hair-08 .avatar-v2-hair-layer::before{top:4%;height:12%;border-radius:70% 30% 45% 28%}.hair-hair-09 .avatar-v2-hair-layer::before{height:8%;top:5.8%;border-radius:46% 54% 16% 22%}.hair-hair-10 .avatar-v2-hair-layer::before{top:3%;height:14%;transform:skewX(8deg)}
+
+/* Head accessories share the same premium dark-metal/teal visual language. */
+.avatar-v2[class*="headgear-head-"] .avatar-v2-headgear-layer::before{content:"";position:absolute;left:37.5%;top:5.2%;width:25%;height:4.5%;border:2px solid rgba(126,255,230,.82);border-radius:50%;background:linear-gradient(180deg,#1a2634,#060a10);box-shadow:0 0 12px rgba(0,229,176,.24)}
+.headgear-head-04 .avatar-v2-headgear-layer::after,.headgear-head-05 .avatar-v2-headgear-layer::after{content:"";position:absolute;left:44%;top:3.5%;width:12%;height:6%;background:linear-gradient(135deg,transparent 43%,#182534 44% 58%,transparent 59%),linear-gradient(45deg,transparent 43%,#182534 44% 58%,transparent 59%)}
+.headgear-head-04 .avatar-v2-headgear-layer::before,.headgear-head-05 .avatar-v2-headgear-layer::before{left:43%;top:7%;width:14%;height:1.8%;border-radius:8px}
+.headgear-head-06 .avatar-v2-headgear-layer::before,.headgear-head-07 .avatar-v2-headgear-layer::before{top:1.8%;height:10%;border-radius:46% 46% 24% 24%;border-color:#aebbc8}.headgear-head-07 .avatar-v2-headgear-layer::before{border-color:#d9aa42}.headgear-head-08 .avatar-v2-headgear-layer::before,.headgear-head-09 .avatar-v2-headgear-layer::before,.headgear-head-10 .avatar-v2-headgear-layer::before{top:9%;height:3.5%;border-radius:8px;background:rgba(13,25,36,.84)}
+
+/* Hand equipment uses crisp illustrated silhouettes and remains independently wearable. */
+.avatar-v2[class*="rightHand-right-"] .avatar-v2-right-layer::before,.avatar-v2[class*="leftHand-left-"] .avatar-v2-left-layer::before{content:"";position:absolute;top:39%;width:2.8%;height:28%;border-radius:70% 20% 45% 20%;background:linear-gradient(90deg,#202d39,#e2edf2 48%,#526775 53%,#111b24);box-shadow:0 0 10px rgba(74,212,205,.22);transform-origin:50% 72%}
+.avatar-v2[class*="rightHand-right-"] .avatar-v2-right-layer::before{right:31%;transform:rotate(10deg)}.avatar-v2[class*="leftHand-left-"] .avatar-v2-left-layer::before{left:31%;transform:rotate(-10deg)}
+.rightHand-right-02 .avatar-v2-right-layer::before,.leftHand-left-02 .avatar-v2-left-layer::before,.rightHand-right-05 .avatar-v2-right-layer::before,.leftHand-left-05 .avatar-v2-left-layer::before{width:10%;height:26%;top:42%;border-radius:50%;background:radial-gradient(circle,rgba(114,255,230,.9),#148879 38%,rgba(0,229,176,.08) 66%,transparent 68%)}
+.rightHand-right-04 .avatar-v2-right-layer::before,.leftHand-left-04 .avatar-v2-left-layer::before{width:12%;height:24%;top:41%;border-radius:50% 8% 50% 8%;background:linear-gradient(135deg,#172532,#79919e,#101820)}
+
+.avatar-v2[class*="effect-effect-"] .avatar-v2-effect-layer::before{content:"";position:absolute;inset:10% 10% 3%;border-radius:46%;background:radial-gradient(ellipse,transparent 48%,rgba(0,229,176,.13) 61%,transparent 72%);filter:drop-shadow(0 0 16px rgba(0,229,176,.38));animation:avatar-v2-aura-spin 5s linear infinite}
+.effect-effect-02 .avatar-v2-effect-layer::before,.effect-effect-06 .avatar-v2-effect-layer::before{background:radial-gradient(ellipse,transparent 48%,rgba(255,83,31,.18) 61%,transparent 72%);filter:drop-shadow(0 0 17px rgba(255,83,31,.4))}.effect-effect-03 .avatar-v2-effect-layer::before,.effect-effect-07 .avatar-v2-effect-layer::before{background:radial-gradient(ellipse,transparent 48%,rgba(112,178,255,.17) 61%,transparent 72%)}
+
+.avatar-pose-relaxed .avatar-v2-body{transform:translateY(1%) scale(.99)}.avatar-pose-lean-left .avatar-v2-body{transform:translateX(-3%) rotate(-2deg)}.avatar-pose-lean-right .avatar-v2-body{transform:translateX(3%) rotate(2deg)}.avatar-pose-hero .avatar-v2-body{transform:scale(1.025,1.01)}.avatar-pose-guard .avatar-v2-body{transform:translateY(1.5%) rotate(-1deg) scale(.985)}.avatar-pose-victory .avatar-v2-body{transform:translateY(-2%) scale(1.015)}.avatar-pose-runner .avatar-v2-body{transform:translateX(2%) rotate(3deg) scale(.98)}.avatar-pose-power .avatar-v2-body{transform:scale(1.04,1.015)}.avatar-pose-cool .avatar-v2-body{transform:translateX(-2%) rotate(-1.4deg)}
+.avatar-v2-playing.avatar-play-salute .avatar-v2-body{animation:avatar-v2-salute 1s cubic-bezier(.22,.8,.22,1)}.avatar-v2-playing.avatar-play-idle .avatar-v2-body{animation:avatar-v2-pulse 1s ease-in-out}
+@keyframes avatar-v2-salute{0%,100%{transform:translateY(0) rotate(0)}25%{transform:translateY(-8px) rotate(-1.5deg)}50%{transform:translateY(-3px) rotate(1.5deg)}72%{transform:translateY(-5px) rotate(-.8deg)}}
+@keyframes avatar-v2-pulse{0%,100%{transform:scale(1)}45%{transform:scale(1.012,.995)}}@keyframes avatar-v2-aura-spin{50%{transform:scale(1.025);opacity:.72}}
+@media(prefers-reduced-motion:reduce){.avatar-v2-playing .avatar-v2-body,.avatar-v2-effect-layer::before{animation:none!important}}

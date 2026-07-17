@@ -1,5 +1,4 @@
 import { esc } from './util.js';
-import { playAvatar3D } from './avatar-3d.js';
 
 export const DEFAULT_AVATAR_V2 = Object.freeze({
   body: 'basic', headgear: null, hair: 'default', face: 'default',
@@ -86,10 +85,15 @@ export function renderAvatarV2(value, options = {}) {
   const label = esc(options.label || '아바타');
   const classes = ['avatar-v2', options.className || '', `avatar-pose-${avatar.pose || 'neutral'}`, `avatar-motion-${avatar.animation || 'idle'}`].filter(Boolean).join(' ');
   const avatarData = esc(encodeURIComponent(JSON.stringify(avatar)));
-  return `<div class="${classes}" style="--avatar-v2-size:${size}px" data-avatar-motion="${esc(avatar.animation || 'idle')}">
-    <div class="avatar-3d-host" data-avatar="${avatarData}" aria-label="${label} 3D"></div>
+  const itemClass = slot => `${slot}-${String(avatar[slot] ?? 'none').replace(/[^a-z0-9-]/gi,'')}`;
+  return `<div class="${classes} ${itemClass('hair')} ${itemClass('headgear')} ${itemClass('top')} ${itemClass('bottom')} ${itemClass('shoes')} ${itemClass('rightHand')} ${itemClass('leftHand')} ${itemClass('effect')}" style="--avatar-v2-size:${size}px" data-avatar="${avatarData}" data-avatar-motion="${esc(avatar.animation || 'idle')}">
     <div class="avatar-v2-aura" aria-hidden="true"></div>
-    <img src="${esc(avatarV2Asset(avatar))}" alt="${label}" draggable="false">
+    <div class="avatar-v2-effect-layer" aria-hidden="true"></div>
+    <img class="avatar-v2-body" src="${esc(avatarV2Asset(avatar))}" alt="${label}" draggable="false">
+    <div class="avatar-v2-hair-layer" aria-hidden="true"></div>
+    <div class="avatar-v2-headgear-layer" aria-hidden="true"></div>
+    <div class="avatar-v2-right-layer" aria-hidden="true"></div>
+    <div class="avatar-v2-left-layer" aria-hidden="true"></div>
     <div class="avatar-v2-floor" aria-hidden="true"></div>
   </div>`;
 }
@@ -101,8 +105,6 @@ export function ownedAvatarV2Item(user, item) {
 
 export function playAvatarV2(element, motion) {
   if (!element) return;
-  const host = element.querySelector('.avatar-3d-host');
-  if (host?.classList.contains('avatar-3d-ready')) playAvatar3D(host);
   const chosen = motion || element.dataset.avatarMotion || 'idle';
   element.classList.remove('avatar-v2-playing', 'avatar-play-salute');
   void element.offsetWidth;
