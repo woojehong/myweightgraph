@@ -201,7 +201,7 @@
 import { getUser, updateUser, getTierSettings } from './js/db.js';
 import { clearAuth, isAuthed } from './js/auth.js';
 import { esc } from './js/util.js';
-import { RARITY_INFO, getShopBorders, getRewardBorders, ACH_TITLE_REWARDS } from './js/borders-data.js';
+import { RARITY_INFO, getShopBorders, ACH_TITLE_REWARDS } from './js/borders-data.js';
 import { getTierForScore, DEFAULT_TIERS } from './js/achievements.js';
 import { SHOP_TITLES } from './js/shop-data.js';
 import { AVATAR_SLOTS, DEFAULT_AVATAR, getItemsBySlot, getAvatarItem, renderAvatarSVG } from './js/avatar-data.js';
@@ -209,8 +209,8 @@ import { AVATAR_SLOTS, DEFAULT_AVATAR, getItemsBySlot, getAvatarItem, renderAvat
 const uid = new URLSearchParams(location.search).get('user') || localStorage.getItem('uid');
 if (!uid) location.href = 'index.html';
 
-const SHOP_BORDERS   = getShopBorders();
-const REWARD_BORDERS = getRewardBorders();
+const SHOP_BORDERS   = getShopBorders(); // 전체 80종 — 모두 구매 가능 (업적 연동은 달성 시 무료)
+const REWARD_TITLE_PRICE = n => n === '챌린저' ? 1200 : 500;
 const REWARD_TITLES  = [...new Set(Object.values(ACH_TITLE_REWARDS))];
 const RARITY_ORDER   = Object.keys(RARITY_INFO); // common → mythic
 
@@ -310,24 +310,21 @@ function borderPreview(id, size = 58) {
     </div>`;
 }
 
-function borderCard(b, purchasable) {
+function borderCard(b) {
   const owned    = ownsBorder(b.id);
   const equipped = _user.selectedBorder === b.id;
   const rInfo    = RARITY_INFO[b.rarity] || RARITY_INFO.common;
-  let btn, extra = '';
+  let btn;
   if (equipped) {
     btn = `<button class="sc-btn on" onclick="equipBorder('')">✓ 장착중</button>`;
   } else if (owned) {
     btn = `<button class="sc-btn equip" onclick="equipBorder('${esc(b.id)}')">장착</button>`;
-  } else if (purchasable) {
-    btn = buyBtnHtml(`openBuyBorder('${esc(b.id)}')`, b.price);
   } else {
-    btn = `<button class="sc-btn lock">🔒 미획득</button>`;
-    extra = `<div class="sc-note">🏆 업적 보상</div>`;
+    btn = buyBtnHtml(`openBuyBorder('${esc(b.id)}')`, b.price);
   }
-  if (!purchasable && owned) extra = `<div class="sc-note">🏆 업적 보상</div>`;
+  const extra = b.rewardAch ? `<div class="sc-note">🏆 업적 달성 시 무료</div>` : '';
   return `
-    <div class="shop-card ${equipped ? 'equipped' : ''} ${(!purchasable && !owned) ? 'locked' : ''}">
+    <div class="shop-card ${equipped ? 'equipped' : ''}">
       ${borderPreview(b.id)}
       <div class="sc-name">${esc(b.name)}</div>
       <div class="sc-rarity" style="color:${rInfo.color}">${esc(rInfo.label)}</div>
@@ -336,7 +333,8 @@ function borderCard(b, purchasable) {
 }
 
 function renderBordersTab() {
-  let html = '';
+  let html = `<p style="font-size:11px;color:var(--muted);margin:0 0 10px">
+    모든 테두리를 코인으로 구매할 수 있어요. 🏆 표시는 연결된 업적을 달성하면 무료로 열려요.</p>`;
   RARITY_ORDER.forEach(r => {
     const items = SHOP_BORDERS.filter(b => b.rarity === r);
     if (!items.length) return;
@@ -346,34 +344,29 @@ function renderBordersTab() {
         <span>◆ ${esc(info.label)}</span><span class="rh-line"></span>
         <span style="font-weight:600;opacity:.7">${fmtCoin(info.price)}코인</span>
       </div>
-      <div class="shop-grid">${items.map(b => borderCard(b, true)).join('')}</div>`;
+      <div class="shop-grid">${items.map(borderCard).join('')}</div>`;
   });
-  html += `
-    <div class="shop-section-gap"></div>
-    <div class="section-title">🏆 업적 보상 테두리</div>
-    <p style="font-size:11px;color:var(--muted);margin:-4px 0 10px">구매할 수 없어요. 연결된 업적을 달성하면 자동으로 열려요.</p>
-    <div class="shop-grid">${REWARD_BORDERS.map(b => borderCard(b, false)).join('')}</div>`;
   return html;
 }
 
 /* ── titles tab ──────────────────────────────────────────────────── */
 
 function titleRow(t, idx) {
-  const owned    = t.kind === 'reward' ? arr(_user.earnedTitles).includes(t.name) : ownsTitle(t.name);
+  const owned    = t.kind === 'reward'
+    ? (arr(_user.earnedTitles).includes(t.name) || ownsTitle(t.name))
+    : ownsTitle(t.name);
   const equipped = _user.selectedTitle === t.name;
   let btn;
   if (equipped) {
     btn = `<button class="sc-btn on" onclick="equipTitleIdx(-1)">✓ 장착중</button>`;
   } else if (owned) {
     btn = `<button class="sc-btn equip" onclick="equipTitleIdx(${idx})">장착</button>`;
-  } else if (t.kind === 'reward') {
-    btn = `<button class="sc-btn lock">🔒 미획득</button>`;
   } else {
     btn = buyBtnHtml(`openBuyTitle(${idx})`, t.price);
   }
-  const desc = t.kind === 'reward' ? '🏆 업적 보상 칭호' : esc(t.desc || '');
+  const desc = t.kind === 'reward' ? '🏆 업적 달성 시 무료' : esc(t.desc || '');
   return `
-    <div class="title-row ${equipped ? 'equipped' : ''} ${t.kind === 'reward' ? 'reward' : ''} ${(!owned && t.kind === 'reward') ? 'locked' : ''}">
+    <div class="title-row ${equipped ? 'equipped' : ''} ${t.kind === 'reward' ? 'reward' : ''}">
       <div class="tr-main">
         <span class="tr-badge">${esc(t.name)}</span>
         <div class="tr-desc">${desc}</div>
@@ -385,16 +378,16 @@ function titleRow(t, idx) {
 function renderTitlesTab() {
   _titleRefs = [
     ...SHOP_TITLES.map(t => ({ ...t, kind: 'shop' })),
-    ...REWARD_TITLES.map(n => ({ name: n, price: 0, kind: 'reward' })),
+    ...REWARD_TITLES.map(n => ({ name: n, price: REWARD_TITLE_PRICE(n), kind: 'reward' })),
   ];
   const shopRows   = _titleRefs.map((t, i) => t.kind === 'shop'   ? titleRow(t, i) : '').join('');
   const rewardRows = _titleRefs.map((t, i) => t.kind === 'reward' ? titleRow(t, i) : '').join('');
   return `
-    <div class="section-title">구매 가능한 칭호</div>
+    <div class="section-title">상점 칭호</div>
     ${shopRows}
     <div class="shop-section-gap"></div>
-    <div class="section-title">🏆 업적 보상 칭호</div>
-    <p style="font-size:11px;color:var(--muted);margin:-4px 0 10px">연결된 업적을 달성하면 자동으로 얻어요.</p>
+    <div class="section-title">🏆 업적 칭호</div>
+    <p style="font-size:11px;color:var(--muted);margin:-4px 0 10px">업적을 달성하면 무료로 얻고, 코인으로 먼저 구매할 수도 있어요.</p>
     ${rewardRows}`;
 }
 
@@ -530,7 +523,7 @@ window.openBuyBorder = id => {
 };
 window.openBuyTitle = idx => {
   const t = _titleRefs[idx];
-  if (!t || t.kind !== 'shop' || ownsTitle(t.name)) return;
+  if (!t || ownsTitle(t.name) || arr(_user.earnedTitles).includes(t.name)) return;
   openBuyModal({ kind: 'title', id: t.name, name: t.name, price: t.price },
     `<span class="tr-badge">${esc(t.name)}</span>`);
 };
@@ -600,7 +593,7 @@ async function init() {
         <span id="coinAmt">0</span>
         <span class="coin-unit">코인</span>
       </div>
-      <div class="wallet-hint">업적을 달성하면 코인을 얻어요</div>
+      <div class="wallet-hint">업적 달성 = 코인 적립 · 모든 아이템 구매 가능</div>
     </div>
     <div class="shop-tabs">
       <button class="shop-tab active" data-tab="borders" onclick="setTab('borders')">🖼️ 테두리</button>

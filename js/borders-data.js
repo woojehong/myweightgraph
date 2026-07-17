@@ -116,22 +116,26 @@ export const ACH_TITLE_REWARDS = {
   mood_100         : '감정 기록가',
 };
 
-// Set of border ids that can be bought (reward-only ones excluded)
+// Every border is purchasable with coins. Achievement-linked borders can
+// ALSO be unlocked for free by earning the linked achievement (rewardAch).
 const rewardBorderIds = new Set(Object.values(ACH_BORDER_REWARDS));
+const CUSTOM_PRICES = { challenger: 2000 }; // prestige pricing
 export function getShopBorders() {
+  const rewardBy = {};
+  Object.entries(ACH_BORDER_REWARDS).forEach(([achId, bId]) => { rewardBy[bId] = achId; });
   const seen = new Set();
   return BORDER_CATALOG.filter(b => {
     if (seen.has(b.id)) return false;
     seen.add(b.id);
-    return !b.reward && !rewardBorderIds.has(b.id);
-  }).map(b => ({ ...b, name: BORDER_NAMES[b.id] || b.id, price: b.price ?? RARITY_INFO[b.rarity].price }));
+    return true;
+  }).map(b => ({
+    ...b,
+    name: BORDER_NAMES[b.id] || b.id,
+    price: CUSTOM_PRICES[b.id] ?? b.price ?? RARITY_INFO[b.rarity].price,
+    rewardAch: rewardBy[b.id] || null,
+  }));
 }
+// Kept for compatibility: achievement-linked subset
 export function getRewardBorders() {
-  const out = [];
-  const seen = new Set();
-  BORDER_CATALOG.forEach(b => {
-    if (seen.has(b.id)) return;
-    if (rewardBorderIds.has(b.id)) { seen.add(b.id); out.push({ ...b, name: BORDER_NAMES[b.id] || b.id }); }
-  });
-  return out;
+  return getShopBorders().filter(b => rewardBorderIds.has(b.id));
 }

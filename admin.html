@@ -112,7 +112,7 @@ import { onAuthChange, adminSignOut, ADMIN_UID,
          getTierSettings, saveTierSettings,
          saveAdminOverride } from './js/db.js';
 import { ACHIEVEMENTS, ACHIEVEMENT_CATEGORIES, DEFAULT_TIERS } from './js/achievements.js';
-import { computeAchievementState } from './js/achievements-engine.js';
+import { computeAchievementState, syncAchievements } from './js/achievements-engine.js';
 
 let allUsers=[], selectedUid=null, settings={};
 
@@ -166,6 +166,15 @@ function renderApp() {
           <div id="userList"></div>
         </div>
         <div class="card mt-12">
+          <div class="section-title">💰 코인 일괄 정산</div>
+          <p style="font-size:11px;color:var(--muted);margin-bottom:8px">
+            전 계정의 업적을 재판정하고, 코인 미지급 계정에 기달성 점수만큼 코인을 소급 지급합니다.
+            (신규 달성 업적 저장·보상 해금·랭킹 점수 갱신 포함)
+          </p>
+          <button class="btn btn-primary btn-sm btn-full" id="settleBtn" onclick="settleAllCoins()">전 계정 정산 실행</button>
+          <div id="settleLog" style="font-size:11px;color:var(--muted);margin-top:8px;max-height:140px;overflow-y:auto"></div>
+        </div>
+        <div class="card mt-12">
           <div class="section-title">⚙️ 기능 설정</div>
           <div id="featurePanel"></div>
         </div>
@@ -197,6 +206,37 @@ function renderUserList() {
       <button class="del-btn" onclick="event.stopPropagation();confirmDelete('${u.id}','${u.name}')">✕</button>
     </div>`).join('');
 }
+
+// ── 코인 일괄 정산: 전 계정 업적 재판정 + 소급 코인 지급 ─────────────
+window.settleAllCoins = async () => {
+  const btn = document.getElementById('settleBtn');
+  const log = document.getElementById('settleLog');
+  if (!btn || btn.disabled) return;
+  btn.disabled = true; btn.textContent = '정산 중...';
+  log.innerHTML = '';
+  let done = 0, failed = 0;
+  for (const u of allUsers) {
+    try {
+      const before = u.coins;
+      const res = await syncAchievements(u.id);
+      if (res) {
+        const after = res.user.coins ?? 0;
+        const granted = before == null ? after : (res.coinsGained || 0);
+        const newAch = res.newAchievements.length;
+        log.innerHTML += `<div>✓ ${u.name} — 코인 ${after} (${before == null ? `소급 +${granted}` : granted > 0 ? `+${granted}` : '변동 없음'}${newAch ? ` · 신규 업적 ${newAch}개` : ''})</div>`;
+        u.coins = after;
+        u.totalScore = res.user.totalScore;
+        done++;
+      }
+    } catch (e) {
+      log.innerHTML += `<div style="color:var(--red)">✗ ${u.name} — ${e.message}</div>`;
+      failed++;
+    }
+    log.scrollTop = log.scrollHeight;
+  }
+  btn.disabled = false; btn.textContent = '전 계정 정산 실행';
+  showToast(`정산 완료: ${done}명 성공${failed ? `, ${failed}명 실패` : ''}`, failed ? 'err' : 'ok');
+};
 
 window.moveUser = async (id, dir) => {
   const i = allUsers.findIndex(u => u.id === id);
