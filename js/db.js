@@ -2,11 +2,13 @@ import { initializeApp }                              from "https://www.gstatic.
 import { getFirestore, collection, doc, setDoc,
          getDoc, getDocs, deleteDoc, query,
          orderBy, writeBatch, serverTimestamp,
-         deleteField }                                 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+         deleteField, runTransaction }                 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, signInAnonymously,
          signOut, onAuthStateChanged }                 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { firebaseConfig, DEFAULT_GOAL }               from "./firebase-config.js";
 import { sha256 }                                     from "./auth.js";
+import { DAILY_REWARD_POINTS, activityDay, isCurrentActivityDay,
+         isDailyComplete }                            from "./daily-rewards.js";
 
 const app  = initializeApp(firebaseConfig);
 const db   = getFirestore(app);
@@ -167,6 +169,71 @@ export async function setDietExercise(userId, dateStr, data) {
     { date: dateStr, ...data, updatedAt: serverTimestamp() }, { merge: true });
 }
 export const setDayData = setDietExercise;
+
+// Atomic daily reward ledger. A reward flag is permanent even if the user
+// later edits/deletes the underlying value. Past activity days never reward.
+export async function grantDailyReward(userId, dateStr, event, value = null) {
+  await _ready;
+  if (!isCurrentActivityDay(dateStr)) return { granted: 0, reason: 'not-current-day' };
+  const allowed = new Set(['attendance','weight','morning','lunch','dinner','exercise','water']);
+  if (!allowed.has(event)) throw new Error(`Unknown daily reward event: ${event}`);
+
+  const userRef = doc(db, 'users', userId);
+  const rewardRef = doc(db, 'dailyRewards', userId, 'days', dateStr);
+  const recordRef = doc(db, 'weights', userId, 'records', dateStr);
+
+  return runTransaction(db, async tx => {
+    const [userSnap, rewardSnap, recordSnap] = await Promise.all([
+      tx.get(userRef), tx.get(rewardRef), tx.get(recordRef),
+    ]);
+    if (!userSnap.exists()) throw new Error('User not found');
+    const ledger = rewardSnap.exists() ? rewardSnap.data() : { date: dateStr };
+    const updates = { updatedAt: serverTimestamp() };
+    let granted = 0;
+
+    if (event === 'water') {
+      const reached = Math.max(0, Math.min(DAILY_REWARD_POINTS.WATER_MAX_STEPS, Math.floor(Number(value) || 0)));
+      const paid = Math.max(0, Math.floor(Number(ledger.waterSteps) || 0));
+      if (reached > paid) {
+        granted += (reached - paid) * DAILY_REWARD_POINTS.WATER_STEP;
+        updates.waterSteps = reached;
+      }
+    } else if (!ledger[event]) {
+      const points = event === 'attendance' ? DAILY_REWARD_POINTS.ATTENDANCE
+        : event === 'weight' ? DAILY_REWARD_POINTS.WEIGHT
+        : event === 'exercise' ? DAILY_REWARD_POINTS.EXERCISE
+        : DAILY_REWARD_POINTS.EACH_MEAL;
+      granted += points;
+      updates[event] = true;
+    }
+
+    const merged = { ...ledger, ...updates };
+    if (!merged.dailyComplete && isDailyComplete(recordSnap.exists() ? recordSnap.data() : null)) {
+      granted += DAILY_REWARD_POINTS.DAILY_COMPLETE;
+      updates.dailyComplete = true;
+    }
+
+    if (Object.keys(updates).length > 1 || granted > 0) {
+      updates.date = dateStr;
+      updates.points = (Number(ledger.points) || 0) + granted;
+      tx.set(rewardRef, updates, { merge: true });
+      if (granted > 0) {
+        const userData = userSnap.data();
+        const walletBase = userData.coins == null
+          ? (Number(userData.totalScore) || 0)
+          : (Number(userData.coins) || 0);
+        tx.update(userRef, { coins: walletBase + granted });
+      }
+    }
+    return { granted, pointsToday: (Number(ledger.points) || 0) + granted,
+             dailyComplete: Boolean(updates.dailyComplete || ledger.dailyComplete) };
+  });
+}
+
+export async function getDailyReward(userId, dateStr = activityDay()) {
+  const snap = await getDocR(doc(db, 'dailyRewards', userId, 'days', dateStr));
+  return snap.exists() ? snap.data() : { date: dateStr, points: 0 };
+}
 export async function batchSetWeights(userId, records) {
   await _ready;
   for (let i=0; i<records.length; i+=499) {

@@ -1,6 +1,11 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
+  <script>
+    // Step sync is intentionally paused; keep the implementation for later.
+    const u = new URLSearchParams(location.search).get('user');
+    location.replace(u ? `input.html?user=${encodeURIComponent(u)}` : 'index.html');
+  </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#0d1117">

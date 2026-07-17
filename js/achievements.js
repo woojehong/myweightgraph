@@ -253,6 +253,9 @@ export const ACHIEVEMENTS = [
 
 // 과거 버전에서 제거된 업적 id (달성 불가능 업적 정리)
 export const RETIRED_ACHIEVEMENT_IDS = new Set(['ach_150', 'ach_200']);
+const PAUSED_ACHIEVEMENT_IDS = new Set(
+  ACHIEVEMENTS.filter(a => a.cat === 'steps' || a.id.startsWith('mood_') || a.id.startsWith('journal_')).map(a => a.id)
+);
 
 const toDs = d =>
   `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -566,6 +569,9 @@ export function calculateEarnedIds(records, user) {
   if(moodDays>=30)  earned.add('mood_30');
   if(moodDays>=100) earned.add('mood_100');
 
+  // Paused features cannot create new achievements. Previously stored awards
+  // remain valid in the engine, preserving their score and wallet history.
+  PAUSED_ACHIEVEMENT_IDS.forEach(id => earned.delete(id));
   return earned;
 }
 

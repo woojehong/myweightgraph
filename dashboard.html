@@ -148,7 +148,8 @@
 <div class="toast" id="toast"></div>
 
 <script type="module">
-import { getUser, getWeights, getSettings, updateSettings, toDateStr, updateUser, setUserPassword, getTierSettings } from './js/db.js';
+import { getUser, getWeights, getSettings, updateSettings, toDateStr, updateUser, setUserPassword, getTierSettings, grantDailyReward } from './js/db.js';
+import { activityDay } from './js/daily-rewards.js';
 import { isAuthed, clearAuth, saveAuth } from './js/auth.js';
 import { renderChart, calcStats, aggregateRecords, periodLabel } from './js/chart-render.js';
 import { getTierForScore, DEFAULT_TIERS } from './js/achievements.js';
@@ -251,6 +252,10 @@ async function render() {
   if (!isAdminView && user.passwordHash && !isAuthed(uid, user.passwordHash)) {
     location.href = `index.html?auth_required=${encodeURIComponent(uid)}`;
     return;
+  }
+  if (!isAdminView) {
+    const attendance = await grantDailyReward(uid, activityDay(), 'attendance').catch(()=>null);
+    if (attendance?.granted) showToast(`출석 +${attendance.granted} 포인트`,'ok');
   }
 
   setChipData(user, _tier.color);

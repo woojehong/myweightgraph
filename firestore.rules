@@ -64,6 +64,13 @@ service cloud.firestore {
       allow read, write: if signedIn();
     }
 
+    // Immutable-per-event daily reward ledger. The client updates this and
+    // users/{uid}.coins together in a Firestore transaction.
+    match /dailyRewards/{uid}/days/{day} {
+      allow read, create, update: if signedIn();
+      allow delete: if isAdmin();
+    }
+
     // ── settings/{doc}: app-wide settings, admin-managed ──
     match /settings/{doc} {
       allow read: if signedIn();

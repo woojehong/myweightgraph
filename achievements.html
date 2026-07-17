@@ -234,6 +234,8 @@ import { ACHIEVEMENTS, ACHIEVEMENT_CATEGORIES,
 import { syncAchievements, queueAchievementPopups } from './js/achievements-engine.js';
 import { BORDER_NAMES, ACH_BORDER_REWARDS, ACH_TITLE_REWARDS } from './js/borders-data.js';
 import { esc } from './js/util.js';
+const VISIBLE_ACHIEVEMENTS = ACHIEVEMENTS.filter(a =>
+  a.cat !== 'steps' && !a.id.startsWith('mood_') && !a.id.startsWith('journal_'));
 
 const uid = new URLSearchParams(location.search).get('user') || localStorage.getItem('uid');
 if (!uid) location.href = 'index.html';
@@ -441,9 +443,9 @@ async function render() {
 }
 
 function buildCatList(validEarned) {
-  const cats = [{ id:'all', label:'전체', icon:'🎖️' }, ...ACHIEVEMENT_CATEGORIES];
+  const cats = [{ id:'all', label:'전체', icon:'🎖️' }, ...ACHIEVEMENT_CATEGORIES.filter(c => c.id !== 'steps')];
   document.getElementById('catList').innerHTML = cats.map(c => {
-    const achs = c.id === 'all' ? ACHIEVEMENTS : ACHIEVEMENTS.filter(a => a.cat === c.id);
+    const achs = c.id === 'all' ? VISIBLE_ACHIEVEMENTS : VISIBLE_ACHIEVEMENTS.filter(a => a.cat === c.id);
     const cnt  = achs.filter(a => validEarned.has(a.id)).length;
     return `<button class="cat-btn ${currentCat===c.id?'active':''}" onclick="setCat('${c.id}')">
       <span>${c.icon}</span><span>${c.label}</span>
@@ -476,7 +478,7 @@ function renderAchievements(cat) {
   const titleRewards = { ...ACH_TITLE_REWARDS };
   (_tierData?.titles || []).forEach(t => { if (t.achId) titleRewards[t.achId] = t.name; });
 
-  const list = cat === 'all' ? ACHIEVEMENTS : ACHIEVEMENTS.filter(a => a.cat === cat);
+  const list = cat === 'all' ? VISIBLE_ACHIEVEMENTS : VISIBLE_ACHIEVEMENTS.filter(a => a.cat === cat);
 
   // 같은 날 달성 시: 점수 높은 것 → 배열 인덱스 높은 것(더 상위 업적) 순
   const achIdx = Object.fromEntries(ACHIEVEMENTS.map((a, i) => [a.id, i]));

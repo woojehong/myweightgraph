@@ -185,7 +185,8 @@
 <div class="toast" id="toast"></div>
 
 <script type="module">
-import { getUser, getWeights, setWeight, parseWeight, toDateStr, updateUser, setUserPassword, setDietExercise, getTierSettings } from './js/db.js';
+import { getUser, getWeights, setWeight, parseWeight, toDateStr, updateUser, setUserPassword, setDietExercise, getTierSettings, grantDailyReward, getDailyReward } from './js/db.js';
+import { activityDay } from './js/daily-rewards.js';
 import { getTierForScore, DEFAULT_TIERS, WATER_GOAL_CUPS } from './js/achievements.js';
 import { syncAchievements, queueAchievementPopups } from './js/achievements-engine.js';
 import { BORDER_NAMES } from './js/borders-data.js';
@@ -198,6 +199,20 @@ const EMOJIS=['⚖️','💪','🔥','👑','🏃','🌟','🎯','🦁','🐯','
 let selEmoji='';
 const DAY_KO=['일','월','화','수','목','금','토'];
 let existingMap={}, allRecords=[], user=null;
+
+async function reward(dateStr,event,value=null){
+  try{
+    const r=await grantDailyReward(uid,dateStr,event,value);
+    if(r.granted>0) showToast(`+${r.granted} 포인트`,'ok');
+    updateRewardSummary(r); return r;
+  }catch(e){console.warn('Daily reward failed:',e);return null;}
+}
+function updateRewardSummary(r){
+  if(!r)return;
+  const p=document.getElementById('todayPoints'),c=document.getElementById('todayComplete');
+  if(p)p.textContent=`오늘 ${r.pointsToday||0}P 획득`;
+  if(c)c.textContent=r.dailyComplete?'오늘 기록 완주 ✓':'완주: 체중·세 끼·운동';
+}
 
 function setChipData(u, tierColor) {
   const tc = tierColor || '#00e5aa';
@@ -282,6 +297,7 @@ window.submitDay = async dateStr => {
   if(st){st.textContent='✓ 저장됨';st.style.color='var(--green)';}
   showToast('저장됐어요 ✓','ok');
   refreshCardState(dateStr);
+  await reward(dateStr,'weight');
   scheduleAchSync();
 };
 
@@ -312,6 +328,7 @@ window.setMeal = async (dateStr, mealTime, value) => {
     if(btn) btn.classList.toggle('on', newMeal[mealTime]===c);
   });
   refreshCardState(dateStr);
+  if(newVal!=null) await reward(dateStr,mealTime);
   scheduleAchSync();
 };
 
@@ -329,6 +346,7 @@ window.setExercise = async (dateStr, value) => {
     if(newVal===false && i===1) btn.className='ex-btn on-cross';
   });
   refreshCardState(dateStr);
+  if(newVal===true||newVal===false) await reward(dateStr,'exercise');
   scheduleAchSync();
 };
 
@@ -345,102 +363,20 @@ window.setWater = async (dateStr, n) => {
   await setDietExercise(uid, dateStr, { water:newVal });
   rec.water=newVal;
   renderLife(dateStr);
+  await reward(dateStr,'water',newVal);
   scheduleAchSync();
 };
-
-// ── 기분 ─────────────────────────────────────────────────────────────
-window.setMood = async (dateStr, m) => {
-  const rec=getRec(dateStr);
-  const newVal = rec.mood===m ? null : m;
-  await setDietExercise(uid, dateStr, { mood:newVal });
-  rec.mood=newVal;
-  renderLife(dateStr);
-  scheduleAchSync();
-};
-
-// ── 저널 (탭할 때마다 미기록 → ✓ → ✗ 순환) ──────────────────────────
-window.setJournal = async (dateStr, key) => {
-  const rec=getRec(dateStr);
-  const j={...(rec.journal||{})};
-  const cur=j[key];
-  j[key] = cur==null ? true : cur===true ? false : null;
-  await setDietExercise(uid, dateStr, { journal:j });
-  rec.journal=j;
-  renderLife(dateStr);
-  scheduleAchSync();
-};
-
-// ── 걸음 수 ──────────────────────────────────────────────────────────
-window.setSteps = async (dateStr, n) => {
-  const rec=getRec(dateStr);
-  const newVal = rec.steps===n ? null : n;
-  await setDietExercise(uid, dateStr, { steps:newVal, stepsSource: newVal==null?null:'manual' });
-  rec.steps=newVal; rec.stepsSource=newVal==null?null:'manual';
-  renderLife(dateStr);
-  scheduleAchSync();
-};
-window.setStepsCustom = async (dateStr, el) => {
-  const raw=el.value.trim();
-  if(raw==='') return;
-  const n=Math.round(Number(raw));
-  if(!Number.isFinite(n)||n<0||n>200000){ showToast('걸음 수를 확인해주세요','err'); return; }
-  const rec=getRec(dateStr);
-  await setDietExercise(uid, dateStr, { steps:n, stepsSource:'manual' });
-  rec.steps=n; rec.stepsSource='manual';
-  renderLife(dateStr);
-  showToast('걸음 수 저장 ✓','ok');
-  scheduleAchSync();
-};
-
-const MOOD_EMOJIS=['😫','😕','😐','🙂','😄'];
-const JOURNAL_ITEMS=[
-  {key:'noAlcohol',  label:'🚫🍺 금주'},
-  {key:'noSnack',    label:'🌙 야식 없음'},
-  {key:'earlySleep', label:'😴 12시 전 취침'},
-];
-const STEP_PRESETS=[[3000,'3천'],[5000,'5천'],[8000,'8천'],[10000,'1만'],[15000,'1.5만'],[20000,'2만']];
 
 function lifeSectionHTML(dateStr){
   const rec=allRecords.find(r=>r.date===dateStr)||{};
   const water=rec.water||0;
   const cups=Array.from({length:WATER_GOAL_CUPS},(_,i)=>
     `<button class="water-cup ${i<water?'full':''}" onclick="setWater('${dateStr}',${i+1})" aria-label="물 ${i+1}잔">🥛</button>`).join('');
-  const moods=MOOD_EMOJIS.map((e,i)=>
-    `<button class="mood-btn ${rec.mood===i+1?'on':''}" onclick="setMood('${dateStr}',${i+1})">${e}</button>`).join('');
-  const j=rec.journal||{};
-  const jr=JOURNAL_ITEMS.map(it=>{
-    const v=j[it.key];
-    const cls=v===true?'yes':v===false?'no':'';
-    const mark=v===true?' ✓':v===false?' ✗':'';
-    return `<button class="jr-chip ${cls}" onclick="setJournal('${dateStr}','${it.key}')">${it.label}${mark}</button>`;
-  }).join('');
-  const isAuto=rec.stepsSource==='auto';
-  const chips=STEP_PRESETS.map(([v,l])=>
-    `<button class="steps-chip ${rec.steps===v?'on':''}" onclick="setSteps('${dateStr}',${v})">${l}</button>`).join('');
-  const stepsVal=(typeof rec.steps==='number'&&!STEP_PRESETS.some(([v])=>v===rec.steps))?rec.steps:'';
   return `
     <div class="dc-life-row">
       <span class="dc-life-label">💧 물</span>
       <div class="water-cups">${cups}</div>
       <span class="water-count ${water>=WATER_GOAL_CUPS?'done':''}">${water}/${WATER_GOAL_CUPS}</span>
-    </div>
-    <div class="dc-life-row">
-      <span class="dc-life-label">😊 기분</span>
-      <div class="mood-row">${moods}</div>
-    </div>
-    <div class="dc-life-row">
-      <span class="dc-life-label">📔 저널</span>
-      ${jr}
-    </div>
-    <div class="dc-life-row">
-      <span class="dc-life-label">🚶 걸음</span>
-      <div class="steps-row">
-        ${chips}
-        <input class="steps-custom" type="number" inputmode="numeric" placeholder="직접" value="${stepsVal}"
-          onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"
-          onchange="setStepsCustom('${dateStr}',this)">
-        ${isAuto?'<span class="steps-auto-badge">⚡ 자동</span>':''}
-      </div>
     </div>`;
 }
 function renderLife(dateStr){
@@ -491,7 +427,7 @@ async function render() {
   const _iTier  = getTierForScore(user?.totalScore || 0, _iTiers);
   setChipData(user, _iTier.color);
 
-  const today = new Date(); today.setHours(0,0,0,0);
+  const today = new Date(activityDay() + 'T12:00:00');
   const labels=['오늘','어제','2일 전','3일 전','4일 전','5일 전'];
   let cards='';
   for(let i=0;i<=5;i++){
@@ -553,15 +489,17 @@ async function render() {
       </div>`;
   }
 
-  document.getElementById('content').innerHTML=cards+`
-    <a href="guide.html?user=${uid}"
-       style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:14px;
-              padding:12px;border:1px dashed rgba(0,229,170,.35);border-radius:10px;
-              font-size:13px;color:var(--teal);text-decoration:none">
-      ⚡ 걸음 수 자동 연동 설정하기 <span style="font-size:11px;color:var(--muted)">(아이폰 단축어로 매일 자동 기록)</span>
-    </a>`;
+  document.getElementById('content').innerHTML=`
+    <div class="card" style="display:flex;justify-content:space-between;gap:10px;margin-bottom:12px">
+      <b id="todayPoints">오늘 0P 획득</b>
+      <span id="todayComplete" class="text-muted">완주: 체중·세 끼·운동</span>
+    </div>`+cards;
 
   // 다른 곳(자동 연동 등)에서 쌓인 미반영 업적을 페이지 진입 시 1회 정산
+  const attendance = await reward(activityDay(),'attendance');
+  const ledger = await getDailyReward(uid,activityDay());
+  updateRewardSummary({pointsToday:ledger.points||attendance?.pointsToday||0,
+    dailyComplete:Boolean(ledger.dailyComplete)});
   scheduleAchSync();
 }
 
