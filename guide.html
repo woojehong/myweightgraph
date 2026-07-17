@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0d1117">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="favicon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
+  <title>걸음 수 자동 연동 | 마웨그</title>
+  <meta property="og:title" content="걸음 수 자동 연동 | 마웨그">
+  <meta property="og:description" content="아이폰 단축어로 매일 밤 걸음 수를 자동 기록해요.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="https://woojehong.github.io/myweightgraph/favicon.png">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .guide-page { max-width: 640px; margin: 0 auto; padding: 16px 16px 48px; }
+    .back-link {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 13px; color: var(--muted); padding: 4px 0;
+    }
+    .back-link:hover { color: var(--text); }
+    .guide-h1 { font-size: 20px; font-weight: 800; margin: 10px 0 4px; }
+    .guide-sub { font-size: 13px; color: var(--muted); margin-bottom: 16px; line-height: 1.6; }
+    .sec-title { font-size: 15px; font-weight: 800; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+    .step-list { list-style: none; counter-reset: step; }
+    .step-list > li {
+      counter-increment: step;
+      position: relative; padding: 0 0 16px 38px;
+      font-size: 13px; line-height: 1.7;
+    }
+    .step-list > li::before {
+      content: counter(step);
+      position: absolute; left: 0; top: 1px;
+      width: 24px; height: 24px; border-radius: 50%;
+      background: rgba(0,229,170,.12); color: var(--teal);
+      border: 1px solid rgba(0,229,170,.35);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 800;
+    }
+    .step-list > li:last-child { padding-bottom: 0; }
+    .action-name {
+      display: inline-block; background: rgba(79,195,247,.12); color: var(--blue);
+      border: 1px solid rgba(79,195,247,.3); border-radius: 6px;
+      padding: 1px 7px; font-size: 12px; font-weight: 700; white-space: nowrap;
+    }
+    .url-box {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 10px 12px; margin-top: 10px;
+    }
+    .url-text {
+      flex: 1; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 11px; word-break: break-all; color: var(--teal); line-height: 1.5;
+    }
+    .hint { font-size: 12px; color: var(--muted); line-height: 1.7; }
+    .pitfall {
+      background: rgba(255,167,38,.07); border: 1px solid rgba(255,167,38,.25);
+      border-radius: 8px; padding: 10px 12px; font-size: 12px; line-height: 1.7;
+      color: var(--text); margin-top: 10px;
+    }
+    .pitfall b { color: var(--orange); }
+    .token-badge {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 12px; color: var(--teal); word-break: break-all;
+    }
+    .test-result {
+      margin-top: 10px; font-size: 12px; line-height: 1.6; min-height: 18px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace; word-break: break-all;
+    }
+    .test-result.ok  { color: var(--green); }
+    .test-result.err { color: var(--red); }
+    .mt-16 { margin-top: 16px; }
+  </style>
+</head>
+<body>
+
+<header class="top-bar">
+  <div><a class="back-link" id="backLink" href="dashboard.html">← 대시보드</a></div>
+  <div class="mweg-header-wrap" style="justify-self:center"><span class="mweg-title">마웨그</span><span class="mweg-subtitle">My Weight Graph</span></div>
+  <div></div>
+</header>
+
+<div class="guide-page">
+  <h1 class="guide-h1">👟 걸음 수 자동 연동</h1>
+  <p class="guide-sub">
+    아이폰 단축어(무료 기본 앱)로 매일 밤 그날의 걸음 수를 자동으로 마웨그에 보냅니다.<br>
+    처음 한 번만 5분 정도 설정하면, 그 뒤로는 손댈 필요 없어요.
+  </p>
+
+  <!-- ── 1. 연동 코드 / 개인 URL ─────────────────────────────── -->
+  <div class="card" id="tokenCard">
+    <div class="sec-title">1️⃣ 내 연동 코드 만들기</div>
+    <div id="tokenBody">
+      <div class="loading"><div class="spinner"></div> 불러오는 중...</div>
+    </div>
+  </div>
+
+  <!-- ── 2. 단축어 만들기 ─────────────────────────────────────── -->
+  <div class="card">
+    <div class="sec-title">2️⃣ 단축어 만들기 (아이폰)</div>
+    <ol class="step-list">
+      <li>
+        <b>단축어</b> 앱 열기 → 오른쪽 위 <b>＋</b> 눌러 새 단축어 만들기.
+        이름은 "걸음 보내기" 정도로.
+      </li>
+      <li>
+        검색창에 "건강"을 입력하고 <span class="action-name">건강 샘플 찾기</span> 동작 추가.<br>
+        동작 안 파란 글씨를 눌러 이렇게 설정:<br>
+        · <b>유형</b>: <b>걸음</b> (걸음 수)<br>
+        · "모든 건강 샘플" 부분을 눌러 <b>필터 추가</b> → <b>시작 날짜</b> → <b>오늘</b><br>
+        · <b>정렬 기준</b>: 없음, <b>제한</b>: 끔 (하루 걸음이 여러 조각으로 나뉘어 저장되기 때문에 전부 가져와야 해요)
+      </li>
+      <li>
+        걸음 조각들을 하나로 합치기: <span class="action-name">통계 계산</span> 동작 추가
+        (검색창에 "통계" — 안 보이면 "계산"으로 검색) → <b>연산</b>: <b>합계</b>,
+        입력은 자동으로 위의 <b>건강 샘플</b>이 잡힙니다.
+      </li>
+      <li>
+        <span class="action-name">URL</span> 동작 추가 → 위 1번 카드의 <b>내 개인 URL을 붙여넣고</b>,
+        URL 맨 끝(<code>steps=</code> 바로 뒤)에 커서를 두고 키보드 위 변수 목록에서
+        <b>통계 계산</b> 결과 변수를 선택해 붙입니다.<br>
+        완성 예: <code>...&amp;steps=</code><span class="action-name">통계 계산</span>
+      </li>
+      <li>
+        <span class="action-name">URL 내용 가져오기</span> 동작 추가 → <b>방법: GET</b> (기본값 그대로).<br>
+        ▶︎ 버튼으로 한 번 실행해보세요. <b>건강 데이터 접근 허용</b> 팝업이 뜨면 꼭 <b>허용</b>!
+        <code>{"ok":true...}</code>가 나오면 성공입니다.
+      </li>
+    </ol>
+    <div class="pitfall">
+      <b>⚠️ 자주 하는 실수</b><br>
+      · 건강 접근 권한 팝업에서 "허용 안 함"을 누르면 걸음 수가 0으로 나와요.
+      설정 → 개인정보 보호 및 보안 → 건강 → 단축어에서 다시 켤 수 있어요.<br>
+      · "건강 샘플 찾기"에서 필터(시작 날짜: 오늘)를 안 걸면 옛날 걸음까지 전부 합산됩니다.
+    </div>
+  </div>
+
+  <!-- ── 3. 자동화 ────────────────────────────────────────────── -->
+  <div class="card">
+    <div class="sec-title">3️⃣ 매일 밤 자동 실행 걸기</div>
+    <ol class="step-list">
+      <li>단축어 앱 하단 <b>자동화</b> 탭 → <b>＋</b> (또는 "새 자동화") → <b>개인용 자동화</b>.</li>
+      <li><b>시간</b> 선택 → <b>매일</b>, 시각은 <b>오후 11:45</b> 권장 (자정 넘기면 다음 날 걸음으로 저장돼요).</li>
+      <li>실행 옵션에서 <b>즉시 실행</b> 선택 (구버전 iOS에선 "실행 전에 묻기" <b>끄기</b>) → 알림도 꺼도 됩니다.</li>
+      <li>실행할 항목으로 방금 만든 <b>"걸음 보내기"</b> 단축어 선택 → 완료.</li>
+      <li>다음 날 아침, 그래프와 업적 페이지에서 걸음 수가 자동으로 들어왔는지 확인해보세요. ✅</li>
+    </ol>
+    <div class="pitfall">
+      <b>⚠️ 알아두기</b><br>
+      · 실행될 때 화면 상단에 자동화 알림이 잠깐 뜨는 건 정상이에요.<br>
+      · 밤 11:45에 폰이 완전히 꺼져 있으면 그날은 건너뜁니다 — 다음 날 아침에 단축어를 한 번 수동 실행하면 오늘 날짜로 들어가니, 놓친 날은 관리자에게 말해주세요.
+    </div>
+    <p class="hint mt-16">
+      🤖 <b>안드로이드 친구들:</b> 아직 자동 연동은 아이폰만 지원해요. 당분간은 수동 입력을 부탁드리고, 삼성헬스 CSV 가져오기는 추후 지원 예정입니다.
+    </p>
+  </div>
+
+  <!-- ── 4. 테스트 ────────────────────────────────────────────── -->
+  <div class="card">
+    <div class="sec-title">4️⃣ 바로 테스트해보기</div>
+    <p class="hint">아래 버튼을 누르면 내 개인 URL로 걸음 수 <b>1234</b>를 실제 전송합니다.
+      <b>오늘 날짜 기록에 저장</b>되니, 진짜 걸음이 이미 기록된 날엔 자동화가 밤에 다시 덮어써 줄 거예요.</p>
+    <button class="btn btn-primary btn-full mt-16" id="testBtn" disabled>지금 테스트 전송 (걸음 1234)</button>
+    <div class="test-result" id="testResult"></div>
+  </div>
+
+  <!-- ── 5. 프라이버시 ────────────────────────────────────────── -->
+  <div class="card">
+    <div class="sec-title">🔒 어떤 데이터가 전송되나요?</div>
+    <p class="hint">
+      전송되는 건 <b>그날의 걸음 수 숫자 하나</b>뿐입니다.<br>
+      심박수, 위치, 수면 등 다른 건강 데이터에는 아예 접근하지 않고, 서버에도 걸음 수와 날짜만 저장돼요.
+      연동 코드는 내 계정에만 걸음 수를 기록할 수 있게 해주는 열쇠이니 다른 사람에게 공유하지 마세요.
+    </p>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+// TODO: 배포 후 실제 URL로 교체 (worker/DEPLOY_GUIDE.md 참고)
+const WORKER_URL = 'https://mwg-steps-sync.YOUR-SUBDOMAIN.workers.dev';
+
+import { getUser, updateUser } from './js/db.js';
+import { esc } from './js/util.js';
+
+const uid = new URLSearchParams(location.search).get('user') || localStorage.getItem('uid');
+if (!uid) location.href = 'index.html';
+
+document.getElementById('backLink').href = `dashboard.html?user=${encodeURIComponent(uid)}`;
+
+const tokenBody  = document.getElementById('tokenBody');
+const testBtn    = document.getElementById('testBtn');
+const testResult = document.getElementById('testResult');
+let syncToken = null;
+
+function showToast(msg, type = 'ok') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = `toast show ${type}`;
+  setTimeout(() => t.className = 'toast', 2500);
+}
+
+function personalUrl(token) {
+  return `${WORKER_URL}/steps?token=${encodeURIComponent(token)}&steps=`;
+}
+
+function renderNoToken() {
+  tokenBody.innerHTML = `
+    <p class="hint">아직 연동 코드가 없어요. 버튼 한 번이면 내 전용 주소가 만들어집니다.</p>
+    <button class="btn btn-primary btn-full mt-16" id="issueBtn">🔑 연동 코드 발급하기</button>`;
+  document.getElementById('issueBtn').addEventListener('click', issueToken);
+  testBtn.disabled = true;
+}
+
+function renderToken(token) {
+  syncToken = token;
+  const url = personalUrl(token);
+  tokenBody.innerHTML = `
+    <p class="hint">내 연동 코드: <span class="token-badge">${esc(token)}</span></p>
+    <p class="hint mt-16">아래가 <b>내 개인 URL</b>이에요. 단축어의 "URL" 동작에 이걸 붙여넣고, 맨 끝에 걸음 수 변수를 붙이면 됩니다.</p>
+    <div class="url-box">
+      <span class="url-text" id="personalUrl">${esc(url)}</span>
+      <button class="btn btn-ghost btn-sm" id="copyBtn">복사</button>
+    </div>`;
+  document.getElementById('copyBtn').addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      showToast('개인 URL 복사됨 ✓');
+    } catch {
+      showToast('복사 실패 — 길게 눌러 직접 복사해주세요', 'err');
+    }
+  });
+  testBtn.disabled = false;
+}
+
+async function issueToken() {
+  const btn = document.getElementById('issueBtn');
+  btn.disabled = true; btn.textContent = '발급 중...';
+  try {
+    const token = crypto.randomUUID().replace(/-/g, '');
+    await updateUser(uid, { syncToken: token });
+    renderToken(token);
+    showToast('연동 코드 발급 완료 ✓');
+  } catch (e) {
+    btn.disabled = false; btn.textContent = '🔑 연동 코드 발급하기';
+    showToast('발급 실패 — 잠시 후 다시 시도해주세요', 'err');
+  }
+}
+
+testBtn.addEventListener('click', async () => {
+  if (!syncToken) return;
+  testBtn.disabled = true;
+  testResult.className = 'test-result';
+  testResult.textContent = '전송 중...';
+  try {
+    const res = await fetch(`${personalUrl(syncToken)}1234`);
+    const data = await res.json();
+    if (res.ok && data.ok) {
+      const saved = data.saved && data.saved[0];
+      testResult.className = 'test-result ok';
+      testResult.textContent = `✅ 성공! ${saved ? `${saved.date} 기록에 걸음 ${saved.steps} 저장됨` : '저장 완료'}`;
+      showToast('테스트 전송 성공 ✓');
+    } else {
+      testResult.className = 'test-result err';
+      testResult.textContent = `❌ 실패: ${data && data.error ? data.error : `HTTP ${res.status}`}`;
+      showToast('테스트 실패', 'err');
+    }
+  } catch {
+    testResult.className = 'test-result err';
+    testResult.textContent = '❌ 서버에 연결하지 못했어요. Worker가 아직 배포 전이거나 URL이 잘못됐을 수 있어요.';
+    showToast('테스트 실패', 'err');
+  } finally {
+    testBtn.disabled = false;
+  }
+});
+
+(async () => {
+  try {
+    const user = await getUser(uid);
+    if (!user) { location.href = 'index.html'; return; }
+    if (user.syncToken) renderToken(user.syncToken);
+    else renderNoToken();
+  } catch (e) {
+    tokenBody.innerHTML = `<p class="hint">사용자 정보를 불러오지 못했어요. 새로고침해주세요.</p>`;
+  }
+})();
+</script>
+</body>
+</html>

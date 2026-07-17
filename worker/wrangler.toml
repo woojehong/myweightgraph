@@ -1,0 +1,10 @@
+# mwg-steps-sync — Cloudflare Worker config
+# Secrets (never put them here):
+#   wrangler secret put SA_CLIENT_EMAIL
+#   wrangler secret put SA_PRIVATE_KEY
+
+name = "mwg-steps-sync"
+main = "worker.js"
+compatibility_date = "2026-07-01"
+
+# No KV / Durable Objects / cron needed: caches live in module scope.

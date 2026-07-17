@@ -1,5 +1,9 @@
 // chart-render.js
 
+// Parse 'YYYY-MM-DD' as LOCAL midnight (new Date('YYYY-MM-DD') is UTC and shifts buckets in non-KST timezones)
+const parseDs = ds => (typeof ds === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(ds)) ? new Date(ds + 'T00:00:00') : new Date(ds);
+
+
 // ── 일간/주간/월간 집계 ────────────────────────────────────────────────
 // mode: 'day' | 'week' | 'month'
 // 'day'  → 원본 그대로 반환 (식단·운동 등 부가 필드 유지)
@@ -12,7 +16,7 @@ export function aggregateRecords(records, mode = 'day') {
   if (!pts.length) return [];
 
   const bucketStart = ds => {
-    const dt = new Date(ds);
+    const dt = parseDs(ds);
     if (mode === 'week') {
       const s = new Date(dt);
       s.setDate(s.getDate() - s.getDay());   // 일요일로 정렬
@@ -78,7 +82,7 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
   const pts = records
     .filter(r => r.weight != null)
     .sort((a, b) => a.date.localeCompare(b.date))
-    .map(r => ({ t: new Date(r.date).getTime(), date: new Date(r.date), w: r.weight }));
+    .map(r => ({ t: parseDs(r.date).getTime(), date: parseDs(r.date), w: r.weight }));
   if (!pts.length) return;
 
   const ws     = pts.map(p => p.w);
@@ -157,7 +161,7 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
   if (gridCell) {
     const dated = records.filter(r => r.date).map(r => r.date).sort();
     if (dated.length) {
-      const f = new Date(dated[0]).getTime(), l = new Date(dated[dated.length-1]).getTime();
+      const f = parseDs(dated[0]).getTime(), l = parseDs(dated[dated.length-1]).getTime();
       const nDays = Math.max(1, Math.round((l - f) / 86400000) + 1);
       const refW  = (canvasMain.parentElement && canvasMain.parentElement.clientWidth) || (window.innerWidth - 32);
       const plotW = Math.max(20, refW - 5 - 4 - Y_AXIS_W);
@@ -408,12 +412,12 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
     // 가시 범위 필터
     const buf     = 4 * 86400000;
     const visible = allDays.filter(r => {
-      const t = new Date(r.date).getTime();
+      const t = parseDs(r.date).getTime();
       return t >= x.min - buf && t <= x.max + buf;
     });
     if (!visible.length) return;
 
-    const pixels = visible.map(r => x.getPixelForValue(new Date(r.date).getTime()));
+    const pixels = visible.map(r => x.getPixelForValue(parseDs(r.date).getTime()));
     const n      = visible.length;
 
     // 평균 셀 간격 기반 경계 (첫/마지막 셀도 동일 크기 — 차트 끝까지 늘어나지 않음)
@@ -616,13 +620,13 @@ export function calcStats(records, userProfile) {
   const pts = records.filter(r => r.weight != null).sort((a, b) => a.date.localeCompare(b.date));
   if (pts.length < 2) return null;
   const ws = pts.map(p => p.weight), maxW = Math.max(...ws), minW = Math.min(...ws), curW = pts[pts.length-1].weight;
-  const start = new Date(pts[0].date), end = new Date(pts[pts.length-1].date);
+  const start = parseDs(pts[0].date), end = parseDs(pts[pts.length-1].date);
   const days = Math.round((end - start) / 86400000), loss = maxW - curW;
   const bmi = height ? +(curW / Math.pow(height/100, 2)).toFixed(1) : null;
 
   function getSun(d) { const dt = new Date(d); dt.setDate(dt.getDate() - dt.getDay()); dt.setHours(0,0,0,0); return dt.getTime(); }
   const byW = new Map();
-  pts.forEach(p => { const wk = getSun(new Date(p.date)); if (!byW.has(wk)) byW.set(wk, []); byW.get(wk).push(p.weight); });
+  pts.forEach(p => { const wk = getSun(parseDs(p.date)); if (!byW.has(wk)) byW.set(wk, []); byW.get(wk).push(p.weight); });
   const avgs = new Map();
   byW.forEach((w, k) => { if (w.length >= 4) avgs.set(k, w.reduce((s, v) => s + v, 0) / w.length); });
   const vk = [...avgs.keys()].sort((a, b) => a - b);
@@ -632,11 +636,11 @@ export function calcStats(records, userProfile) {
   changes.forEach(c => { if (c < 0) { tmp++; max2 = Math.max(max2, tmp); } else tmp = 0; });
   for (let i = changes.length - 1; i >= 0; i--) { if (changes[i] < 0) cur++; else break; }
 
-  const r6 = pts.filter(p => new Date(p.date).getTime() >= end.getTime() - 42*86400000);
+  const r6 = pts.filter(p => parseDs(p.date).getTime() >= end.getTime() - 42*86400000);
   let eta = '계산불가';
   if (r6.length >= 2 && curW > goal) {
     const rl   = r6[0].weight - r6[r6.length-1].weight;
-    const rd   = (new Date(r6[r6.length-1].date) - new Date(r6[0].date)) / 86400000;
+    const rd   = (parseDs(r6[r6.length-1].date) - parseDs(r6[0].date)) / 86400000;
     const rate = rd > 0 ? rl / rd : 0;
     if (rate > 0) {
       const d = new Date(end.getTime() + Math.round((curW - goal) / rate) * 86400000);

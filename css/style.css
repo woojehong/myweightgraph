@@ -132,10 +132,12 @@ input  { font-family: inherit; outline: none; }
   display: flex; align-items: center; justify-content: center;
   position: relative; z-index: 1; font-size: 14px;
 }
-.chip-info { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; }
-.chip-title { font-size: 9px; font-weight: 700; display: none; }
-.chip-name  { font-weight: 700; font-size: 13px; }
-.chip-score { font-size: 9px; color: var(--muted); }
+.chip-info { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; overflow: hidden; }
+.chip-title { font-size: 9px; font-weight: 700; display: none;
+              white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
+.chip-name  { font-weight: 700; font-size: 13px;
+              white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
+.chip-score { font-size: 9px; color: var(--muted); white-space: nowrap; }
 
 /* 하단 네비 (모바일) */
 .bottom-nav {
@@ -423,3 +425,48 @@ input  { font-family: inherit; outline: none; }
   font-weight: 700;
   color: var(--text);
 }
+
+/* ── 업적 달성 팝업 (achievements-engine.js) ─────────────────────────── */
+#achvPopHost {
+  position: fixed; top: 16px; left: 0; right: 0;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  z-index: 900; pointer-events: none;
+}
+.achv-pop {
+  display: flex; align-items: center; gap: 12px;
+  background: linear-gradient(135deg, rgba(13,26,23,.97), rgba(9,17,23,.97));
+  border: 1.5px solid rgba(0,229,170,.55);
+  border-radius: 14px; padding: 12px 18px 12px 14px;
+  box-shadow: 0 6px 28px rgba(0,229,170,.22), 0 2px 8px rgba(0,0,0,.5);
+  max-width: min(340px, 92vw);
+  opacity: 0; transform: translateY(-18px) scale(.92);
+  transition: opacity .3s cubic-bezier(.22,1,.36,1), transform .3s cubic-bezier(.22,1,.36,1);
+  position: relative; overflow: hidden;
+}
+.achv-pop.show { opacity: 1; transform: translateY(0) scale(1); }
+.achv-pop.legendary {
+  border-color: rgba(255,215,0,.7);
+  background: linear-gradient(135deg, rgba(35,28,8,.97), rgba(20,15,5,.97));
+  box-shadow: 0 6px 32px rgba(255,215,0,.3), 0 2px 8px rgba(0,0,0,.5);
+}
+.achv-pop-burst {
+  position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(circle at 18% 50%, rgba(0,229,170,.18) 0%, transparent 55%);
+}
+.achv-pop.legendary .achv-pop-burst {
+  background: radial-gradient(circle at 18% 50%, rgba(255,215,0,.2) 0%, transparent 55%);
+}
+.achv-pop-icon {
+  font-size: 34px; line-height: 1; flex-shrink: 0;
+  animation: achv-bounce .55s cubic-bezier(.28,2.2,.5,1) both .12s;
+}
+@keyframes achv-bounce { from { transform: scale(.2) rotate(-16deg); } to { transform: scale(1) rotate(0); } }
+.achv-pop-body { min-width: 0; }
+.achv-pop-label { font-size: 10px; font-weight: 800; letter-spacing: .08em; color: var(--teal); }
+.achv-pop.legendary .achv-pop-label { color: #FFD700; }
+.achv-pop-name {
+  font-size: 15px; font-weight: 800; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.achv-pop-score { font-size: 11px; font-weight: 700; color: var(--teal); margin-top: 2px; }
+.achv-pop.legendary .achv-pop-score { color: #FFD700; }

@@ -58,13 +58,6 @@
     .tier-table tr:last-child td{border-bottom:none;}
     .tier-color-swatch{width:28px;height:28px;border-radius:50%;border:2px solid rgba(255,255,255,.15);cursor:pointer;}
     .ach-admin-list{display:flex;flex-direction:column;gap:4px;margin-top:8px;max-height:360px;overflow-y:auto;}
-    .ach-admin-row{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;background:var(--surface2);font-size:12px;}
-    .ach-admin-row.invalidated{opacity:.45;}
-    .ach-admin-row .ar-icon{font-size:16px;flex-shrink:0;}
-    .ach-admin-row .ar-info{flex:1;min-width:0;}
-    .ach-admin-row .ar-date{font-size:10px;color:var(--muted);}
-    .invalid-btn{font-size:11px;padding:3px 8px;border-radius:6px;cursor:pointer;background:rgba(239,83,80,.12);border:1px solid rgba(239,83,80,.25);color:var(--red);}
-    .invalid-btn.restore{background:rgba(0,229,170,.08);border-color:rgba(0,229,170,.25);color:var(--teal);}
     /* 월별 아코디언 */
     .month-accordion{margin-bottom:4px;}
     .month-header{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;border-radius:6px;background:var(--surface2);cursor:pointer;user-select:none;font-size:12px;font-weight:700;color:var(--text);}
@@ -113,13 +106,13 @@ import { onAuthChange, adminSignOut, ADMIN_UID,
          getUsers, getUser, updateUser, deleteUser,
          getWeights, setWeight, deleteWeight, setDietExercise,
          batchMergeWeights, toDateStr, saveUserOrder,
-         getSettings, updateSettings,
-         setUserPassword, parseWeight, DEFAULT_SETTINGS,
-         getEarnedAchievements, invalidateAchievement,
+         getSettings, updateGlobalSettings,
+         setUserPassword, parseWeight,
+         getEarnedAchievements,
          getTierSettings, saveTierSettings,
          saveAdminOverride } from './js/db.js';
-import { ACHIEVEMENTS, ACHIEVEMENT_CATEGORIES, DEFAULT_TIERS, getTierForScore,
-         calculateEarnedIds, calcTotalScore, calculateMetaEarnedIds } from './js/achievements.js';
+import { ACHIEVEMENTS, ACHIEVEMENT_CATEGORIES, DEFAULT_TIERS } from './js/achievements.js';
+import { computeAchievementState } from './js/achievements-engine.js';
 
 let allUsers=[], selectedUid=null, settings={};
 
@@ -262,8 +255,8 @@ function renderFeaturePanel() {
     </div>`;
   document.getElementById('featurePanel').innerHTML=html;
 }
-window.onToggle=async(key,val)=>{settings[key]=val;await updateSettings({[key]:val});showToast('저장됨','ok');};
-window.onOp=async val=>{document.getElementById('opV').textContent=val+'%';await updateSettings({annotOpacity:val/100});};
+window.onToggle=async(key,val)=>{settings[key]=val;await updateGlobalSettings({[key]:val});showToast('전역 기본값 저장됨','ok');};
+window.onOp=async val=>{document.getElementById('opV').textContent=val+'%';await updateGlobalSettings({annotOpacity:val/100});};
 
 // ── 사용자 상세 ───────────────────────────────────────────────────────
 window.selectUser = async uid => {
@@ -274,14 +267,14 @@ window.selectUser = async uid => {
   const idx = allUsers.findIndex(u=>u.id===uid);
   const merged = {...(allUsers[idx]||{}), ...user};
   if(idx>=0) allUsers[idx]=merged;
-  // 시스템 달성 여부 계산
-  const shouldEarn = calculateEarnedIds(records, user);
-  const storedMap  = Object.fromEntries(earnedRaw.map(a=>[a.id,a]));
-  const validBase  = new Set([...earnedRaw.filter(a=>!a.invalidated&&shouldEarn.has(a.id)).map(a=>a.id), ...[...shouldEarn].filter(id=>!storedMap[id])]);
-  const baseScore  = calcTotalScore(validBase);
-  const metaEarned = calculateMetaEarnedIds(validBase, baseScore, tierSettings?.tiers || DEFAULT_TIERS);
-  const systemEarned = new Set([...validBase, ...metaEarned]);
-  renderDetail(merged, records, systemEarned);
+  // 시스템 달성 여부 계산 — 공용 엔진 (오버라이드 제외한 순수 시스템 판정)
+  const state = computeAchievementState({
+    user: { ...merged, adminOverrides: {} },
+    records,
+    storedRaw: earnedRaw,
+    tierData: tierSettings,
+  });
+  renderDetail(merged, records, state.validEarned);
 };
 
 function fmtTs(ts) {
@@ -1131,16 +1124,6 @@ window.removeTitle = async i => {
   showToast('칭호 삭제됨','ok');
 };
 window.updateTitleName = async (i,v) => { titleList[i].name=v; await saveDrSettings(); };
-window.updateTitleAch  = async (i,v) => { titleList[i].achId=v; await saveDrSettings(); showToast('저장됨','ok'); };
-
-window.saveBorderAssign = async () => {
-  borderAssign={};
-  document.querySelectorAll('select[data-border]').forEach(s=>{
-    if(s.value) borderAssign[s.dataset.border]=s.value;
-  });
-  await saveDrSettings();
-  showToast('테두리 연결 저장됨','ok');
-};
 
 async function saveDrSettings() {
   await saveTierSettings({ titles: titleList, borderAssign });

@@ -16,9 +16,9 @@
 
 <header class="top-bar">
   <span class="title">📥 데이터 가져오기</span>
-  <nav class="side-nav" id="sideNav"></nav>
-  <div class="user-chip" onclick="doLogout()">
-    <span id="chipEmoji">⚖️</span><span id="chipName">-</span>
+  <div></div>
+  <div class="user-chip" style="cursor:default;justify-self:end">
+    <span id="chipEmoji">⚖️</span><span id="chipName" class="chip-name">-</span>
   </div>
 </header>
 
@@ -74,34 +74,36 @@
 <div class="toast" id="toast"></div>
 
 <script type="module">
-import { getUser, batchSetWeights, parseWeight, toDateStr } from './js/db.js';
+import { getUser, batchMergeWeights, parseWeight, toDateStr } from './js/db.js';
+import { isAuthed } from './js/auth.js';
 
 const uid = new URLSearchParams(location.search).get('user') || localStorage.getItem('uid');
 if (!uid) location.href = 'index.html';
 document.getElementById('dashLink').href = `dashboard.html?user=${uid}`;
 
-// 네비
+// 네비 (전 페이지 공통 5탭)
 function buildNav() {
   const links = [
-    { href:`dashboard.html?user=${uid}`, icon:'📊', label:'그래프', id:'dashboard' },
-    { href:`input.html?user=${uid}`,     icon:'✏️',  label:'입력',   id:'input' },
-    { href:`import.html?user=${uid}`,    icon:'📥',  label:'가져오기', id:'import' },
+    { href:`input.html?user=${uid}`,        icon:'✏️',  label:'데이터 입력', id:'input' },
+    { href:`dashboard.html?user=${uid}`,    icon:'📊', label:'내 그래프',   id:'dashboard' },
+    { href:`compare.html?user=${uid}`,      icon:'👥', label:'모아보기',     id:'compare' },
+    { href:`achievements.html?user=${uid}`, icon:'🏆', label:'업적',        id:'achievements' },
+    { href:`shop.html?user=${uid}`,         icon:'🛍️', label:'상점',        id:'shop' },
   ];
-  [document.getElementById('bottomNav'), document.getElementById('sideNav')].forEach((nav, ni) => {
-    links.forEach(l => {
-      const a = document.createElement('a');
-      a.href = l.href; a.className = l.id === 'import' ? 'active' : '';
-      a.innerHTML = ni === 0 ? `<span class="icon">${l.icon}</span>${l.label}` : `${l.icon} ${l.label}`;
-      nav.appendChild(a);
-    });
+  const nav = document.getElementById('bottomNav');
+  links.forEach(l => {
+    const a = document.createElement('a');
+    a.href = l.href;
+    a.innerHTML = `<span class="icon">${l.icon}</span>${l.label}`;
+    nav.appendChild(a);
   });
 }
 
 getUser(uid).then(u => {
-  if (u) {
-    document.getElementById('chipName').textContent  = u.name;
-    document.getElementById('chipEmoji').textContent = u.emoji || '⚖️';
-  }
+  if (!u) { localStorage.removeItem('uid'); location.href = 'index.html?select=1'; return; }
+  if (u.passwordHash && !isAuthed(uid, u.passwordHash)) { location.href = 'index.html?select=1'; return; }
+  document.getElementById('chipName').textContent  = u.name;
+  document.getElementById('chipEmoji').textContent = u.emoji || '⚖️';
 });
 buildNav();
 
@@ -245,7 +247,8 @@ window.doImport = async function() {
   const btn = document.getElementById('importBtn');
   btn.disabled = true; btn.textContent = '저장 중...';
   try {
-    await batchSetWeights(uid, pendingRecords);
+    // merge-write: 같은 날짜의 식단·운동·물·걸음 기록은 보존하고 체중만 갱신
+    await batchMergeWeights(uid, pendingRecords);
     showToast(`${pendingRecords.length}개 저장 완료 ✓`, 'ok');
     cancelPreview();
     setTimeout(() => location.href = `dashboard.html?user=${uid}`, 1200);

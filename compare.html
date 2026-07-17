@@ -84,7 +84,7 @@
     }
 
     /* ── 미니 프로필 (데스크탑 기본) ───────────────────────────── */
-    .cmp-profile{ display:flex; align-items:center; gap:9px; margin-bottom:8px; padding:0 6px; }
+    .cmp-profile{ display:flex; align-items:center; gap:9px; margin-bottom:8px; padding:0 6px; flex-wrap:wrap; }
     .cmp-avatar{ width:32px; height:32px; flex-shrink:0; }
     .cmp-avatar-inner{
       width:26px; height:26px; border-radius:50%; background:#0d1117;
@@ -187,6 +187,7 @@ import { getUser, getUsers, getWeights, getSettings, getTierSettings } from './j
 import { isAuthed, clearAuth } from './js/auth.js';
 import { renderChart, aggregateRecords, periodLabel } from './js/chart-render.js';
 import { getTierForScore, DEFAULT_TIERS } from './js/achievements.js';
+import { esc } from './js/util.js';
 
 const uid = new URLSearchParams(location.search).get('user') || localStorage.getItem('uid');
 if (!uid) location.href = 'index.html';
@@ -200,6 +201,7 @@ function buildNav() {
     { href:`dashboard.html?user=${uid}`,    icon:'📊', label:'내 그래프',   id:'dashboard' },
     { href:`compare.html?user=${uid}`,      icon:'👥', label:'모아보기',     id:'compare' },
     { href:`achievements.html?user=${uid}`, icon:'🏆', label:'업적',         id:'achievements' },
+    { href:`shop.html?user=${uid}`,         icon:'🛍️', label:'상점',         id:'shop' },
   ];
   const nav = document.getElementById('bottomNav');
   links.forEach(l => {
@@ -320,7 +322,7 @@ function renderPicker() {
         <div class="avatar-frame pick-avatar${bClass}" style="--tier-color:${tc}">
           <div class="pick-avatar-inner">${u.emoji || '⚖️'}</div>
         </div>
-        <span class="pick-name">${u.name}</span>
+        <span class="pick-name">${esc(u.name)}</span>
       </button>`;
   }).join('');
   el.querySelectorAll('.pick-chip').forEach(btn => {
@@ -375,8 +377,8 @@ function cellHTML(u) {
           <div class="cmp-avatar-inner">${u.emoji || '⚖️'}</div>
         </div>
         <div class="cmp-info">
-          ${u.selectedTitle ? `<span class="cmp-title" style="color:${tc}">${u.selectedTitle}</span>` : ''}
-          <span class="cmp-name" style="color:${tc}">${u.name}</span>
+          ${u.selectedTitle ? `<span class="cmp-title" style="color:${tc}">${esc(u.selectedTitle)}</span>` : ''}
+          <span class="cmp-name" style="color:${tc}">${esc(u.name)}</span>
           ${u.totalScore > 0 ? `<span class="cmp-score">${u.totalScore} PT</span>` : ''}
         </div>
         ${markers}
@@ -411,7 +413,8 @@ async function renderGrid() {
     const cv = document.getElementById('cv_' + u.id);
     const recs = aggregateRecords(weightsCache[u.id] || [], viewMode);
     if (cv && recs.filter(r => r.weight != null).length >= 2) {
-      try { renderChart(recs, u, cv, null, opts); } catch (e) {}
+      try { renderChart(recs, u, cv, null, opts); }
+      catch (e) { console.warn('renderChart failed for', u.id, e); }
     }
   });
 }
@@ -433,17 +436,16 @@ function showToast(msg, type = 'ok') {
 // ── 초기화 ────────────────────────────────────────────────────────────
 async function init() {
   buildNav();
-  const [users, tierData, settings] = await Promise.all([
+  const [users, tierData] = await Promise.all([
     getUsers(),
     getTierSettings().catch(() => null),
-    getSettings(),
   ]);
   allUsers = users;
   TIERS = tierData?.tiers || DEFAULT_TIERS;
-  S = settings;
 
   curUser = users.find(u => u.id === uid) || await getUser(uid);
-  if (!curUser) { location.href = 'index.html'; return; }
+  if (!curUser) { localStorage.removeItem('uid'); location.href = 'index.html?select=1'; return; }
+  S = await getSettings(uid, curUser);
 
   // 현재 세션 사용자 인증 체크 (다른 유저 그래프는 핀 불필요)
   if (curUser.passwordHash && !isAuthed(uid, curUser.passwordHash)) {

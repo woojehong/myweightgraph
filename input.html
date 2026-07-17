@@ -49,11 +49,52 @@
     /* 모두 입력 완료 */
     .day-card.all-done { border-color: var(--green) !important; background: rgba(102,187,106,.05) !important; }
 
-    /* 데스크탑: 한 줄 컴팩트 레이아웃 */
+    /* ── 라이프 섹션 (물·기분·저널·걸음) ─────────────────────────────── */
+    .dc-life { margin-top:12px; padding-top:12px; border-top:1px dashed var(--border);
+               display:flex; flex-direction:column; gap:9px; }
+    .dc-life-row { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .dc-life-label { font-size:11px; color:var(--muted); width:52px; flex-shrink:0; white-space:nowrap; }
+
+    .water-cups { display:flex; gap:3px; }
+    .water-cup { width:20px; height:24px; border:none; background:transparent; cursor:pointer;
+                 font-size:15px; padding:0; opacity:.22; transition:opacity .12s, transform .1s; }
+    .water-cup.full { opacity:1; }
+    .water-cup:active { transform:scale(1.25); }
+    .water-count { font-size:11px; color:var(--muted); min-width:30px; }
+    .water-count.done { color:var(--teal); font-weight:700; }
+
+    .mood-row { display:flex; gap:4px; }
+    .mood-btn { width:28px; height:28px; border-radius:50%; border:1.5px solid transparent;
+                background:transparent; font-size:17px; cursor:pointer; padding:0;
+                opacity:.28; transition:all .12s; line-height:1; }
+    .mood-btn.on { opacity:1; border-color:var(--teal); background:rgba(0,229,170,.12); transform:scale(1.12); }
+
+    .jr-chip { display:inline-flex; align-items:center; gap:4px; padding:4px 9px; border-radius:14px;
+               font-size:11px; cursor:pointer; border:1.5px solid var(--border);
+               background:transparent; color:var(--muted); transition:all .12s; white-space:nowrap; }
+    .jr-chip.yes { border-color:var(--green); color:var(--green); background:rgba(102,187,106,.1); }
+    .jr-chip.no  { border-color:var(--red);   color:var(--red);   background:rgba(239,83,80,.1); }
+
+    .steps-row { display:flex; gap:4px; align-items:center; flex-wrap:wrap; }
+    .steps-chip { padding:4px 8px; border-radius:12px; font-size:11px; cursor:pointer;
+                  border:1.5px solid var(--border); background:transparent; color:var(--muted);
+                  transition:all .12s; white-space:nowrap; }
+    .steps-chip.on { border-color:var(--teal); color:var(--teal); background:rgba(0,229,170,.1); font-weight:700; }
+    .steps-custom { width:64px; padding:4px 6px; font-size:11px; border-radius:8px;
+                    border:1.5px solid var(--border); background:var(--surface2); color:var(--text); }
+    .steps-auto-badge { font-size:9px; color:var(--teal); border:1px solid rgba(0,229,170,.35);
+                        border-radius:8px; padding:1px 5px; white-space:nowrap; }
+
+    /* 데스크탑: 컴팩트 레이아웃 (라이프 섹션은 아래 줄로 래핑) */
     @media(min-width:768px) {
       /* 카드를 내용 크기에 맞게 + 가운데 정렬 */
-      .day-card { display:inline-flex; flex-direction:row; align-items:center; flex-wrap:nowrap;
-                  gap:18px; padding:14px 24px; margin-bottom:10px; width:auto !important; }
+      .day-card { display:inline-flex; flex-direction:row; align-items:center; flex-wrap:wrap;
+                  gap:14px 18px; padding:14px 24px; margin-bottom:10px; width:auto !important;
+                  max-width:min(860px, 100%); }
+      .dc-life { flex-basis:100%; margin-top:0; padding-top:10px;
+                 flex-direction:row; flex-wrap:wrap; gap:8px 20px; }
+      .dc-life-row { flex-wrap:nowrap; }
+      .dc-life-label { width:auto; min-width:46px; font-size:12px; }
       #content { display:flex; flex-direction:column; align-items:center; }
       .day-card .dc-top { margin-bottom:0; flex-shrink:0; min-width:180px; }
       .day-card .dc-name { font-size:18px; }
@@ -145,35 +186,14 @@
 
 <script type="module">
 import { getUser, getWeights, setWeight, parseWeight, toDateStr, updateUser, setUserPassword, setDietExercise, getTierSettings } from './js/db.js';
-import { getTierForScore, DEFAULT_TIERS } from './js/achievements.js';
-import { clearAuth, saveAuth } from './js/auth.js';
+import { getTierForScore, DEFAULT_TIERS, WATER_GOAL_CUPS } from './js/achievements.js';
+import { syncAchievements, queueAchievementPopups } from './js/achievements-engine.js';
+import { BORDER_NAMES } from './js/borders-data.js';
+import { esc } from './js/util.js';
+import { clearAuth, saveAuth, isAuthed } from './js/auth.js';
 const uid = new URLSearchParams(location.search).get('user') || localStorage.getItem('uid');
 if (!uid) location.href='index.html';
 window.doLogout = () => { clearAuth(); localStorage.removeItem('uid'); location.href='index.html'; };
-
-const BORDER_NAMES = {
-  'pulse-glow':'펄스 글로우','rotating-gradient':'회전 그라데이션','rainbow':'레인보우',
-  'shimmer':'샤이머','flame':'화염','ice':'얼음','lightning':'번개','neon':'네온',
-  'energy-wave':'에너지 파동','gold-shine':'골드 샤인','platinum':'플래티넘',
-  'aurora':'오로라','double-ring':'더블 링','dashed-spin':'대시 회전','corona':'코로나',
-  'gradient-shift':'그라데이션 시프트','starlight':'별빛','hologram':'홀로그램',
-  'diamond':'다이아몬드','challenger':'챌린저','plasma':'플라즈마','magma':'마그마',
-  'void-rift':'보이드 리프트','matrix':'매트릭스','cosmic':'코스믹','supernova':'슈퍼노바',
-  'solar-flare':'솔라 플레어','frostbite':'프로스트바이트','toxic':'톡식','blood-moon':'블러드문',
-  'galaxy':'갤럭시','phoenix':'피닉스','cyber':'사이버펑크','prism':'프리즘','royal-gold':'로열 골드',
-  'nebula':'네뷸라','electric-storm':'일렉트릭 스톰','sakura':'사쿠라','obsidian':'옵시디언',
-  'radiance':'레디언스','venom':'베놈','inferno':'인페르노','starfall':'스타폴','dragon-scale':'드래곤 스케일',
-  'wow-legendary':'전설(레전더리)','wow-fel':'지옥불(펠)','wow-arcane':'비전','wow-frostmourne':'프로스트모운',
-  'wow-pyroblast':'불덩이 작렬','wow-holy':'신성한 빛','wow-void':'공허','wow-shadowflame':'암흑불길',
-  'wow-stormstrike':'폭풍의 일격','wow-anima':'아니마',
-  'epic-orbit':'궤도(오빗)','epic-comet':'혜성','epic-burst':'대폭발',
-  'sword-slash':'검무(강철검)','flame-blade':'화염검','holy-greatsword':'성스러운 대검',
-  'tier-heartbeat':'하트비트','tier-breathe':'브리딩','tier-satellite':'위성','tier-sparkle':'스파클',
-  'tier-ripple':'리플','tier-comet':'혜성(티어)','tier-pulse-rings':'펄스 링','tier-electric':'일렉트릭(티어)',
-  'tier-halo':'후광','tier-beam':'라이트 빔','tier-shockwave':'충격파','tier-dual-orbit':'듀얼 오빗',
-  'tier-aura':'오라','tier-blade':'검무(티어색)','tier-glitch':'글리치','tier-meteor':'메테오',
-  'tier-rune':'룬 서클','tier-firefly':'반딧불','tier-starburst':'스타버스트','tier-vortex':'보텍스',
-};
 const EMOJIS=['⚖️','💪','🔥','👑','🏃','🌟','🎯','🦁','🐯','🦊','🐼','🦋','🍎','🥗','🏋️','🚴','💎','⚡','🎖️','🏆','✨'];
 let selEmoji='';
 const DAY_KO=['일','월','화','수','목','금','토'];
@@ -201,6 +221,7 @@ function buildNav() {
     {href:`dashboard.html?user=${uid}`,    icon:'📊', label:'내 그래프',   id:'dashboard'},
     {href:`compare.html?user=${uid}`,      icon:'👥', label:'모아보기',     id:'compare'},
     {href:`achievements.html?user=${uid}`, icon:'🏆', label:'업적',        id:'achievements'},
+    {href:`shop.html?user=${uid}`,         icon:'🛍️', label:'상점',        id:'shop'},
   ];
   const nav=document.getElementById('bottomNav');
   links.forEach(l=>{
@@ -255,10 +276,13 @@ window.submitDay = async dateStr => {
   inp.value=w.toFixed(1);
   await setWeight(uid,dateStr,w);
   existingMap[dateStr]=w;
+  const _wr=allRecords.find(r=>r.date===dateStr);
+  if(_wr) _wr.weight=w; else allRecords.push({date:dateStr,weight:w});
   inp.style.borderColor='var(--green)';
   if(st){st.textContent='✓ 저장됨';st.style.color='var(--green)';}
   showToast('저장됐어요 ✓','ok');
   refreshCardState(dateStr);
+  scheduleAchSync();
 };
 
 // ── all-done 체크 ─────────────────────────────────────────────────────
@@ -285,9 +309,10 @@ window.setMeal = async (dateStr, mealTime, value) => {
   else allRecords.push({ date:dateStr, meal:newMeal });
   ['red','yellow','green'].forEach(c=>{
     const btn=document.querySelector(`#daycard-${dateStr} .tl-btn.${c}-tl[onclick*="${mealTime}"]`);
-    if(btn) btn.classList.toggle('on', newMeal[mealTime]===(c==='yellow'?'yellow':c));
+    if(btn) btn.classList.toggle('on', newMeal[mealTime]===c);
   });
   refreshCardState(dateStr);
+  scheduleAchSync();
 };
 
 // ── 운동 저장 ─────────────────────────────────────────────────────────
@@ -304,12 +329,162 @@ window.setExercise = async (dateStr, value) => {
     if(newVal===false && i===1) btn.className='ex-btn on-cross';
   });
   refreshCardState(dateStr);
+  scheduleAchSync();
 };
+
+// ── 물 마시기 ─────────────────────────────────────────────────────────
+function getRec(dateStr){
+  let rec=allRecords.find(r=>r.date===dateStr);
+  if(!rec){ rec={date:dateStr}; allRecords.push(rec); }
+  return rec;
+}
+window.setWater = async (dateStr, n) => {
+  const rec=getRec(dateStr);
+  const cur=rec.water||0;
+  const newVal = cur===n ? n-1 : n;   // 마지막 잔을 다시 탭하면 한 잔 취소
+  await setDietExercise(uid, dateStr, { water:newVal });
+  rec.water=newVal;
+  renderLife(dateStr);
+  scheduleAchSync();
+};
+
+// ── 기분 ─────────────────────────────────────────────────────────────
+window.setMood = async (dateStr, m) => {
+  const rec=getRec(dateStr);
+  const newVal = rec.mood===m ? null : m;
+  await setDietExercise(uid, dateStr, { mood:newVal });
+  rec.mood=newVal;
+  renderLife(dateStr);
+  scheduleAchSync();
+};
+
+// ── 저널 (탭할 때마다 미기록 → ✓ → ✗ 순환) ──────────────────────────
+window.setJournal = async (dateStr, key) => {
+  const rec=getRec(dateStr);
+  const j={...(rec.journal||{})};
+  const cur=j[key];
+  j[key] = cur==null ? true : cur===true ? false : null;
+  await setDietExercise(uid, dateStr, { journal:j });
+  rec.journal=j;
+  renderLife(dateStr);
+  scheduleAchSync();
+};
+
+// ── 걸음 수 ──────────────────────────────────────────────────────────
+window.setSteps = async (dateStr, n) => {
+  const rec=getRec(dateStr);
+  const newVal = rec.steps===n ? null : n;
+  await setDietExercise(uid, dateStr, { steps:newVal, stepsSource: newVal==null?null:'manual' });
+  rec.steps=newVal; rec.stepsSource=newVal==null?null:'manual';
+  renderLife(dateStr);
+  scheduleAchSync();
+};
+window.setStepsCustom = async (dateStr, el) => {
+  const raw=el.value.trim();
+  if(raw==='') return;
+  const n=Math.round(Number(raw));
+  if(!Number.isFinite(n)||n<0||n>200000){ showToast('걸음 수를 확인해주세요','err'); return; }
+  const rec=getRec(dateStr);
+  await setDietExercise(uid, dateStr, { steps:n, stepsSource:'manual' });
+  rec.steps=n; rec.stepsSource='manual';
+  renderLife(dateStr);
+  showToast('걸음 수 저장 ✓','ok');
+  scheduleAchSync();
+};
+
+const MOOD_EMOJIS=['😫','😕','😐','🙂','😄'];
+const JOURNAL_ITEMS=[
+  {key:'noAlcohol',  label:'🚫🍺 금주'},
+  {key:'noSnack',    label:'🌙 야식 없음'},
+  {key:'earlySleep', label:'😴 12시 전 취침'},
+];
+const STEP_PRESETS=[[3000,'3천'],[5000,'5천'],[8000,'8천'],[10000,'1만'],[15000,'1.5만'],[20000,'2만']];
+
+function lifeSectionHTML(dateStr){
+  const rec=allRecords.find(r=>r.date===dateStr)||{};
+  const water=rec.water||0;
+  const cups=Array.from({length:WATER_GOAL_CUPS},(_,i)=>
+    `<button class="water-cup ${i<water?'full':''}" onclick="setWater('${dateStr}',${i+1})" aria-label="물 ${i+1}잔">🥛</button>`).join('');
+  const moods=MOOD_EMOJIS.map((e,i)=>
+    `<button class="mood-btn ${rec.mood===i+1?'on':''}" onclick="setMood('${dateStr}',${i+1})">${e}</button>`).join('');
+  const j=rec.journal||{};
+  const jr=JOURNAL_ITEMS.map(it=>{
+    const v=j[it.key];
+    const cls=v===true?'yes':v===false?'no':'';
+    const mark=v===true?' ✓':v===false?' ✗':'';
+    return `<button class="jr-chip ${cls}" onclick="setJournal('${dateStr}','${it.key}')">${it.label}${mark}</button>`;
+  }).join('');
+  const isAuto=rec.stepsSource==='auto';
+  const chips=STEP_PRESETS.map(([v,l])=>
+    `<button class="steps-chip ${rec.steps===v?'on':''}" onclick="setSteps('${dateStr}',${v})">${l}</button>`).join('');
+  const stepsVal=(typeof rec.steps==='number'&&!STEP_PRESETS.some(([v])=>v===rec.steps))?rec.steps:'';
+  return `
+    <div class="dc-life-row">
+      <span class="dc-life-label">💧 물</span>
+      <div class="water-cups">${cups}</div>
+      <span class="water-count ${water>=WATER_GOAL_CUPS?'done':''}">${water}/${WATER_GOAL_CUPS}</span>
+    </div>
+    <div class="dc-life-row">
+      <span class="dc-life-label">😊 기분</span>
+      <div class="mood-row">${moods}</div>
+    </div>
+    <div class="dc-life-row">
+      <span class="dc-life-label">📔 저널</span>
+      ${jr}
+    </div>
+    <div class="dc-life-row">
+      <span class="dc-life-label">🚶 걸음</span>
+      <div class="steps-row">
+        ${chips}
+        <input class="steps-custom" type="number" inputmode="numeric" placeholder="직접" value="${stepsVal}"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"
+          onchange="setStepsCustom('${dateStr}',this)">
+        ${isAuto?'<span class="steps-auto-badge">⚡ 자동</span>':''}
+      </div>
+    </div>`;
+}
+function renderLife(dateStr){
+  const el=document.getElementById(`life-${dateStr}`);
+  if(el) el.innerHTML=lifeSectionHTML(dateStr);
+}
+
+// ── 입력 직후 업적 판정 (디바운스 + 직렬화) ──────────────────────────
+let _achTimer=null, _achRunning=false, _achPending=false;
+function scheduleAchSync(){
+  clearTimeout(_achTimer);
+  _achTimer=setTimeout(runAchSync, 900);
+}
+async function runAchSync(){
+  if(_achRunning){ _achPending=true; return; }
+  _achRunning=true;
+  try{
+    const res=await syncAchievements(uid);
+    if(res){
+      const list=res.newAchievements;
+      if(list.length>4){
+        queueAchievementPopups(list.slice(0,3), res.coinsGained);
+        showToast(`외 ${list.length-3}개 업적을 더 달성했어요! 🏆`,'ok');
+      } else if(list.length){
+        queueAchievementPopups(list, res.coinsGained);
+      }
+      user={...user, totalScore:res.user.totalScore, coins:res.user.coins,
+            unlockedBorders:res.user.unlockedBorders, earnedTitles:res.user.earnedTitles};
+      const tiers=res.tierData?.tiers||DEFAULT_TIERS;
+      setChipData(user, getTierForScore(user.totalScore||0, tiers).color);
+    }
+  }catch(e){ console.warn('Achievement sync failed:', e); }
+  finally{
+    _achRunning=false;
+    if(_achPending){ _achPending=false; runAchSync(); }
+  }
+}
 
 
 async function render() {
   buildNav();
   const [_iu, _ir, _itd] = await Promise.all([getUser(uid), getWeights(uid), getTierSettings().catch(()=>null)]);
+  if (!_iu) { localStorage.removeItem('uid'); location.href='index.html?select=1'; return; }
+  if (_iu.passwordHash && !isAuthed(uid, _iu.passwordHash)) { location.href='index.html?select=1'; return; }
   user = _iu; allRecords = _ir;
   existingMap = Object.fromEntries(allRecords.map(r=>[r.date, r.weight]));
   const _iTiers = _itd?.tiers || DEFAULT_TIERS;
@@ -317,7 +492,6 @@ async function render() {
   setChipData(user, _iTier.color);
 
   const today = new Date(); today.setHours(0,0,0,0);
-  const todayStr = toDateStr(today);
   const labels=['오늘','어제','2일 전','3일 전','4일 전','5일 전'];
   let cards='';
   for(let i=0;i<=5;i++){
@@ -375,10 +549,20 @@ async function render() {
         </div>
         <div class="dc-status" id="dcst-${dateStr}" style="color:${hasSaved?'var(--green)':'var(--muted)'}">${hasSaved?'✓ 저장됨':''}</div>
         ${extraSection}
+        <div class="dc-life" id="life-${dateStr}">${lifeSectionHTML(dateStr)}</div>
       </div>`;
   }
 
-  document.getElementById('content').innerHTML=cards;
+  document.getElementById('content').innerHTML=cards+`
+    <a href="guide.html?user=${uid}"
+       style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:14px;
+              padding:12px;border:1px dashed rgba(0,229,170,.35);border-radius:10px;
+              font-size:13px;color:var(--teal);text-decoration:none">
+      ⚡ 걸음 수 자동 연동 설정하기 <span style="font-size:11px;color:var(--muted)">(아이폰 단축어로 매일 자동 기록)</span>
+    </a>`;
+
+  // 다른 곳(자동 연동 등)에서 쌓인 미반영 업적을 페이지 진입 시 1회 정산
+  scheduleAchSync();
 }
 
 
@@ -468,7 +652,7 @@ window.openProfileEdit = () => {
 
   const titles = user?.earnedTitles || [];
   const tg = document.getElementById('pTitleGroup');
-  if(titles.length){ tg.style.display=''; document.getElementById('pTitleSection').innerHTML=`<select class="input-field" id="pTitleSelect"><option value="">칭호 없음</option>${titles.map(t=>`<option value="${t}" ${t===user?.selectedTitle?'selected':''}>${t}</option>`).join('')}</select>`; }
+  if(titles.length){ tg.style.display=''; document.getElementById('pTitleSection').innerHTML=`<select class="input-field" id="pTitleSelect"><option value="">칭호 없음</option>${titles.map(t=>`<option value="${esc(t)}" ${t===user?.selectedTitle?'selected':''}>${esc(t)}</option>`).join('')}</select>`; }
   else tg.style.display='none';
   const hasPw=!!user?.passwordHash;
   document.getElementById('pPwLabel').textContent=hasPw?'비밀번호 변경':'비밀번호 설정 (선택)';

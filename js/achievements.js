@@ -2,11 +2,14 @@
 
 export const RECORD_START_DATE = '2026-06-01'; // 기록 누적 기준일 (체중/식단/운동 횟수)
 export const LOSS_START_DATE   = '2026-01-01'; // 감량/갱신 기준일
+export const WATER_GOAL_CUPS   = 8;            // 하루 물 목표 (잔)
 
 export const ACHIEVEMENT_CATEGORIES = [
   { id:'record',    label:'체중',  icon:'⚖️' },
   { id:'diet',      label:'식단',  icon:'🥗' },
   { id:'exercise',  label:'운동',  icon:'💪' },
+  { id:'steps',     label:'걸음',  icon:'🚶' },
+  { id:'life',      label:'라이프', icon:'🌱' },
   { id:'loss',      label:'감량',  icon:'📉' },
   { id:'goal',      label:'목표',  icon:'🎯' },
   { id:'daily',     label:'일간',  icon:'📆' },
@@ -75,6 +78,40 @@ export const ACHIEVEMENTS = [
   { id:'ex_150', cat:'exercise', name:'운동 150회',  desc:'운동 체크마크 150회 달성',                         score:70,  icon:'🥊', legendary:true },
   { id:'ex_200', cat:'exercise', name:'운동 200회',  desc:'운동 체크마크 200회 달성',                         score:100, icon:'🏅', legendary:true },
   { id:'ex_300', cat:'exercise', name:'운동 300회',  desc:'운동 체크마크 300회 달성',                         score:200, icon:'🏆', legendary:true },
+
+  // ── 걸음 수 ──────────────────────────────────────────────────────────
+  { id:'steps_day_1',       cat:'steps', name:'첫 걸음',        desc:'걸음 수를 처음 기록했어요',              score:10, icon:'🚶' },
+  { id:'steps_8k_1',        cat:'steps', name:'8천 보',         desc:'하루 8,000보를 달성했어요',              score:10, icon:'👟' },
+  { id:'steps_10k_1',       cat:'steps', name:'만보 클럽',      desc:'하루 10,000보를 처음 달성했어요',        score:10, icon:'🚶' },
+  { id:'steps_10k_5',       cat:'steps', name:'만보 5일',       desc:'하루 1만 보 달성 5일 누적',              score:15, icon:'🏃' },
+  { id:'steps_10k_10',      cat:'steps', name:'만보 10일',      desc:'하루 1만 보 달성 10일 누적',             score:20, icon:'🏃' },
+  { id:'steps_10k_30',      cat:'steps', name:'만보 30일',      desc:'하루 1만 보 달성 30일 누적',             score:40, icon:'🔥', legendary:true },
+  { id:'steps_20k_1',       cat:'steps', name:'2만 보!',        desc:'하루 20,000보를 달성했어요',             score:20, icon:'⚡' },
+  { id:'steps_total_100k',  cat:'steps', name:'누적 10만 보',   desc:'기록된 걸음 수 100,000보 누적',          score:20, icon:'🗺️' },
+  { id:'steps_total_500k',  cat:'steps', name:'누적 50만 보',   desc:'기록된 걸음 수 500,000보 누적',          score:40, icon:'🌍' },
+  { id:'steps_total_1m',    cat:'steps', name:'누적 100만 보',  desc:'기록된 걸음 수 1,000,000보 누적',        score:60, icon:'🌌', legendary:true },
+
+  // ── 라이프 — 물 ──────────────────────────────────────────────────────
+  { id:'water_first',       cat:'life', name:'첫 잔',           desc:'물 마시기를 처음 기록했어요',            score:10, icon:'💧' },
+  { id:'water_goal_1',      cat:'life', name:'수분 충전',       desc:'하루 물 목표(8잔)를 처음 달성했어요',    score:10, icon:'💧' },
+  { id:'water_goal_5',      cat:'life', name:'물 목표 5일',     desc:'하루 물 목표 달성 5일 누적',             score:15, icon:'🚰' },
+  { id:'water_goal_10',     cat:'life', name:'물 목표 10일',    desc:'하루 물 목표 달성 10일 누적',            score:20, icon:'🌊' },
+  { id:'water_goal_30',     cat:'life', name:'물 목표 30일',    desc:'하루 물 목표 달성 30일 누적',            score:40, icon:'🌊', legendary:true },
+  { id:'water_total_100',   cat:'life', name:'누적 100잔',      desc:'물 100잔 누적',                          score:20, icon:'🥤' },
+  { id:'water_total_500',   cat:'life', name:'누적 500잔',      desc:'물 500잔 누적',                          score:50, icon:'🏆' },
+
+  // ── 라이프 — 저널 (금주·야식 없음·일찍 취침) ─────────────────────────
+  { id:'journal_first',     cat:'life', name:'첫 저널',         desc:'하루 저널을 처음 기록했어요',            score:10, icon:'📔' },
+  { id:'journal_clean_1',   cat:'life', name:'클린 데이',       desc:'저널 3항목 모두 ✓ 인 날 첫 달성',        score:10, icon:'✨' },
+  { id:'journal_clean_5',   cat:'life', name:'클린 5일',        desc:'저널 3항목 모두 ✓ 인 날 5일 누적',       score:15, icon:'✨' },
+  { id:'journal_clean_10',  cat:'life', name:'클린 10일',       desc:'저널 3항목 모두 ✓ 인 날 10일 누적',      score:20, icon:'🌟' },
+  { id:'journal_clean_30',  cat:'life', name:'클린 30일',       desc:'저널 3항목 모두 ✓ 인 날 30일 누적',      score:40, icon:'👑', legendary:true },
+
+  // ── 라이프 — 기분 ────────────────────────────────────────────────────
+  { id:'mood_first',        cat:'life', name:'오늘의 기분',     desc:'기분을 처음 기록했어요',                 score:10, icon:'😊' },
+  { id:'mood_10',           cat:'life', name:'감정 기록 10일',  desc:'기분 기록 10일 누적',                    score:15, icon:'😄' },
+  { id:'mood_30',           cat:'life', name:'감정 기록 30일',  desc:'기분 기록 30일 누적',                    score:25, icon:'🥰' },
+  { id:'mood_100',          cat:'life', name:'감정 기록 100일', desc:'기분 기록 100일 누적',                   score:50, icon:'🌈', legendary:true },
 
   // ── 감량 ─────────────────────────────────────────────────────────────
   { id:'loss_1pct',  cat:'loss', name:'첫 감량',    desc:'기준 체중 대비 1% 감량',                           score:10, icon:'📉' },
@@ -211,9 +248,11 @@ export const ACHIEVEMENTS = [
   { id:'ach_50',  cat:'milestone', name:'업적 50개 달성',   desc:'업적을 50개 달성했어요',                      score:30,  icon:'🎖️' },
   { id:'ach_75',  cat:'milestone', name:'업적 75개 달성',   desc:'업적을 75개 달성했어요',                      score:40,  icon:'🏅' },
   { id:'ach_100', cat:'milestone', name:'업적 100개 달성',  desc:'업적을 100개 달성했어요',                     score:50,  icon:'🏆', legendary:true },
-  { id:'ach_150', cat:'milestone', name:'업적 150개 달성',  desc:'업적을 150개 달성했어요',                     score:70,  icon:'🏆', legendary:true },
-  { id:'ach_200', cat:'milestone', name:'업적 200개 달성',  desc:'업적을 200개 달성했어요',                     score:100, icon:'👑', legendary:true },
+  { id:'ach_125', cat:'milestone', name:'업적 125개 달성',  desc:'업적을 125개 달성했어요',                     score:70,  icon:'👑', legendary:true },
 ];
+
+// 과거 버전에서 제거된 업적 id (달성 불가능 업적 정리)
+export const RETIRED_ACHIEVEMENT_IDS = new Set(['ach_150', 'ach_200']);
 
 const toDs = d =>
   `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -346,6 +385,29 @@ function extractData(records, user) {
     }
   }
 
+  // ── 걸음/물/저널/기분 (신규 항목 — 날짜 제한 없음) ──────────────────
+  let waterTotal = 0, waterGoalDays = 0, waterAnyDays = 0;
+  let moodDays = 0;
+  let journalAnyDays = 0, journalCleanDays = 0;
+  let stepsTotal = 0, stepsAnyDays = 0, steps8kDays = 0, steps10kDays = 0, steps20kDays = 0;
+  allRecs.forEach(r => {
+    if (typeof r.water === 'number' && r.water > 0) {
+      waterTotal += r.water; waterAnyDays++;
+      if (r.water >= WATER_GOAL_CUPS) waterGoalDays++;
+    }
+    if (r.mood != null) moodDays++;
+    const j = r.journal || {};
+    const jvals = [j.noAlcohol, j.noSnack, j.earlySleep];
+    if (jvals.some(v => v === true || v === false)) journalAnyDays++;
+    if (jvals.every(v => v === true)) journalCleanDays++;
+    if (typeof r.steps === 'number' && r.steps > 0) {
+      stepsTotal += r.steps; stepsAnyDays++;
+      if (r.steps >= 8000)  steps8kDays++;
+      if (r.steps >= 10000) steps10kDays++;
+      if (r.steps >= 20000) steps20kDays++;
+    }
+  });
+
   // ── 체중 연속 기록 streak (6월 1일~, 최대 30일 캡) ───────────────────
   let maxRecordStreak = 0;
   if (recordActive.length > 0) {
@@ -366,6 +428,9 @@ function extractData(records, user) {
     weeklyMeal18, monthlyMeal60,
     exerciseCount, maxExStreak, weeklyEx3, monthlyEx15,
     maxRecordStreak,
+    waterTotal, waterGoalDays, waterAnyDays,
+    moodDays, journalAnyDays, journalCleanDays,
+    stepsTotal, stepsAnyDays, steps8kDays, steps10kDays, steps20kDays,
   };
 }
 
@@ -379,6 +444,9 @@ export function calculateEarnedIds(records, user) {
     weeklyMeal18, monthlyMeal60,
     exerciseCount, maxExStreak, weeklyEx3, monthlyEx15,
     maxRecordStreak,
+    waterTotal, waterGoalDays, waterAnyDays,
+    moodDays, journalAnyDays, journalCleanDays,
+    stepsTotal, stepsAnyDays, steps8kDays, steps10kDays, steps20kDays,
   } = extractData(records, user);
 
   // 체중 기록 (6월 1일~)
@@ -464,6 +532,40 @@ export function calculateEarnedIds(records, user) {
   if(maxRecordStreak>=14) earned.add('record_streak_14');
   if(maxRecordStreak>=30) earned.add('record_streak_30');
 
+  // 걸음 수
+  if(stepsAnyDays>=1)  earned.add('steps_day_1');
+  if(steps8kDays>=1)   earned.add('steps_8k_1');
+  if(steps10kDays>=1)  earned.add('steps_10k_1');
+  if(steps10kDays>=5)  earned.add('steps_10k_5');
+  if(steps10kDays>=10) earned.add('steps_10k_10');
+  if(steps10kDays>=30) earned.add('steps_10k_30');
+  if(steps20kDays>=1)  earned.add('steps_20k_1');
+  if(stepsTotal>=100000)  earned.add('steps_total_100k');
+  if(stepsTotal>=500000)  earned.add('steps_total_500k');
+  if(stepsTotal>=1000000) earned.add('steps_total_1m');
+
+  // 물
+  if(waterAnyDays>=1)   earned.add('water_first');
+  if(waterGoalDays>=1)  earned.add('water_goal_1');
+  if(waterGoalDays>=5)  earned.add('water_goal_5');
+  if(waterGoalDays>=10) earned.add('water_goal_10');
+  if(waterGoalDays>=30) earned.add('water_goal_30');
+  if(waterTotal>=100)   earned.add('water_total_100');
+  if(waterTotal>=500)   earned.add('water_total_500');
+
+  // 저널
+  if(journalAnyDays>=1)    earned.add('journal_first');
+  if(journalCleanDays>=1)  earned.add('journal_clean_1');
+  if(journalCleanDays>=5)  earned.add('journal_clean_5');
+  if(journalCleanDays>=10) earned.add('journal_clean_10');
+  if(journalCleanDays>=30) earned.add('journal_clean_30');
+
+  // 기분
+  if(moodDays>=1)   earned.add('mood_first');
+  if(moodDays>=10)  earned.add('mood_10');
+  if(moodDays>=30)  earned.add('mood_30');
+  if(moodDays>=100) earned.add('mood_100');
+
   return earned;
 }
 
@@ -499,10 +601,27 @@ export function calculateMetaEarnedIds(baseEarned, baseScore, tiers) {
   if (earnedCount >= 50)  meta.add('ach_50');
   if (earnedCount >= 75)  meta.add('ach_75');
   if (earnedCount >= 100) meta.add('ach_100');
-  if (earnedCount >= 150) meta.add('ach_150');
-  if (earnedCount >= 200) meta.add('ach_200');
+  if (earnedCount >= 125) meta.add('ach_125');
 
   return meta;
+}
+
+// 메타 업적(등급·업적 개수) 진행도 — 잠금 카드에 진행바를 띄우기 위함
+export function calculateMetaProgress(baseEarnedCount, totalScore, tiers = DEFAULT_TIERS) {
+  const p = (cur, tgt) => ({ current: Math.min(cur, tgt), target: tgt });
+  const out = {};
+  [1,3,5,10,20,30,50,75,100,125].forEach(n => { out[`ach_${n}`] = p(baseEarnedCount, n); });
+  const sorted = [...tiers].sort((a,b) => a.minScore - b.minScore);
+  const gradeIds = {
+    grade_bronze:'bronze', grade_silver:'silver', grade_gold:'gold',
+    grade_platinum:'platinum', grade_emerald:'emerald', grade_diamond:'diamond',
+    grade_master:'master', grade_grandmaster:'grandmaster', grade_challenger:'challenger',
+  };
+  Object.entries(gradeIds).forEach(([achId, tierId]) => {
+    const cut = sorted.find(t => t.id === tierId)?.minScore;
+    if (cut != null && cut > 0) out[achId] = p(totalScore, cut);
+  });
+  return out;
 }
 
 export function calculateProgress(records, user) {
@@ -513,6 +632,9 @@ export function calculateProgress(records, user) {
     weeklyMeal18, monthlyMeal60,
     exerciseCount, maxExStreak, weeklyEx3, monthlyEx15,
     maxRecordStreak,
+    waterTotal, waterGoalDays, waterAnyDays,
+    moodDays, journalAnyDays, journalCleanDays,
+    stepsTotal, stepsAnyDays, steps8kDays, steps10kDays, steps20kDays,
   } = extractData(records, user);
   const p = (cur, tgt) => ({ current: Math.min(cur, tgt), target: tgt });
   return {
@@ -576,6 +698,20 @@ export function calculateProgress(records, user) {
     // 체중 연속 기록 streak
     record_streak_3:p(maxRecordStreak,3), record_streak_7:p(maxRecordStreak,7),
     record_streak_14:p(maxRecordStreak,14), record_streak_30:p(maxRecordStreak,30),
+    // 걸음 수
+    steps_day_1:p(stepsAnyDays,1), steps_8k_1:p(steps8kDays,1), steps_10k_1:p(steps10kDays,1),
+    steps_10k_5:p(steps10kDays,5), steps_10k_10:p(steps10kDays,10), steps_10k_30:p(steps10kDays,30),
+    steps_20k_1:p(steps20kDays,1),
+    steps_total_100k:p(stepsTotal,100000), steps_total_500k:p(stepsTotal,500000), steps_total_1m:p(stepsTotal,1000000),
+    // 물
+    water_first:p(waterAnyDays,1), water_goal_1:p(waterGoalDays,1), water_goal_5:p(waterGoalDays,5),
+    water_goal_10:p(waterGoalDays,10), water_goal_30:p(waterGoalDays,30),
+    water_total_100:p(waterTotal,100), water_total_500:p(waterTotal,500),
+    // 저널
+    journal_first:p(journalAnyDays,1), journal_clean_1:p(journalCleanDays,1), journal_clean_5:p(journalCleanDays,5),
+    journal_clean_10:p(journalCleanDays,10), journal_clean_30:p(journalCleanDays,30),
+    // 기분
+    mood_first:p(moodDays,1), mood_10:p(moodDays,10), mood_30:p(moodDays,30), mood_100:p(moodDays,100),
   };
 }
 

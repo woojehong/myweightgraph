@@ -93,6 +93,7 @@
 import { getUsers, createUser, parseWeight, toDateStr, getTierSettings } from './js/db.js';
 import { sha256, saveAuth, isAuthed } from './js/auth.js';
 import { getTierForScore, DEFAULT_TIERS } from './js/achievements.js';
+import { esc } from './js/util.js';
 
 const EMOJIS = ['⚖️','💪','🔥','👑','🏃','🌟','🎯','😤','🦁','🐯','🐻','🐺','🦊','🐸','🐼','🦋','🍎','🥗','🥑','🎽','🏋️','🚴','🧘','💎','🌈','⚡','🎖️','🏆','🌙','☀️','💫','✨'];
 
@@ -480,8 +481,8 @@ async function render() {
           <div class="avatar-frame ${bClass}" style="--tier-color:${tc};width:52px;height:52px;margin:0 auto 10px;flex-shrink:0">
             <div style="width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;font-size:22px;position:relative;z-index:1">${u.emoji||'⚖️'}</div>
           </div>
-          ${title?`<div style="font-size:10px;color:${tc};font-weight:700;margin-bottom:2px">${title}</div>`:''}
-          <div class="name" style="color:${tc}">${u.name}</div>
+          ${title?`<div style="font-size:10px;color:${tc};font-weight:700;margin-bottom:2px">${esc(title)}</div>`:''}
+          <div class="name" style="color:${tc}">${esc(u.name)}</div>
           <div class="sub">${score > 0 ? score + ' PT' : ''}</div>`;
         card.onclick = () => enterUser(u);
         grid.appendChild(card);
@@ -507,7 +508,7 @@ async function render() {
               <div style="width:28px;text-align:center;font-size:${i<3?'18':'13'}px;font-weight:800;flex-shrink:0">${medal}</div>
               <div style="font-size:18px;flex-shrink:0">${u.emoji||'⚖️'}</div>
               <div style="flex:1;min-width:0">
-                <div style="font-size:13px;font-weight:700;color:${tier.color}">${u.name}</div>
+                <div style="font-size:13px;font-weight:700;color:${tier.color};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(u.name)}</div>
                 <div style="font-size:11px;color:var(--muted)">${tier.name}</div>
               </div>
               <div style="font-size:15px;font-weight:800;color:${tier.color};flex-shrink:0">

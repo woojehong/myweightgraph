@@ -1,0 +1,78 @@
+rules_version = '2';
+
+// myweightgraph — friend-group-grade security rules.
+//
+// Model:
+//  - The web app signs in with Firebase Anonymous Auth before any read/write,
+//    so `request.auth != null` blocks drive-by internet writes (anyone without
+//    the app). It does NOT stop a determined insider who has the app open.
+//  - The Cloudflare Worker writes with a service account and BYPASSES these
+//    rules entirely.
+//  - The admin signs in with email/password (fixed UID below).
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAdmin() {
+      return request.auth != null
+          && request.auth.uid == 'X2kTDfOGWKbqLkv0AYAVRLpzHvy2';
+    }
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    // ── users/{uid}: profile docs (name, emoji, goal, syncToken, ...) ──
+    match /users/{uid} {
+      allow read: if signedIn();
+      allow create, update: if signedIn()
+        // name: string, max 20 chars (when present in the resulting doc)
+        && (!('name' in request.resource.data)
+            || (request.resource.data.name is string
+                && request.resource.data.name.size() <= 20))
+        // totalScore / coins: numbers when present
+        && (!('totalScore' in request.resource.data)
+            || request.resource.data.totalScore is number)
+        && (!('coins' in request.resource.data)
+            || request.resource.data.coins is number);
+      allow delete: if isAdmin();
+    }
+
+    // ── weights/{uid}/records/{d}: daily records ──
+    match /weights/{uid}/records/{d} {
+      allow read: if signedIn();
+      allow create, update: if signedIn()
+        // date: required YYYY-MM-DD string
+        && request.resource.data.date is string
+        && request.resource.data.date.matches('\\d{4}-\\d{2}-\\d{2}')
+        // weight: number <= 500 or null, when present
+        && (!('weight' in request.resource.data)
+            || request.resource.data.weight == null
+            || (request.resource.data.weight is number
+                && request.resource.data.weight <= 500))
+        // steps: int 0..200000 or null (manual clear), when present
+        && (!('steps' in request.resource.data)
+            || request.resource.data.steps == null
+            || (request.resource.data.steps is int
+                && request.resource.data.steps >= 0
+                && request.resource.data.steps <= 200000));
+      allow delete: if signedIn();
+    }
+
+    // ── achievements/{uid}/earned/{a}: earned achievement docs ──
+    match /achievements/{uid}/earned/{a} {
+      allow read, write: if signedIn();
+    }
+
+    // ── settings/{doc}: app-wide settings, admin-managed ──
+    match /settings/{doc} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    // ── everything else: deny ──
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
