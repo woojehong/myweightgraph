@@ -1,4 +1,9 @@
 .avatar-v2{position:relative;width:var(--avatar-v2-size);height:calc(var(--avatar-v2-size)*1.18);display:flex;align-items:flex-end;justify-content:center;isolation:isolate;user-select:none}
+.avatar-3d-host{position:absolute;z-index:4;inset:0;overflow:hidden;opacity:0;transition:opacity .28s ease}
+.avatar-3d-host canvas{display:block;width:100%;height:100%;outline:0}
+.avatar-3d-host.avatar-3d-ready{opacity:1}
+.avatar-3d-host.avatar-3d-ready~img,.avatar-3d-host.avatar-3d-ready~.avatar-v2-floor{opacity:0}
+.avatar-3d-host.avatar-3d-failed{display:none}
 .avatar-v2 img{position:relative;z-index:2;display:block;width:auto;height:100%;max-width:100%;object-fit:contain;object-position:center bottom;filter:drop-shadow(0 16px 18px rgba(0,0,0,.48));transform-origin:50% 92%}
 .avatar-v2-floor{position:absolute;z-index:1;left:13%;right:13%;bottom:1.5%;height:5%;border-radius:50%;background:radial-gradient(ellipse,rgba(0,229,170,.22),rgba(0,0,0,.35) 58%,transparent 72%);transform:perspective(80px) rotateX(60deg)}
 .avatar-v2-aura{position:absolute;z-index:0;inset:4% 2% 3%;border-radius:46%;background:radial-gradient(ellipse at 50% 46%,rgba(0,229,170,.12),transparent 66%);opacity:.75}

@@ -1,3 +1,6 @@
 _to_delete/
 *.lock
 .DS_Store
+node_modules/
+assets/avatar-3d/source/
+tools/human-bundle-inventory.json
