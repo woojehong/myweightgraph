@@ -206,6 +206,12 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
 
   // ── 말풍선 유틸 ──────────────────────────────────────────────────────
   const BP = 5, BLH = 15, BOFF = 100;
+  const markerImage = chartDecorations?.markerAsset ? new Image() : null;
+  if (markerImage) {
+    markerImage.decoding = 'async';
+    markerImage.onload = () => canvasMain._chartInstance?.draw?.();
+    markerImage.src = chartDecorations.markerAsset;
+  }
   function rrect(ctx, x, y, w, h, r) {
     ctx.beginPath(); ctx.moveTo(x+r, y); ctx.arcTo(x+w, y, x+w, y+h, r); ctx.arcTo(x+w, y+h, x, y+h, r);
     ctx.arcTo(x, y+h, x, y, r); ctx.arcTo(x, y, x+w, y, r); ctx.closePath();
@@ -237,12 +243,13 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
   function dot(ctx, px, py, color, r) {
     const key=`${Math.round(px)}:${Math.round(py)}`,hit=markerHits.get(key)||0;markerHits.set(key,hit+1);
     const angle=hit*Math.PI*2/3;px+=hit?Math.cos(angle)*9:0;py+=hit?Math.sin(angle)*9:0;
-    const rawVariant=Number(chartDecorations?.markerIndex),variant=Number.isFinite(rawVariant)?rawVariant:-1;
-    ctx.save();ctx.fillStyle=color;ctx.strokeStyle=BG;ctx.lineWidth=2;ctx.beginPath();
-    if(variant<0){ctx.arc(px,py,r,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.restore();return}
-    const points=4+(variant%5);
-    for(let i=0;i<points*2;i++){const a=-Math.PI/2+i*Math.PI/points,rr=i%2?r*.45:r*(1+(variant%3)*.12),x=px+Math.cos(a)*rr,y=py+Math.sin(a)*rr;i?ctx.lineTo(x,y):ctx.moveTo(x,y)}
-    ctx.closePath();ctx.fill();ctx.stroke();ctx.restore();
+    ctx.save();
+    if(markerImage?.complete&&markerImage.naturalWidth){
+      const size=Math.max(24,r*3.6);
+      ctx.shadowColor='rgba(0,0,0,.85)';ctx.shadowBlur=5;
+      ctx.drawImage(markerImage,px-size/2,py-size/2,size,size);ctx.restore();return;
+    }
+    ctx.fillStyle=color;ctx.strokeStyle=BG;ctx.lineWidth=2;ctx.beginPath();ctx.arc(px,py,r,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.restore();
   }
 
   // ── 어노테이션 플러그인 ──────────────────────────────────────────────

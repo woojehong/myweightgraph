@@ -1,17 +1,49 @@
-const CACHE = 'weight-v58-signature-lab';
+const CACHE = 'weight-v59-showroom-images';
 const ASSETS = [
   './index.html', './dashboard.html', './input.html', './import.html',
   './achievements.html', './compare.html', './dressroom.html', './shop.html', './guide.html', './visual-lab.html',
-  './css/style.css', './css/signature-v2.css', './css/signature-policy.css', './css/lab-fix.css', './css/rest-state.css',
+  './css/style.css',
   './js/firebase-config.js', './js/db.js', './js/auth.js',
   './js/chart-render.js', './js/achievements.js', './js/achievements-engine.js',
   './js/util.js', './js/daily-rewards.js', './js/showroom-v2.js',
   './js/showroom-catalog-v2.js', './js/titles-catalog-v2.js', './js/achievement-item-rewards-v2.js',
   './manifest.json', './favicon.png',
   './register-sw.js',
+  './assets/showroom-v3/graph_skin/gs_explorer_parchment.webp',
+  './assets/showroom-v3/graph_skin/gs_frost_runestone.webp',
+  './assets/showroom-v3/graph_skin/gs_dragonbone_slab.webp',
+  './assets/showroom-v3/graph_skin/gs_cosmic_timekeeper.webp',
+  './assets/showroom-v3/card_theme/ct_alpine_dawn.webp',
+  './assets/showroom-v3/card_theme/ct_sunken_temple.webp',
+  './assets/showroom-v3/card_theme/ct_moonlit_grove.webp',
+  './assets/showroom-v3/card_theme/ct_cosmic_observatory.webp',
+  './assets/showroom-v3/point_marker/pm_expedition_compass.png',
+  './assets/showroom-v3/point_marker/pm_moon_crystal.png',
+  './assets/showroom-v3/point_marker/pm_watcher_eye.png',
+  './assets/showroom-v3/point_marker/pm_phoenix_seal.png',
+  './assets/showroom-v3/companion/cp_sleepy_golem.png',
+  './assets/showroom-v3/companion/cp_candle_wisp.png',
+  './assets/showroom-v3/companion/cp_satchel_mimic.png',
+  './assets/showroom-v3/companion/cp_lantern_moth.png',
+  './assets/showroom-v3/ambient_effect/ae_forest_breath.webp',
+  './assets/showroom-v3/ambient_effect/ae_deep_caustics.webp',
+  './assets/showroom-v3/ambient_effect/ae_dimensional_breach.webp',
+  './assets/showroom-v3/ambient_effect/ae_ancient_dragon.webp',
+  './assets/showroom-v3/trophy/tr_summit_compass.png',
+  './assets/showroom-v3/trophy/tr_sea_chalice.png',
+  './assets/showroom-v3/trophy/tr_giant_horn.png',
+  './assets/showroom-v3/trophy/tr_cosmic_goblet.png',
+  './assets/showroom-v3/profile_emoji/pe_archive_spirit.png',
+  './assets/showroom-v3/profile_emoji/pe_forest_goblin.png',
+  './assets/showroom-v3/profile_emoji/pe_dragonblood.png',
+  './assets/showroom-v3/profile_emoji/pe_celestial_oracle.png',
+  './assets/showroom-v3/emoji_border/eb_forged_iron.png',
+  './assets/showroom-v3/emoji_border/eb_worldroot.png',
+  './assets/showroom-v3/emoji_border/eb_giant_hunter.png',
+  './assets/showroom-v3/emoji_border/eb_twin_dragon.png',
 ];
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS).catch(() => {})));
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
   self.skipWaiting();
 });
 

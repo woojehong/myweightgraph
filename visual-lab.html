@@ -1,1 +1,54 @@
-<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>시그니처 데모 · 마웨그</title><link rel="stylesheet" href="css/style.css"><style>body{background:#070b12;color:#eef5ff;margin:0;font-family:system-ui}.lab{max-width:1180px;margin:auto;padding:28px 16px}.lab h1{margin:0}.lab p{color:#92a1b5}.lab-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}.lab-card{position:relative;overflow:hidden;min-height:180px;border:1px solid #26364a;border-radius:14px;background:#101824;padding:12px}.lab-card h3{font-size:13px;margin:0 0 5px}.lab-card small{color:#7890a8}.lab-stage{position:relative;display:grid;place-items:center;height:125px;margin-top:6px;border-radius:10px;background:linear-gradient(#101d2b,#080d15)}.lab-stage .v2-profile{width:92px!important;height:92px!important}.lab-stage .v2-emoji-border{width:104px;height:104px}.lab-stage>.v2-ambient{inset:0}.lab-head{display:flex;justify-content:space-between;align-items:end;margin:26px 0 10px}.badge{font-size:11px;color:#00e5aa}</style></head><body><main class="lab"><h1>시그니처 데모</h1><p>인증과 Firebase 없이 실제 쇼룸 렌더러를 직접 비교합니다. 각 시퀀스는 3~5초간 한 번 재생한 뒤 완성 상태로 정지합니다.</p><div class="lab-head"><h2>이모티콘 테두리 10</h2><span class="badge">stable ID</span></div><section class="lab-grid" id="borders"></section><div class="lab-head"><h2>분위기 효과 10</h2><span class="badge">플롯 가독성 우선</span></div><section class="lab-grid" id="ambients"></section></main><script type="module">import{getCatalogItemV2,renderEmojiBorderV2,renderProfileEmojiV2,renderAmbientV2}from'./js/showroom-v2.js';const borderIds=['eb_astral_portal','eb_frost_spikes','eb_ember_chain','eb_arcane_orbit','eb_primordial_serpent','eb_abyss_tentacles','eb_clockwork_dial','eb_worldroot_arch','eb_drake_wings','eb_dawn_throne'],ambientIds=['ae_wind','ae_astral','ae_gold_sand','ae_void','ae_abyss','ae_thunder','ae_rune','ae_crystal','ae_dust','ae_dawn_blessing'];const card=(id,html)=>{const item=getCatalogItemV2(id);return`<article class="lab-card"><h3>${item?.name||id}</h3><small>${id}</small><div class="lab-stage">${html}</div></article>`};document.getElementById('borders').innerHTML=borderIds.map(id=>card(id,`<span class="v2-profile">${renderEmojiBorderV2(id,104)}${renderProfileEmojiV2(null,64)}</span>`)).join('');document.getElementById('ambients').innerHTML=ambientIds.map(id=>card(id,renderAmbientV2(id))).join('');</script></body></html>
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>쇼룸 이미지 랩 | 마웨그</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    body{margin:0;background:#070b12;color:#eef5ff;font-family:system-ui,sans-serif}.lab{max-width:1180px;margin:auto;padding:26px 16px 60px}.lab h1{margin:0}.lab-lead{color:#9aacbf;margin:7px 0 20px}.lab-demo{border:1px solid #2a3b50;border-radius:18px;padding:12px;background:#0c131e}.lab-card{min-height:300px;border:1px solid #ffffff24;border-radius:14px;padding:10px;overflow:hidden}.lab-profile{display:flex;align-items:center;gap:10px;min-height:58px;padding:0 8px 7px;font-weight:800}.lab-chart{position:relative;aspect-ratio:16/9;min-height:220px;border-radius:10px;overflow:hidden}.lab-chart canvas{width:100%;height:100%}.lab-status{display:flex;justify-content:space-between;gap:10px;margin:8px 2px 0;color:#8ca0b6;font-size:11px}.lab-head{display:flex;justify-content:space-between;align-items:end;margin:26px 0 10px}.lab-head h2{margin:0;font-size:17px}.lab-count{font-size:11px;color:#00e5aa}.lab-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.lab-item{min-width:0;border:1px solid #27394d;border-radius:13px;padding:9px;background:#0e1723;color:#eaf2fc;text-align:left;cursor:pointer}.lab-item.active{border-color:#00e5aa;box-shadow:inset 0 0 0 1px #00e5aa55}.lab-visual{height:105px;display:grid;place-items:center;overflow:hidden;border-radius:8px;background:#070b12}.lab-visual .v3-landscape-preview{height:100%;aspect-ratio:auto}.lab-visual>.v3-companion-image,.lab-visual>.v3-trophy-image{width:86px;height:86px;object-fit:contain}.lab-item b,.lab-item small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.lab-item b{font-size:12px;margin-top:7px}.lab-item small{font-size:9px;color:#8195aa;margin-top:2px}@media(max-width:760px){.lab-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.lab-chart{min-height:180px}}@media(max-width:380px){.lab{padding-inline:9px}.lab-grid{gap:7px}.lab-visual{height:90px}}
+  </style>
+</head>
+<body>
+  <main class="lab">
+    <h1>쇼룸 이미지 랩</h1>
+    <p class="lab-lead">외부 데이터 연결 없이 32개 테스트 에셋과 차트 하부 레이어를 검수합니다. 항목은 세션 미리보기 전용이며 구매하거나 저장할 수 없습니다.</p>
+    <section class="lab-demo">
+      <article id="demoCard" class="lab-card">
+        <div class="lab-profile" id="demoProfile"></div>
+        <div class="lab-chart v2-plot-host" id="demoPlot"><canvas id="demoCanvas"></canvas></div>
+      </article>
+      <div class="lab-status"><span>이미지는 캔버스 아래 · 중앙 가독성 마스크 적용</span><span id="status">32 / 32</span></div>
+    </section>
+    <div id="catalog"></div>
+  </main>
+  <script type="module">
+    import{SHOWROOM_CATALOG_V2,SHOWROOM_CATEGORIES,SHOWROOM_DEFAULTS}from'./js/showroom-catalog-v2.js';
+    import{CATEGORY_META,RARITY_META,applyCardV2,decoratePlotV2,getChartDecorationsV2,profileVisualV2,renderCatalogPreviewV2}from'./js/showroom-v2.js';
+    const byCategory=category=>SHOWROOM_CATALOG_V2.filter(entry=>entry.category===category);
+    const loadout={...SHOWROOM_DEFAULTS,trophy:[]};
+    for(const category of SHOWROOM_CATEGORIES){const first=byCategory(category)[0];loadout[category]=category==='trophy'?[first.id]:first.id}
+    const card=document.getElementById('demoCard'),plot=document.getElementById('demoPlot'),canvas=document.getElementById('demoCanvas');
+    const imageCache=new Map();
+    function imageFor(src){if(!src)return null;if(!imageCache.has(src)){const image=new Image();image.onload=drawChart;image.src=src;imageCache.set(src,image)}return imageCache.get(src)}
+    function drawMarker(ctx,image,x,y,color){if(image?.complete&&image.naturalWidth){ctx.save();ctx.shadowColor='#000';ctx.shadowBlur=7;ctx.drawImage(image,x-15,y-15,30,30);ctx.restore()}else{ctx.beginPath();ctx.arc(x,y,7,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();ctx.strokeStyle='#07101a';ctx.lineWidth=2;ctx.stroke()}}
+    function drawChart(){
+      const rect=canvas.getBoundingClientRect(),dpr=Math.min(2,devicePixelRatio||1),w=Math.max(320,Math.round(rect.width*dpr)),h=Math.max(180,Math.round(rect.height*dpr));
+      if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h}const ctx=canvas.getContext('2d');ctx.clearRect(0,0,w,h);ctx.save();ctx.scale(dpr,dpr);const W=w/dpr,H=h/dpr,L=45,R=W-18,T=18,B=H-31;
+      ctx.strokeStyle='rgba(255,255,255,.14)';ctx.lineWidth=1;ctx.font='10px system-ui';ctx.fillStyle='rgba(255,255,255,.68)';ctx.textAlign='right';
+      for(let i=0;i<5;i++){const y=T+(B-T)*i/4;ctx.beginPath();ctx.moveTo(L,y);ctx.lineTo(R,y);ctx.stroke();ctx.fillText(String(86-i*4),L-7,y+3)}
+      const points=[[L,B-22],[L+(R-L)*.17,B-51],[L+(R-L)*.34,B-43],[L+(R-L)*.51,B-82],[L+(R-L)*.68,B-74],[L+(R-L)*.84,B-112],[R,B-96]];
+      const decoration=getChartDecorationsV2(loadout),line=decoration.actualColor||'#00e5aa';ctx.strokeStyle=line;ctx.lineWidth=3;ctx.lineJoin='round';ctx.beginPath();points.forEach(([x,y],index)=>index?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.stroke();
+      const marker=imageFor(decoration.markerAsset);drawMarker(ctx,marker,points[0][0],points[0][1],line);drawMarker(ctx,marker,points[5][0],points[5][1],line);drawMarker(ctx,marker,points[6][0],points[6][1],line);
+      ctx.fillStyle='rgba(255,255,255,.7)';ctx.textAlign='center';['1주','2주','3주','4주'].forEach((label,index)=>ctx.fillText(label,L+(R-L)*index/3,H-10));ctx.restore();
+    }
+    function renderDemo(){
+      document.getElementById('demoProfile').innerHTML=`${profileVisualV2(loadout,48)}<span>마웨그 탐험가</span>`;applyCardV2(card,loadout);decoratePlotV2(plot,loadout);drawChart();document.querySelectorAll('[data-item]').forEach(button=>button.classList.toggle('active',Object.values(loadout).flat().includes(button.dataset.item)));
+    }
+    document.getElementById('catalog').innerHTML=SHOWROOM_CATEGORIES.map(category=>`<section><div class="lab-head"><h2>${CATEGORY_META[category].icon} ${CATEGORY_META[category].name}</h2><span class="lab-count">4개 · 테스트 전용</span></div><div class="lab-grid">${byCategory(category).map(entry=>`<button class="lab-item" data-item="${entry.id}" data-category="${category}"><span class="lab-visual">${renderCatalogPreviewV2(entry)}</span><b style="color:${RARITY_META[entry.rarity].color}">${entry.name}</b><small>${entry.id} · ${RARITY_META[entry.rarity].label} · 구매 불가</small></button>`).join('')}</div></section>`).join('');
+    document.querySelectorAll('[data-item]').forEach(button=>button.addEventListener('click',()=>{const category=button.dataset.category;if(category==='trophy'){loadout.trophy=[button.dataset.item]}else loadout[category]=button.dataset.item;renderDemo()}));
+    const probes=SHOWROOM_CATALOG_V2.map(entry=>new Promise(resolve=>{const image=new Image();image.onload=()=>resolve(true);image.onerror=()=>resolve(false);image.src=entry.asset}));Promise.all(probes).then(results=>{const loaded=results.filter(Boolean).length;document.getElementById('status').textContent=`${loaded} / ${results.length}`;document.getElementById('status').style.color=loaded===results.length?'#00e5aa':'#ff6b6b'});
+    addEventListener('resize',drawChart);renderDemo();
+  </script>
+</body>
+</html>

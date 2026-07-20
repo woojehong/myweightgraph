@@ -9,8 +9,8 @@ import { firebaseConfig, DEFAULT_GOAL }               from "./firebase-config.js
 import { sha256 }                                     from "./auth.js";
 import { DAILY_REWARD_POINTS, activityDay, isCurrentActivityDay,
          isDailyComplete }                            from "./daily-rewards.js";
-import { getCatalogItemV2, normalizeLoadoutV2, selectedItemIdsV2,
-         ownedItemIdsV2 }                             from "./showroom-v2.js";
+import { getCatalogItemV2, normalizeLoadoutV2, persistableLoadoutV2,
+         validateCatalogPurchaseV2, selectedItemIdsV2, ownedItemIdsV2 } from "./showroom-v2.js";
 
 const app  = initializeApp(firebaseConfig);
 const db   = getFirestore(app);
@@ -137,11 +137,8 @@ export async function updateUser(userId, data) {
 // 확인하므로 빠른 중복 클릭이나 여러 탭 구매로 인한 이중 차감을 막는다.
 // 기존 users/{uid}.coins 및 updateUser 기반 문서 구조는 그대로 유지한다.
 export async function purchaseCatalogItemsV2(userId, itemIds) {
+  const items=validateCatalogPurchaseV2(itemIds);
   await _ready;
-  const requested=[...new Set(Array.isArray(itemIds)?itemIds:[itemIds])];
-  const items=requested.map(getCatalogItemV2);
-  if(items.some(item=>item?.acquisition==='achievement_only')) throw new Error('업적으로만 획득할 수 있는 칭호입니다.');
-  if(!items.length||items.some(item=>!item||!Number.isFinite(item.price)||item.price<0)) throw new Error('구매할 수 없는 스킨입니다.');
   const userRef = doc(db, 'users', userId);
   return runTransaction(db, async tx => {
     const snap = await tx.get(userRef);
@@ -161,13 +158,15 @@ export async function purchaseCatalogItemsV2(userId, itemIds) {
 export const purchaseShowroomItem=(userId,itemId)=>purchaseCatalogItemsV2(userId,[itemId]);
 
 export async function saveShowroomLoadoutV2(userId,rawLoadout){
-  await _ready;const clean=normalizeLoadoutV2(rawLoadout),userRef=doc(db,'users',userId);
+  await _ready;const clean=persistableLoadoutV2(rawLoadout),userRef=doc(db,'users',userId);
   return runTransaction(db,async tx=>{const snap=await tx.get(userRef);if(!snap.exists())throw new Error('사용자를 찾을 수 없습니다.');const user=snap.data(),owned=ownedItemIdsV2(user);const missing=selectedItemIdsV2(clean).filter(id=>!owned.has(id));if(missing.length)throw new Error('미보유 스킨은 저장할 수 없습니다.');tx.update(userRef,{showroomLoadoutV2:clean});return clean});
 }
 
 export async function adminSetCatalogOwnershipV2(userId,itemIds,grant=true){
+  const requested=[...new Set(Array.isArray(itemIds)?itemIds:[itemIds])];
+  if(requested.some(id=>getCatalogItemV2(id)?.testOnly))throw new Error('테스트 아이템은 소유권을 추가하거나 회수할 수 없습니다.');
   await _ready;if(auth.currentUser?.uid!==ADMIN_UID)throw new Error('슈퍼관리자 권한이 필요합니다.');
-  const ids=[...new Set((Array.isArray(itemIds)?itemIds:[itemIds]).filter(id=>getCatalogItemV2(id)))],userRef=doc(db,'users',userId);
+  const ids=requested.filter(id=>{const item=getCatalogItemV2(id);return item&&item.purchasable!==false}),userRef=doc(db,'users',userId);
   return runTransaction(db,async tx=>{const snap=await tx.get(userRef);if(!snap.exists())throw new Error('사용자를 찾을 수 없습니다.');const user=snap.data(),current=new Set(user.adminGrantedItems||[]);ids.forEach(id=>grant?current.add(id):current.delete(id));const nextUser={...user,adminGrantedItems:[...current]},owned=ownedItemIdsV2(nextUser),loadout=normalizeLoadoutV2(user.showroomLoadoutV2);for(const category of Object.keys(loadout)){if(Array.isArray(loadout[category]))loadout[category]=loadout[category].filter(id=>owned.has(id));else if(loadout[category]&&!owned.has(loadout[category]))loadout[category]=normalizeLoadoutV2({})[category]}tx.update(userRef,{adminGrantedItems:[...current],showroomLoadoutV2:loadout});return {adminGrantedItems:[...current],showroomLoadoutV2:loadout}});
 }
 export async function deleteUser(userId) {
