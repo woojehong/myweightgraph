@@ -67,7 +67,10 @@ const pricePlan = [200,220,240,260,300,320,360,400,500,550,600,650,700,750,800,1
 
 export const SHOWROOM_CATEGORIES = Object.freeze(Object.keys(categorySpecs));
 export const SHOWROOM_DEFAULTS = Object.freeze({ graph_skin:null, card_theme:null, point_marker:null, companion:null, ambient_effect:null, trophy:[], profile_emoji:null, emoji_border:null });
-export const SHOWROOM_CATALOG_V2 = Object.freeze(SHOWROOM_CATEGORIES.flatMap(category => categorySpecs[category].slice(0,category==='companion'?8:30).map(([slug,name,visual], index) => Object.freeze({ id:`${categoryPrefixes[category]}_${slug.replaceAll('-','_')}`, category, name, rarity:rarityPlan[index], price:pricePlan[index], visual, implKey:`${category}:${slug}` }))));
+const stableIdAliases={
+  'ambient_effect:wind-trail':'ae_wind','ambient_effect:astral-vortex':'ae_astral','ambient_effect:void-rift':'ae_void','ambient_effect:abyss-current':'ae_abyss','ambient_effect:thunder-ring':'ae_thunder','ambient_effect:geo-rune':'ae_rune','ambient_effect:crystal-shard':'ae_crystal',
+};
+export const SHOWROOM_CATALOG_V2 = Object.freeze(SHOWROOM_CATEGORIES.flatMap(category => categorySpecs[category].slice(0,category==='companion'?8:30).map(([slug,name,visual], index) => Object.freeze({ id:stableIdAliases[`${category}:${slug}`]||`${categoryPrefixes[category]}_${slug.replaceAll('-','_')}`, category, name, rarity:rarityPlan[index], price:pricePlan[index], visual, implKey:`${category}:${slug}` }))));
 
 export function assertShowroomCatalogV2(catalog = SHOWROOM_CATALOG_V2) {
   const expectedRarities = { common:8, uncommon:7, rare:6, epic:5, legendary:4 };

@@ -32,6 +32,20 @@ const borderSvgs=SHOWROOM_CATALOG_V2.filter(i=>i.category==='emoji_border').map(
 assert.equal(new Set(borderSvgs).size,30,'all border layout signatures must be unique');
 for(const [category,render] of [['companion',renderCompanionV2],['trophy',renderTrophyV2],['point_marker',renderMarkerV2],['profile_emoji',renderProfileEmojiV2]]){const signatures=SHOWROOM_CATALOG_V2.filter(i=>i.category===category).map(i=>render(i.id).replace(/hsl\([^)]*\)/g,'COLOR').replace(/fill="#[^"]+"/g,'')),expected=category==='companion'?8:30;assert.equal(new Set(signatures).size,expected,`${category} structural signatures`)}
 const ambientSignatures=SHOWROOM_CATALOG_V2.filter(i=>i.category==='ambient_effect').map(i=>renderAmbientV2(i.id).replace(/hsl\([^)]*\)/g,'COLOR').replace(/--ambient-h:\d+/g,''));assert.ok(new Set(ambientSignatures).size>=15);
+const signatureBorders=['eb_astral_portal','eb_frost_spikes','eb_ember_chain','eb_arcane_orbit','eb_primordial_serpent','eb_abyss_tentacles','eb_clockwork_dial','eb_worldroot_arch','eb_drake_wings','eb_dawn_throne'];
+const signatureAmbients=['ae_wind','ae_astral','ae_gold_sand','ae_void','ae_abyss','ae_thunder','ae_rune','ae_crystal','ae_dust','ae_dawn_blessing'];
+assert.equal(new Set(signatureBorders.map(id=>renderEmojiBorderV2(id).match(/data-signature="([^"]+)"/)?.[1])).size,10);
+assert.equal(new Set(signatureAmbients.map(id=>renderAmbientV2(id).match(/data-signature="([^"]+)"/)?.[1])).size,10);
+for(const id of [...signatureBorders,...signatureAmbients])assert.ok(getCatalogItemV2(id),id);
+const requiredBorderParts=[['left-door','orbit-outer'],['ice-spikes','ice-crystal'],['chain-links','padlock'],['orbit-a','rune-n'],['dragon-one','dragon-two'],['tentacle-one','rear-eye'],['octagonal-plate','gear'],['root-left','leaf-right'],['left-wing','right-wing'],['throne-seat','crown']];
+signatureBorders.forEach((id,i)=>{const html=renderEmojiBorderV2(id);for(const part of requiredBorderParts[i])assert.ok(html.includes(`data-part="${part}"`),`${id}:${part}`);assert.equal(html.includes('fill="#000'),false,id)});
+const requiredAmbientParts=[['slash-one','cut-surface'],['clock-arc','reverse-arrow'],['chest-base','vertical-light'],['rift-main','rift-left'],['water-one','creature-shadow'],['record-high','bolt-two'],['left-page','geometry'],['glass-frame','glass-shards'],['fragment-triangle','up-arrows'],['light-column','halo']];
+signatureAmbients.forEach((id,i)=>{const html=renderAmbientV2(id);for(const part of requiredAmbientParts[i])assert.ok(html.includes(`data-part="${part}"`),`${id}:${part}`);assert.equal(html.includes('<i '),false,id);assert.ok(html.includes('fill="none"'),id)});
+assert.ok(renderAmbientV2('ae_wind').includes('data-state="sequence"'));
+const restCss=await readFile(new URL('../css/rest-state.css',import.meta.url),'utf8');assert.ok(restCss.includes('[data-state="rest"]'));assert.ok(restCss.includes('animation-fill-mode:forwards'));
+const lab=await readFile(new URL('../visual-lab.html',import.meta.url),'utf8');for(const id of [...signatureBorders,...signatureAmbients])assert.ok(lab.includes(id),`lab:${id}`);assert.ok(lab.includes('renderEmojiBorderV2'));assert.ok(lab.includes('renderAmbientV2'));assert.equal(lab.includes('firebase'),false);
+const signatureCss=await readFile(new URL('../css/signature-v2.css',import.meta.url),'utf8');assert.equal((signatureCss.match(/@keyframes /g)||[]).length,20);assert.ok(signatureCss.includes('prefers-reduced-motion'));
+const policyCss=await readFile(new URL('../css/signature-policy.css',import.meta.url),'utf8');assert.ok(policyCss.includes('animation-iteration-count:1'));
 const graphFamilies=new Set(SHOWROOM_CATALOG_V2.filter(i=>i.category==='graph_skin').map(i=>getChartDecorationsV2({graph_skin:i.id}).graphFamily));assert.equal(graphFamilies.size,15);
 const cardFamilies=new Set(SHOWROOM_CATALOG_V2.filter(i=>i.category==='card_theme').map(i=>renderCatalogPreviewV2(i).match(/data-family="(\d+)"/)?.[1]));assert.equal(cardFamilies.size,15);
 assert.ok(getChartDecorationsV2({point_marker:'pm_dawn_relic'}).markerIndex>=0);
@@ -43,6 +57,8 @@ const pageNames=['input.html','dashboard.html','compare.html','achievements.html
 const labels=['데이터 입력','내 그래프','우리 그래프','업적','쇼룸'];
 for(const name of pageNames){const html=await readFile(new URL(`../${name}`,import.meta.url),'utf8');const pos=labels.map(label=>html.indexOf(`label:'${label}'`)>=0?html.indexOf(`label:'${label}'`):html.indexOf(`label: '${label}'`));assert.ok(pos.every(n=>n>=0),name);assert.deepEqual([...pos].sort((a,b)=>a-b),pos,name);assert.equal(html.includes("label:'상점'"),false,name)}
 const showroom=await readFile(new URL('../dressroom.html',import.meta.url),'utf8');assert.ok(showroom.includes('purchaseCatalogItemsV2'));assert.ok(showroom.includes('saveShowroomLoadoutV2'));assert.ok(showroom.includes('현재 조합 일괄 구매'));assert.ok(showroom.includes('unownedSelectionV2'));
+for(const label of ['기본 그래프','기본 카드','기본 포인트','동반자 없음','효과 없음','트로피 전시 안 함','기본 이모티콘(⚖️)','테두리 없음','칭호 없음'])assert.ok(showroom.includes(label),`missing synthetic default: ${label}`);
+assert.ok(showroom.includes("draft.trophy=[]"));assert.ok(showroom.includes("draft[category]=null"));assert.ok(showroom.includes("o==='unowned'"));assert.ok(showroom.includes('defaultCard()+filtered()'));
 assert.ok(showroom.includes('구매 확인'));assert.ok(showroom.includes('처리 중…'));assert.ok(showroom.includes("acquisition!=='achievement_only'"));
 const shop=await readFile(new URL('../shop.html',import.meta.url),'utf8');assert.ok(shop.includes("location.replace('dressroom.html'+q)"));
 const dashboard=await readFile(new URL('../dashboard.html',import.meta.url),'utf8');assert.equal(dashboard.includes('chartDecorations:'),false);

@@ -1,8 +1,8 @@
-const CACHE = 'weight-v57-showroom-v2';
+const CACHE = 'weight-v58-signature-lab';
 const ASSETS = [
   './index.html', './dashboard.html', './input.html', './import.html',
-  './achievements.html', './compare.html', './dressroom.html', './shop.html', './guide.html',
-  './css/style.css',
+  './achievements.html', './compare.html', './dressroom.html', './shop.html', './guide.html', './visual-lab.html',
+  './css/style.css', './css/signature-v2.css', './css/signature-policy.css', './css/lab-fix.css', './css/rest-state.css',
   './js/firebase-config.js', './js/db.js', './js/auth.js',
   './js/chart-render.js', './js/achievements.js', './js/achievements-engine.js',
   './js/util.js', './js/daily-rewards.js', './js/showroom-v2.js',
