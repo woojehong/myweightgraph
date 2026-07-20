@@ -13,7 +13,7 @@ import {
   ownedItemIdsV2, unownedSelectionV2, persistableLoadoutV2, validateCatalogPurchaseV2,
   renderEmojiBorderV2, getChartDecorationsV2,
   renderCompanionV2, renderTrophyV2, renderMarkerV2, renderProfileEmojiV2,
-  renderAmbientV2, renderCatalogPreviewV2,
+  renderAmbientV2, renderCatalogPreviewV2, applyCardV2,
 } from '../js/showroom-v2.js';
 
 assert.equal(assertShowroomCatalogV2(),true);
@@ -80,6 +80,17 @@ for(const entry of SHOWROOM_CATALOG_V2){
     assert.equal(bytes.subarray(8,12).toString(),'WEBP',entry.id);
   }
 }
+function webpDimensions(bytes){
+  const kind=bytes.subarray(12,16).toString();
+  if(kind==='VP8 ')return{width:bytes.readUInt16LE(26)&0x3fff,height:bytes.readUInt16LE(28)&0x3fff};
+  if(kind==='VP8X')return{width:1+bytes.readUIntLE(24,3),height:1+bytes.readUIntLE(27,3)};
+  if(kind==='VP8L'){const b1=bytes[21],b2=bytes[22],b3=bytes[23],b4=bytes[24];return{width:1+(b1|((b2&0x3f)<<8)),height:1+((b2>>6)|(b3<<2)|((b4&15)<<10))}}
+  throw new Error(`unsupported WebP chunk ${kind}`);
+}
+for(const entry of SHOWROOM_CATALOG_V2.filter(item=>item.category==='graph_skin')){
+  const bytes=await readFile(new URL(`../${entry.asset.replace(/^\.\//,'')}`,import.meta.url)),size=webpDimensions(bytes);
+  assert.equal(size.width*9,size.height*16,`${entry.id}: source graph skin must be exactly 16:9`);
+}
 
 for(const [category,render] of [['companion',renderCompanionV2],['trophy',renderTrophyV2],['point_marker',renderMarkerV2],['profile_emoji',renderProfileEmojiV2],['emoji_border',renderEmojiBorderV2]]){
   for(const entry of SHOWROOM_CATALOG_V2.filter(item=>item.category===category)){
@@ -91,6 +102,21 @@ for(const entry of SHOWROOM_CATALOG_V2.filter(item=>item.category==='ambient_eff
 }
 for(const entry of SHOWROOM_CATALOG_V2)assert.ok(renderCatalogPreviewV2(entry).includes(entry.asset),entry.id);
 
+let removedOldFrame=false,prependedFrame=null;
+const fakeProfile={
+  dataset:{},querySelector:selector=>selector===':scope > .v3-card-theme-frame'?{remove(){removedOldFrame=true}}:null,
+  removeAttribute(name){delete this.dataset[name]},prepend(frame){prependedFrame=frame},
+};
+const fakeCard={matches:()=>false,querySelector:selector=>selector===':scope > .cmp-profile'?fakeProfile:null};
+const previousDocument=globalThis.document;
+globalThis.document={createElement:tag=>({tagName:tag.toUpperCase(),setAttribute(name,value){this[name]=value}})};
+try{
+  assert.equal(applyCardV2(fakeCard,{card_theme:'ct_alpine_dawn'}),true);
+  assert.equal(removedOldFrame,true);assert.equal(prependedFrame.tagName,'IMG');assert.equal(prependedFrame.className,'v3-card-theme-frame');
+  assert.equal(prependedFrame.src,'./assets/showroom-v3/card_theme/ct_alpine_dawn.webp');assert.equal(prependedFrame['aria-hidden'],'true');
+  assert.equal(fakeProfile.dataset.cardPreset,'ct_alpine_dawn');assert.equal('style' in fakeCard,false,'card background style must not be injected');
+}finally{if(previousDocument===undefined)delete globalThis.document;else globalThis.document=previousDocument}
+
 const achIds=new Set(ACHIEVEMENTS.map(achievement=>achievement.id));
 for(const [achId,ids] of Object.entries(ACHIEVEMENT_ITEM_REWARDS_V2)){
   assert.ok(achIds.has(achId),achId);for(const id of ids)assert.ok(getCatalogItemV2(id),`${achId}:${id}`);
@@ -101,11 +127,16 @@ assert.ok(visualLab.includes('SHOWROOM_CATALOG_V2'));assert.ok(visualLab.include
 assert.ok(visualLab.includes('data-main-weight-plot="true"'));
 assert.ok(visualLab.includes('data-subgraph="diet"'));assert.ok(visualLab.includes('data-subgraph="exercise"'));
 const css=await readFile(new URL('../css/style.css',import.meta.url),'utf8');
-for(const token of ['.v3-main-plot-decor','aspect-ratio:16/9','z-index:0','.v3-ambient-layer','mask-image:radial-gradient','.v2-plot-host>canvas','z-index:2!important','.v2-companion','.v2-trophies'])assert.ok(css.includes(token),token);
+for(const token of ['.v3-main-plot-decor','background:transparent','aspect-ratio:16/9','.v3-graph-layer{z-index:1;opacity:.9;display:block;object-fit:fill!important','.v3-ambient-layer','mask-image:radial-gradient','.v2-plot-host>canvas','z-index:2!important','.v2-companion','.v2-trophies','.v3-card-theme-frame','object-fit:fill','mask-composite:exclude'])assert.ok(css.includes(token),token);
 assert.equal(css.includes('.v3-card-plot-layer'),false,'card theme must not create a graph layer');
+assert.equal(css.includes('.showroom-v2-card::before'),false,'card theme must not become a card background');
+assert.equal(css.includes('--v3-card-image'),false,'card theme background variable must be retired');
 const renderer=await readFile(new URL('../js/showroom-v2.js',import.meta.url),'utf8');
+const cardApplicator=renderer.slice(renderer.indexOf('export function applyCardV2'),renderer.indexOf('export function decorateMainPlotV2'));
+for(const token of ["querySelector?.(':scope > .cmp-profile')","document.createElement('img')",'v3-card-theme-frame','profile.prepend(frame)'])assert.ok(cardApplicator.includes(token),token);
+for(const forbidden of ['style.setProperty','background','--v3-card-image','showroom-v2-card'])assert.equal(cardApplicator.includes(forbidden),false,`card theme must not inject ${forbidden}`);
 const mainPlotDecorator=renderer.slice(renderer.indexOf('export function decorateMainPlotV2'),renderer.indexOf('export function renderCatalogPreviewV2'));
-for(const token of ['[data-main-weight-plot="true"]','v3-main-plot-decor','v3-graph-layer',"dataset.aspectRatio='16:9'"])assert.ok(mainPlotDecorator.includes(token),token);
+for(const token of ['[data-main-weight-plot="true"]','v3-main-plot-decor','v3-graph-layer',"dataset.aspectRatio='16:9'","dataset.hasGraph=graph?'true':'false'"])assert.ok(mainPlotDecorator.includes(token),token);
 assert.equal(mainPlotDecorator.includes('card_theme'),false,'card theme is card-only');
 assert.equal(mainPlotDecorator.includes('v3-card-plot-layer'),false,'card theme layer must not be injected into plots');
 assert.ok(renderer.includes('options.mainPlot===true?decorateMainPlotV2(plot,raw):false'),'legacy API must require explicit mainPlot opt-in');

@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://myweightgraph.local/schemas/showroom-v4-manifest.schema.json",
+  "title": "Showroom V4 staging manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "catalogVersion", "status", "assetRoot", "categories", "rarities", "variantsPerRarity", "defaults", "qualityTiers", "items"],
+  "properties": {
+    "schemaVersion": { "const": "showroom-v4/1" },
+    "catalogVersion": { "const": "v4" },
+    "status": { "const": "staging" },
+    "assetRoot": { "const": "./assets/showroom-v4" },
+    "categories": {
+      "const": ["graph_skin", "card_theme", "point_marker", "companion", "ambient_effect", "trophy", "profile_emoji", "emoji_border"]
+    },
+    "rarities": { "const": ["uncommon", "rare", "epic", "legendary"] },
+    "variantsPerRarity": { "const": 3 },
+    "defaults": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["graph_skin", "card_theme", "point_marker", "companion", "ambient_effect", "trophy", "profile_emoji", "emoji_border"],
+      "properties": {
+        "graph_skin": { "type": "null" }, "card_theme": { "type": "null" }, "point_marker": { "type": "null" },
+        "companion": { "type": "null" }, "ambient_effect": { "type": "null" }, "trophy": { "const": [] },
+        "profile_emoji": { "type": "null" }, "emoji_border": { "type": "null" }
+      }
+    },
+    "qualityTiers": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["uncommon", "rare", "epic", "legendary"],
+      "properties": {
+        "uncommon": { "$ref": "#/$defs/qualityTier" }, "rare": { "$ref": "#/$defs/qualityTier" },
+        "epic": { "$ref": "#/$defs/qualityTier" }, "legendary": { "$ref": "#/$defs/qualityTier" }
+      }
+    },
+    "items": {
+      "type": "array", "minItems": 96, "maxItems": 96,
+      "items": { "$ref": "#/$defs/item" }
+    }
+  },
+  "$defs": {
+    "qualityTier": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "rank", "label", "renderScale", "compressionTarget", "reviewGate"],
+      "properties": {
+        "id": { "enum": ["quality_1", "quality_2", "quality_3", "quality_4"] },
+        "rank": { "type": "integer", "minimum": 1, "maximum": 4 },
+        "label": { "type": "string", "minLength": 1 },
+        "renderScale": { "type": "number", "minimum": 1 },
+        "compressionTarget": { "type": "integer", "minimum": 1, "maximum": 100 },
+        "reviewGate": { "enum": ["standard", "enhanced", "premium", "hero"] }
+      }
+    },
+    "motionLayer": {
+      "type": "object", "additionalProperties": false,
+      "required": ["enabled", "kind", "asset", "loop", "durationMs", "opacity", "blendMode"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "kind": { "enum": ["none", "css-loop", "sprite-sheet"] },
+        "asset": { "type": ["string", "null"] },
+        "loop": { "type": "boolean" },
+        "durationMs": { "type": ["integer", "null"], "minimum": 1 },
+        "opacity": { "type": "number", "minimum": 0, "maximum": 1 },
+        "blendMode": { "enum": ["normal", "screen", "multiply", "overlay", "soft-light"] }
+      }
+    },
+    "item": {
+      "type": "object", "additionalProperties": false,
+      "required": ["slot", "id", "category", "rarity", "variant", "name", "visual", "asset", "mimeType", "width", "height", "byteLength", "sha256", "price", "qualityTier", "motionLayer", "testOnly", "purchasable", "persistable"],
+      "properties": {
+        "slot": { "type": "string", "pattern": "^[a-z_]+:(uncommon|rare|epic|legendary):0[1-3]$" },
+        "id": { "type": "string", "pattern": "^[a-z0-9_]+$" },
+        "category": { "enum": ["graph_skin", "card_theme", "point_marker", "companion", "ambient_effect", "trophy", "profile_emoji", "emoji_border"] },
+        "rarity": { "enum": ["uncommon", "rare", "epic", "legendary"] },
+        "variant": { "type": "integer", "minimum": 1, "maximum": 3 },
+        "name": { "type": "string", "minLength": 1 }, "visual": { "type": "string", "minLength": 1 },
+        "asset": { "type": "string", "pattern": "^\\./assets/showroom-v4/" },
+        "mimeType": { "enum": ["image/png", "image/webp"] },
+        "width": { "type": "integer", "minimum": 1 }, "height": { "type": "integer", "minimum": 1 },
+        "byteLength": { "type": "integer", "minimum": 1 }, "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "price": { "type": "null" }, "qualityTier": { "enum": ["quality_1", "quality_2", "quality_3", "quality_4"] },
+        "motionLayer": { "$ref": "#/$defs/motionLayer" },
+        "testOnly": { "const": true }, "purchasable": { "const": false }, "persistable": { "const": false }
+      }
+    }
+  }
+}

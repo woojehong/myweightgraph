@@ -123,15 +123,16 @@ export function getChartDecorationsV2(raw){
 }
 
 export function applyCardV2(card,raw){
-  if(!card)return;
+  if(!card)return false;
   const loadout=normalizeLoadoutV2(raw),theme=getCatalogItemV2(loadout.card_theme);
-  card.classList.remove('showroom-v2-card');
-  card.style.removeProperty('--v3-card-image');
-  card.removeAttribute('data-card-preset');
-  if(!theme)return;
-  card.classList.add('showroom-v2-card');
-  card.style.setProperty('--v3-card-image',`url("${theme.asset}")`);
-  card.dataset.cardPreset=theme.id;
+  const profile=card.matches?.('.cmp-profile')?card:card.querySelector?.(':scope > .cmp-profile');
+  profile?.querySelector(':scope > .v3-card-theme-frame')?.remove();
+  profile?.removeAttribute('data-card-preset');
+  if(!theme||!profile)return false;
+  const frame=document.createElement('img');
+  frame.className='v3-card-theme-frame';frame.src=theme.asset;frame.alt='';frame.setAttribute('aria-hidden','true');
+  profile.prepend(frame);profile.dataset.cardPreset=theme.id;
+  return true;
 }
 
 export function decorateMainPlotV2(plot,raw){
@@ -142,7 +143,7 @@ export function decorateMainPlotV2(plot,raw){
   const trophies=loadout.trophy.map(getCatalogItemV2).filter(Boolean);
   if(!graph&&!ambient&&!companion&&!trophies.length)return false;
   const host=document.createElement('div');
-  host.className='v3-main-plot-decor';host.setAttribute('aria-hidden','true');host.dataset.showroomMainPlot='true';host.dataset.aspectRatio='16:9';
+  host.className='v3-main-plot-decor';host.setAttribute('aria-hidden','true');host.dataset.showroomMainPlot='true';host.dataset.aspectRatio='16:9';host.dataset.hasGraph=graph?'true':'false';
   host.innerHTML=`${img(graph,'v3-graph-layer')}${img(ambient,'v3-ambient-layer')}<span class="v3-plot-scrim"></span>${companion?`<span class="v2-companion">${renderCompanionV2(companion.id)}</span>`:''}<span class="v2-trophies">${trophies.map(entry=>renderTrophyV2(entry.id)).join('')}</span>`;
   plot.prepend(host);
   return true;
