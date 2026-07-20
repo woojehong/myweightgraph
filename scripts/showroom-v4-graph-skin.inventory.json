@@ -1,0 +1,18 @@
+{
+  "schemaVersion": "showroom-v4-category-inventory/1",
+  "category": "graph_skin",
+  "items": [
+    {"slot":"graph_skin:uncommon:01","id":"gs_v4_uncommon_01","category":"graph_skin","rarity":"uncommon","variant":1,"name":"그을음목 장부","visual":"그을음목과 장부 장식의 그래프 배경","file":"graph_skin/gs4_uncommon_sootwood_ledger.webp"},
+    {"slot":"graph_skin:uncommon:02","id":"gs_v4_uncommon_02","category":"graph_skin","rarity":"uncommon","variant":2,"name":"드워프 대장장이 동판","visual":"드워프 대장장이의 구리 동판 그래프 배경","file":"graph_skin/gs4_uncommon_dwarfsmith_copperplate.webp"},
+    {"slot":"graph_skin:uncommon:03","id":"gs_v4_uncommon_03","category":"graph_skin","rarity":"uncommon","variant":3,"name":"밤감시대 모직 기록판","visual":"밤감시대 모직 기록판 그래프 배경","file":"graph_skin/gs4_uncommon_nightwatch_felt.webp"},
+    {"slot":"graph_skin:rare:01","id":"gs_v4_rare_01","category":"graph_skin","rarity":"rare","variant":1,"name":"별측량사의 천구의","visual":"별측량사의 천구의가 둘러싼 그래프 배경","file":"graph_skin/gs4_rare_star_surveyor_orrey.webp"},
+    {"slot":"graph_skin:rare:02","id":"gs_v4_rare_02","category":"graph_skin","rarity":"rare","variant":2,"name":"녹음 연금술 작업대","visual":"녹음 연금술 작업대 그래프 배경","file":"graph_skin/gs4_rare_verdant_alchemist.webp"},
+    {"slot":"graph_skin:rare:03","id":"gs_v4_rare_03","category":"graph_skin","rarity":"rare","variant":3,"name":"파도소환사의 조개 기록고","visual":"파도소환사의 조개 기록고 그래프 배경","file":"graph_skin/gs4_rare_tidecaller_archive.webp"},
+    {"slot":"graph_skin:epic:01","id":"gs_v4_epic_01","category":"graph_skin","rarity":"epic","variant":1,"name":"거울 예언자의 좌표판","visual":"거울 예언자의 좌표판 그래프 배경","file":"graph_skin/gs4_epic_mirror_oracle.webp"},
+    {"slot":"graph_skin:epic:02","id":"gs_v4_epic_02","category":"graph_skin","rarity":"epic","variant":2,"name":"폭풍 예언기관","visual":"폭풍 예언기관 그래프 배경","file":"graph_skin/gs4_epic_storm_prophet_engine.webp"},
+    {"slot":"graph_skin:epic:03","id":"gs_v4_epic_03","category":"graph_skin","rarity":"epic","variant":3,"name":"심연 기억직조기","visual":"심연 기억직조기 그래프 배경","file":"graph_skin/gs4_epic_abyssal_memory_loom.webp"},
+    {"slot":"graph_skin:legendary:01","id":"gs_v4_legendary_01","category":"graph_skin","rarity":"legendary","variant":1,"name":"꿈직조자의 무한 베틀","visual":"꿈직조자의 무한 베틀 그래프 배경","file":"graph_skin/gs4_legendary_dreamweaver_loom.webp"},
+    {"slot":"graph_skin:legendary:02","id":"gs_v4_legendary_02","category":"graph_skin","rarity":"legendary","variant":2,"name":"황금 성계 주조소","visual":"황금 성계 주조소 그래프 배경","file":"graph_skin/gs4_legendary_gilded_astral_foundry.webp"},
+    {"slot":"graph_skin:legendary:03","id":"gs_v4_legendary_03","category":"graph_skin","rarity":"legendary","variant":3,"name":"창세의 관문 기록판","visual":"창세의 관문 기록판 그래프 배경","file":"graph_skin/gs4_legendary_genesis_gate.webp"}
+  ]
+}

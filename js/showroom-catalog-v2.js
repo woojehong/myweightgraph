@@ -71,12 +71,10 @@ const SHOWROOM_CATALOG_V3_FALLBACK = Object.freeze(SHOWROOM_CATEGORIES.flatMap(c
   )),
 ));
 const v4Items=Array.isArray(SHOWROOM_V4_RUNTIME?.items)?SHOWROOM_V4_RUNTIME.items:[];
-const hasCompleteV4=v4Items.length===108
-  &&SHOWROOM_CATEGORIES.every(category=>v4Items.filter(item=>item.category===category).length===12)
-  &&v4Items.every(item=>item.testOnly===true&&item.purchasable===false&&item.persistable===false&&item.price===null
-    &&(item.category==='line_style'?item.asset===null&&item.renderSpec:item.asset?.startsWith('./assets/showroom-v4/')));
-export const SHOWROOM_CATALOG_VERSION=hasCompleteV4?'v4':'v3-fallback';
-export const SHOWROOM_CATALOG_V2=Object.freeze(hasCompleteV4?v4Items:SHOWROOM_CATALOG_V3_FALLBACK);
+const completeV4Category=category=>{const entries=v4Items.filter(item=>item.category===category);return entries.length===12&&entries.every(item=>item.testOnly===true&&item.purchasable===false&&item.persistable===false&&item.price===null&&(category==='line_style'?item.asset===null&&item.renderSpec:item.asset?.startsWith(`./assets/showroom-v4/${category}/`)))};
+export const SHOWROOM_V4_ACTIVE_CATEGORIES=Object.freeze(SHOWROOM_CATEGORIES.filter(completeV4Category));
+export const SHOWROOM_CATALOG_VERSION=SHOWROOM_V4_ACTIVE_CATEGORIES.length?`v4-mixed:${SHOWROOM_V4_ACTIVE_CATEGORIES.join(',')}`:'v3-fallback';
+export const SHOWROOM_CATALOG_V2=Object.freeze(SHOWROOM_CATEGORIES.flatMap(category=>completeV4Category(category)?v4Items.filter(item=>item.category===category):SHOWROOM_CATALOG_V3_FALLBACK.filter(item=>item.category===category)));
 
 // Exact V2 ids are retained only as a compatibility index. They are not active catalog entries.
 const LEGACY_IDS_BY_CATEGORY = Object.freeze({
@@ -109,11 +107,10 @@ export const LEGACY_SHOWROOM_ID_ALIASES = Object.freeze(Object.fromEntries(alias
 export const resolveShowroomItemIdV2 = id => typeof id==='string' ? (LEGACY_SHOWROOM_ID_ALIASES[id]||id) : id;
 
 export function assertShowroomCatalogV2(catalog=SHOWROOM_CATALOG_V2){
-  const isV4=catalog.length===108,expectedTotal=isV4?108:32;
-  if(catalog.length!==expectedTotal)throw new Error(`showroom catalog: expected ${expectedTotal} items, got ${catalog.length}`);
+  if(![32,40,48,56,60,64,68,72,76,80,84,88,92,96,100,104,108].includes(catalog.length))throw new Error(`showroom catalog: invalid mixed total ${catalog.length}`);
   const ids=new Set(),assets=new Set();
   for(const category of SHOWROOM_CATEGORIES){
-    const entries=catalog.filter(entry=>entry.category===category),expectedPerCategory=isV4?12:(category==='line_style'?0:4);
+    const entries=catalog.filter(entry=>entry.category===category),expectedPerCategory=entries.length===12?12:(category==='line_style'?0:4);
     if(entries.length!==expectedPerCategory)throw new Error(`${category}: expected ${expectedPerCategory} items, got ${entries.length}`);
     const expected=expectedPerCategory===0?[]:expectedPerCategory===12
       ? ['uncommon','uncommon','uncommon','rare','rare','rare','epic','epic','epic','legendary','legendary','legendary']
