@@ -66,17 +66,18 @@ const rarityPlan = [
 const pricePlan = [200,220,240,260,300,320,360,400,500,550,600,650,700,750,800,1000,1100,1200,1300,1400,1500,1800,2000,2200,2400,2600,3500,4000,4500,5000];
 
 export const SHOWROOM_CATEGORIES = Object.freeze(Object.keys(categorySpecs));
-export const SHOWROOM_DEFAULTS = Object.freeze({ graph_skin:'gs_ink_grid', card_theme:'ct_dark_canvas', point_marker:'pm_ring', companion:'cp_firefly', ambient_effect:'ae_dust', trophy:[], profile_emoji:'pe_squire', emoji_border:'eb_rope_knot' });
-export const SHOWROOM_CATALOG_V2 = Object.freeze(SHOWROOM_CATEGORIES.flatMap(category => categorySpecs[category].map(([slug,name,visual], index) => Object.freeze({ id:`${categoryPrefixes[category]}_${slug.replaceAll('-','_')}`, category, name, rarity:rarityPlan[index], price:pricePlan[index], visual, implKey:`${category}:${slug}` }))));
+export const SHOWROOM_DEFAULTS = Object.freeze({ graph_skin:null, card_theme:null, point_marker:null, companion:null, ambient_effect:null, trophy:[], profile_emoji:null, emoji_border:null });
+export const SHOWROOM_CATALOG_V2 = Object.freeze(SHOWROOM_CATEGORIES.flatMap(category => categorySpecs[category].slice(0,category==='companion'?8:30).map(([slug,name,visual], index) => Object.freeze({ id:`${categoryPrefixes[category]}_${slug.replaceAll('-','_')}`, category, name, rarity:rarityPlan[index], price:pricePlan[index], visual, implKey:`${category}:${slug}` }))));
 
 export function assertShowroomCatalogV2(catalog = SHOWROOM_CATALOG_V2) {
   const expectedRarities = { common:8, uncommon:7, rare:6, epic:5, legendary:4 };
   const priceRanges = { common:[200,400], uncommon:[500,800], rare:[1000,1500], epic:[1800,2600], legendary:[3500,5000] };
-  if (catalog.length !== 240) throw new Error(`showroom catalog: expected 240 items, got ${catalog.length}`);
+  if (catalog.length !== 218) throw new Error(`showroom catalog: expected 218 items, got ${catalog.length}`);
   const ids = new Set();
   for (const category of SHOWROOM_CATEGORIES) {
     const items = catalog.filter(item => item.category === category);
-    if (items.length !== 30) throw new Error(`${category}: expected 30 items, got ${items.length}`);
+    const expectedCount=category==='companion'?8:30;
+    if (items.length !== expectedCount) throw new Error(`${category}: expected ${expectedCount} items, got ${items.length}`);
     const counts = Object.fromEntries(Object.keys(expectedRarities).map(rarity => [rarity,0]));
     for (const item of items) {
       for (const key of ['id','category','name','rarity','price','visual','implKey']) if (item[key] === undefined || item[key] === '') throw new Error(`${item.id || category}: missing ${key}`);
@@ -87,11 +88,11 @@ export function assertShowroomCatalogV2(catalog = SHOWROOM_CATALOG_V2) {
       const [min,max] = priceRanges[item.rarity];
       if (item.price < min || item.price > max) throw new Error(`${item.id}: price ${item.price} outside ${min}-${max}`);
     }
-    for (const [rarity,count] of Object.entries(expectedRarities)) if (counts[rarity] !== count) throw new Error(`${category}: ${rarity} expected ${count}, got ${counts[rarity]}`);
+    for (const [rarity,count] of Object.entries(expectedRarities)) {const expected=category==='companion'?(rarity==='common'?8:0):count;if(counts[rarity] !== expected) throw new Error(`${category}: ${rarity} expected ${expected}, got ${counts[rarity]}`);}
   }
   for (const [category,value] of Object.entries(SHOWROOM_DEFAULTS)) {
     const defaults = Array.isArray(value) ? value : [value];
-    for (const id of defaults) if (!catalog.some(item => item.category === category && item.id === id)) throw new Error(`${category}: invalid default ${id}`);
+    for (const id of defaults) if (id != null && !catalog.some(item => item.category === category && item.id === id)) throw new Error(`${category}: invalid default ${id}`);
   }
   return true;
 }

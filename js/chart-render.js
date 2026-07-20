@@ -237,8 +237,10 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
   function dot(ctx, px, py, color, r) {
     const key=`${Math.round(px)}:${Math.round(py)}`,hit=markerHits.get(key)||0;markerHits.set(key,hit+1);
     const angle=hit*Math.PI*2/3;px+=hit?Math.cos(angle)*9:0;py+=hit?Math.sin(angle)*9:0;
-    const variant=Math.max(0,Number(chartDecorations?.markerIndex)||0),points=4+(variant%5);
+    const rawVariant=Number(chartDecorations?.markerIndex),variant=Number.isFinite(rawVariant)?rawVariant:-1;
     ctx.save();ctx.fillStyle=color;ctx.strokeStyle=BG;ctx.lineWidth=2;ctx.beginPath();
+    if(variant<0){ctx.arc(px,py,r,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.restore();return}
+    const points=4+(variant%5);
     for(let i=0;i<points*2;i++){const a=-Math.PI/2+i*Math.PI/points,rr=i%2?r*.45:r*(1+(variant%3)*.12),x=px+Math.cos(a)*rr,y=py+Math.sin(a)*rr;i?ctx.lineTo(x,y):ctx.moveTo(x,y)}
     ctx.closePath();ctx.fill();ctx.stroke();ctx.restore();
   }
@@ -584,7 +586,8 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
   const canvasBgPlugin = { id:'showroomCanvasBackground', beforeDraw(chart) {
     if (!chartDecorations?.canvasColor) return;
     const { ctx, width, height } = chart;
-    ctx.save(); ctx.fillStyle = chartDecorations.canvasColor; ctx.fillRect(0, 0, width, height); ctx.restore();
+    ctx.save(); ctx.fillStyle = chartDecorations.canvasColor; ctx.fillRect(0, 0, width, height);
+    const f=Number(chartDecorations.graphFamily);if(Number.isFinite(f)){ctx.strokeStyle=chartDecorations.gridColor||'#ffffff18';ctx.lineWidth=1;const step=10+(f%5)*5;ctx.beginPath();if(f%5===0)for(let x=0;x<width;x+=step){ctx.moveTo(x,0);ctx.lineTo(x,height)}if(f%5===1)for(let y=0;y<height;y+=step){ctx.moveTo(0,y);ctx.lineTo(width,y)}if(f%5===2)for(let x=-height;x<width;x+=step){ctx.moveTo(x,0);ctx.lineTo(x+height,height)}if(f%5===3)for(let r=step;r<Math.max(width,height);r+=step){ctx.moveTo(width/2+r,height/2);ctx.arc(width/2,height/2,r,0,Math.PI*2)}if(f%5===4)for(let x=0;x<width;x+=step)for(let y=0;y<height;y+=step){ctx.moveTo(x+2,y);ctx.arc(x,y,2+(f%3),0,Math.PI*2)}ctx.stroke();ctx.globalAlpha=.12+.04*(f%3);ctx.fillStyle=chartDecorations.actualColor||'#fff';if(f>=5)ctx.fillRect((f*17)%width,0,Math.max(2,width/(18-f)),height);if(f>=10)ctx.fillRect(0,(f*13)%height,width,Math.max(2,height/(23-f)));}ctx.restore();
   }};
   const chartRefW = (canvasMain.parentElement && canvasMain.parentElement.clientWidth) || (window.innerWidth - 32);
   // 비교 화면은 메인 플롯 너비를 16:9로 환산하고 기존 서브그래프 예약 높이를 더한다.

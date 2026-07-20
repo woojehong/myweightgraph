@@ -41,7 +41,7 @@ export function normalizeLoadoutV2(raw){
 
 export function ownedItemIdsV2(user){
   return new Set([
-    ...Object.values(SHOWROOM_DEFAULTS).flat(),
+    ...Object.values(SHOWROOM_DEFAULTS).flat().filter(Boolean),
     ...(user?.purchasedItemsV2||[]), ...(user?.achievementRewardItems||[]), ...(user?.adminGrantedItems||[]),
   ]);
 }
@@ -54,15 +54,25 @@ export function unownedSelectionV2(user,raw){return selectedItemIdsV2(raw).filte
 
 function hashSeed(text){let n=2166136261;for(const ch of text)n=Math.imul(n^ch.charCodeAt(0),16777619);return n>>>0}
 function hueFor(item,offset=0){return (hashSeed(item?.implKey||'default')+offset)%360}
+const SHAPES30=[
+'M12 32q8-16 16 0t16 0 8 0 8-8M18 41l5-4m18 4-5-4','M9 16h38l5 8-5 8v19H9V32l-5-8zM14 20h28M14 46h28','M8 42q8-26 24-26t24 26q-8 12-24 12T8 42M20 35q12 8 24 0','M5 28l18-13 9 12 9-12 18 13-14 8-13-6-13 6z','M14 47V23q0-14 18-14t18 14v24M19 26h26M25 34h3m8 0h3','M32 5q18 22 0 48Q14 27 32 5M19 38l-8 5m34-5 8 5','M32 9l9 8 12 2-5 10 3 12-12 1-7 8-7-8-12-1 3-12-5-10 12-2z','M8 24q8-15 18 0l6-9 6 9q10-15 18 0l-10 15H18zM24 45h16','M32 5l8 16 17 2-13 12 4 17-16-8-16 8 4-17L7 23l17-2z','M10 49q2-25 22-39 20 14 22 39M18 44l14-22 14 22','M7 44q8-28 25-35 17 7 25 35l-14-8-11 14-11-14z','M13 51V22l8-10 11 8 11-8 8 10v29M20 30h24M25 39h14','M8 32q12-20 24 0 12-20 24 0-12 20-24 20T8 32','M7 40q10-30 25-30t25 30l-16-7-9 16-9-16z','M12 51q-4-23 20-42 24 19 20 42M20 40l12-18 12 18','M32 4l9 17 18 4-13 12 3 19-17-9-17 9 3-19L5 25l18-4zM22 31h20','M5 35q13-26 27-10 14-16 27 10-15 2-27 16Q20 37 5 35','M32 6c16 0 25 12 25 25S48 56 32 56 7 44 7 31 16 6 32 6zm-12 25q12-12 24 0-12 12-24 0','M32 5l6 12 13-4-4 13 12 6-12 6 4 13-13-4-6 12-6-12-13 4 4-13-12-6 12-6-4-13 13 4z','M6 39q7-24 26-30 19 6 26 30l-10 14-16-7-16 7zM18 31h28','M10 50V23l10-14 12 12L44 9l10 14v27M18 42h28','M8 47q12-30 24-38 12 8 24 38l-14-9-10 15-10-15zM25 29h14','M12 49q-6-25 20-42 26 17 20 42M18 28q14 14 28 0','M7 53q5-34 25-46 20 12 25 46l-17-9-8 12-8-12z','M5 45l13-32 14 13 14-13 13 32-18-5-9 15-9-15z','M32 4l8 17 18 3-13 13 4 19-17-9-17 9 4-19L6 24l18-3zM12 32h40','M8 48q3-29 24-40 21 11 24 40l-12-8-12 14-12-14zM19 24l13 8 13-8','M9 51V17l12-9 11 14L43 8l12 9v34M18 39h28','M6 42q9-28 26-34 17 6 26 34l-13 11-13-8-13 8zM23 30h18','M8 51l7-26 10 7 7-25 7 25 10-7 7 26zM18 44h28'];
+function svgGlyph(item,kind,size=48){if(!item)return'';const i=indexInCategory(item),h=hueFor(item),d=SHAPES30[i];return `<svg class="v2-${kind}-glyph" data-layout="${item.implKey}" viewBox="0 0 64 64" width="${size}" height="${size}" aria-label="${item.name}"><path d="${d}" fill="hsl(${h} 70% 45% / .72)" stroke="hsl(${(h+55)%360} 90% 75%)" stroke-width="2"/><circle cx="${18+i%29}" cy="${17+(i*7)%29}" r="${1+i%4}" fill="#fff"/></svg>`}
+export const markerPathV2=id=>{const item=getCatalogItemV2(id);return item?.category==='point_marker'?SHAPES30[indexInCategory(item)]:null};
+export const renderCompanionV2=id=>svgGlyph(getCatalogItemV2(id),'companion');
+export const renderTrophyV2=id=>svgGlyph(getCatalogItemV2(id),'trophy');
+export const renderMarkerV2=id=>svgGlyph(getCatalogItemV2(id),'marker');
+export function renderAmbientV2(id){const item=getCatalogItemV2(id);if(!item)return'';const i=indexInCategory(item),family=i%15,count=3+(i%8);return `<span class="v2-ambient ambient-family-${family}" data-layout="${item.implKey}" style="--ambient-h:${hueFor(item)};--ambient-seed:${i}">${Array.from({length:count},(_,n)=>`<i class="ambient-shape-${(family+n)%10}" style="--n:${n}"></i>`).join('')}</span>`}
 
 export function renderProfileEmojiV2(id,size=42){
-  const item=getCatalogItemV2(id)||getCatalogItemV2(SHOWROOM_DEFAULTS.profile_emoji);
+  const item=getCatalogItemV2(id);
+  if(!item)return `<span class="v2-profile-base" style="font-size:${Math.round(size*.66)}px" aria-label="기본 프로필">⚖️</span>`;
   const i=indexInCategory(item),h=hueFor(item),hat=10+(i%6)*2,eye=2+(i%3);
   return `<svg class="v2-profile-emoji" viewBox="0 0 64 64" width="${size}" height="${size}" role="img" aria-label="${item.name}"><defs><linearGradient id="pe${i}" x2="1" y2="1"><stop stop-color="hsl(${h} 72% 64%)"/><stop offset="1" stop-color="hsl(${(h+55)%360} 62% 36%)"/></linearGradient></defs><circle cx="32" cy="35" r="20" fill="url(#pe${i})"/><path d="M${12+i%5} ${30-i%4} Q32 ${hat} ${52-i%4} ${30-i%4} L${46-i%3} 18 Q32 ${6+i%5} ${18+i%3} 18Z" fill="hsl(${(h+180)%360} 45% 25%)" stroke="hsl(${h} 75% 75%)" stroke-width="2"/><circle cx="24" cy="36" r="${eye}" fill="#fff"/><circle cx="40" cy="36" r="${eye}" fill="#fff"/><path d="M25 47 Q32 ${51+i%3} 39 47" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/><path d="M32 7 L${36+i%5} ${17+i%4} L28 17Z" fill="hsl(${(h+40)%360} 85% 58%)"/></svg>`;
 }
 
 export function renderEmojiBorderV2(id,size=52){
-  const item=getCatalogItemV2(id)||getCatalogItemV2(SHOWROOM_DEFAULTS.emoji_border);
+  const item=getCatalogItemV2(id);
+  if(!item)return '';
   const i=indexInCategory(item),h=hueFor(item),c=`hsl(${h} 78% 62%)`,a=`hsl(${(h+48)%360} 88% 70%)`;
   const shapes=[
     `<circle cx="32" cy="31" r="25"/><path d="M19 53c7-8 19-8 26 0l-7-2-6 8-6-8z"/>`,
@@ -107,24 +117,28 @@ export function titleInfoV2(raw){const l=normalizeLoadoutV2(raw),item=getCatalog
 
 export function getChartDecorationsV2(raw){
   const l=normalizeLoadoutV2(raw),skin=getCatalogItemV2(l.graph_skin),marker=getCatalogItemV2(l.point_marker);
-  const h=hueFor(skin),mi=indexInCategory(marker);
-  return {actualColor:`hsl(${h} 78% 56%)`,maColor:`hsl(${(h+55)%360} 82% 64%)`,gridColor:`hsl(${h} 55% 55% / .16)`,canvasColor:`hsl(${h} 32% 8%)`,markerPreset:marker?.implKey||'point_marker:ring',markerIndex:Math.max(0,mi)};
+  if(!skin&&!marker)return {};
+  const h=hueFor(skin),mi=marker?indexInCategory(marker):-1;
+  return {actualColor:skin?`hsl(${h} 78% 56%)`:undefined,maColor:skin?`hsl(${(h+55)%360} 82% 64%)`:undefined,gridColor:skin?`hsl(${h} 55% 55% / .16)`:undefined,canvasColor:skin?`hsl(${h} 32% 8%)`:undefined,graphFamily:skin?indexInCategory(skin)%15:null,markerPreset:marker?.implKey||null,markerIndex:marker?mi:-1,markerPath:markerPathV2(marker?.id)};
 }
 
 export function applyCardV2(card,raw){
-  if(!card)return;const l=normalizeLoadoutV2(raw),theme=getCatalogItemV2(l.card_theme),i=indexInCategory(theme),h=hueFor(theme);
-  card.classList.add('showroom-v2-card');card.style.setProperty('--v2h',h);card.style.setProperty('--v2seed',i);card.dataset.cardPreset=theme?.implKey||'';
+  if(!card)return;const l=normalizeLoadoutV2(raw),theme=getCatalogItemV2(l.card_theme);card.classList.remove('showroom-v2-card');card.removeAttribute('data-card-preset');card.removeAttribute('data-card-family');if(!theme)return;const i=indexInCategory(theme),h=hueFor(theme);
+  card.classList.add('showroom-v2-card');card.style.setProperty('--v2h',h);card.style.setProperty('--v2seed',i);card.dataset.cardPreset=theme.implKey;card.dataset.cardFamily=String(i%15);
 }
-function plotGlyph(item,index){const h=hueFor(item);return `<svg viewBox="0 0 48 48"><path d="M24 ${5+index%7} L${39-index%5} 18 L${35+index%4} 39 L13 39 L${8+index%5} 18Z" fill="hsl(${h} 72% 50% / .9)" stroke="hsl(${(h+55)%360} 90% 75%)" stroke-width="2"/><circle cx="24" cy="24" r="${4+index%7}" fill="none" stroke="#fff" stroke-width="2"/></svg>`}
 export function decoratePlotV2(plot,raw){
   if(!plot)return;plot.querySelector(':scope > .v2-plot-decor')?.remove();const l=normalizeLoadoutV2(raw),host=document.createElement('div');host.className='v2-plot-decor';
   const companion=getCatalogItemV2(l.companion),ambient=getCatalogItemV2(l.ambient_effect);
-  host.innerHTML=`<span class="v2-ambient" style="--ambient-h:${hueFor(ambient)};--ambient-seed:${Math.max(0,indexInCategory(ambient))}">${'<i></i>'.repeat(8)}</span><span class="v2-companion" style="--companion-h:${hueFor(companion)}">${plotGlyph(companion,Math.max(0,indexInCategory(companion)))}</span><span class="v2-trophies">${l.trophy.map((id,n)=>plotGlyph(getCatalogItemV2(id),n+indexInCategory(getCatalogItemV2(id)))).join('')}</span>`;
-  plot.appendChild(host);
+  host.innerHTML=`${renderAmbientV2(ambient?.id)}${companion?`<span class="v2-companion">${renderCompanionV2(companion.id)}</span>`:''}<span class="v2-trophies">${l.trophy.map(id=>renderTrophyV2(id)).join('')}</span>`;
+  if(host.innerHTML)plot.appendChild(host);
 }
 export function renderCatalogPreviewV2(item){
   if(item.category==='profile_emoji')return renderProfileEmojiV2(item.id,54);
   if(item.category==='emoji_border')return `<span class="v2-profile" style="width:58px;height:58px">${renderEmojiBorderV2(item.id,62)}${renderProfileEmojiV2(SHOWROOM_DEFAULTS.profile_emoji,42)}</span>`;
   if(item.category==='title')return `<span style="color:${TITLE_RARITY_COLORS[item.rarity]};font-weight:800">${item.name}</span>`;
-  return `<span class="v2-item-glyph" style="--item-h:${hueFor(item)};--item-seed:${Math.max(0,indexInCategory(item))}">${plotGlyph(item,Math.max(0,indexInCategory(item)))}</span>`;
+  if(item.category==='companion')return renderCompanionV2(item.id);
+  if(item.category==='trophy')return renderTrophyV2(item.id);
+  if(item.category==='point_marker')return renderMarkerV2(item.id);
+  if(item.category==='ambient_effect')return renderAmbientV2(item.id);
+  return `<span class="v2-item-glyph" data-layout="${item.implKey}" data-family="${indexInCategory(item)%15}" style="--item-h:${hueFor(item)};--item-seed:${Math.max(0,indexInCategory(item))}">${svgGlyph(item,item.category)}</span>`;
 }

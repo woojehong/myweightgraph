@@ -5,28 +5,35 @@ import { TITLES_CATALOG_V2, TITLE_RARITY_COLORS } from '../js/titles-catalog-v2.
 import { ACHIEVEMENTS } from '../js/achievements.js';
 import { ACHIEVEMENT_ITEM_REWARDS_V2 } from '../js/achievement-item-rewards-v2.js';
 import { ALL_CATALOG_V2, V2_CATEGORIES, normalizeLoadoutV2, getCatalogItemV2,
-  ownedItemIdsV2, unownedSelectionV2, renderEmojiBorderV2, getChartDecorationsV2 } from '../js/showroom-v2.js';
+  ownedItemIdsV2, unownedSelectionV2, renderEmojiBorderV2, getChartDecorationsV2,
+  renderCompanionV2,renderTrophyV2,renderMarkerV2,renderProfileEmojiV2,renderAmbientV2,renderCatalogPreviewV2 } from '../js/showroom-v2.js';
 
 assert.equal(assertShowroomCatalogV2(),true);
-assert.equal(SHOWROOM_CATALOG_V2.length,240);
+assert.equal(SHOWROOM_CATALOG_V2.length,218);
 assert.equal(TITLES_CATALOG_V2.length,30);
-assert.equal(ALL_CATALOG_V2.length,270);
+assert.equal(ALL_CATALOG_V2.length,248);
 assert.deepEqual(SHOWROOM_CATEGORIES,['graph_skin','card_theme','point_marker','companion','ambient_effect','trophy','profile_emoji','emoji_border']);
 assert.deepEqual(V2_CATEGORIES,[...SHOWROOM_CATEGORIES,'title']);
-assert.equal(new Set(ALL_CATALOG_V2.map(item=>item.id)).size,270);
-assert.equal(new Set(SHOWROOM_CATALOG_V2.map(item=>item.implKey)).size,240);
+assert.equal(new Set(ALL_CATALOG_V2.map(item=>item.id)).size,248);
+assert.equal(new Set(SHOWROOM_CATALOG_V2.map(item=>item.implKey)).size,218);
 const rarityExpected={common:8,uncommon:7,rare:6,epic:5,legendary:4};
-for(const category of V2_CATEGORIES){const items=ALL_CATALOG_V2.filter(item=>item.category===category);assert.equal(items.length,30,category);for(const [rarity,count] of Object.entries(rarityExpected))assert.equal(items.filter(item=>item.rarity===rarity).length,count,`${category}:${rarity}`)}
+for(const category of V2_CATEGORIES){const items=ALL_CATALOG_V2.filter(item=>item.category===category),expected=category==='companion'?8:30;assert.equal(items.length,expected,category);for(const [rarity,count] of Object.entries(rarityExpected))assert.equal(items.filter(item=>item.rarity===rarity).length,category==='companion'?(rarity==='common'?8:0):count,`${category}:${rarity}`)}
 assert.deepEqual(TITLE_RARITY_COLORS,{common:'#FFFFFF',uncommon:'#1EFF00',rare:'#0070DD',epic:'#A335EE',legendary:'#FF8000'});
 for(const item of ALL_CATALOG_V2){assert.match(item.id,/^[a-z0-9_]+$/);assert.ok(Number.isFinite(item.price)&&item.price>=200);}
 
 const invalid=normalizeLoadoutV2({graph_skin:'old_border_1',title:'legacy title',trophy:['tr_wood_medal','bad','tr_wood_medal','tr_iron_badge','tr_copper_cup','tr_scout_pin','tr_leaf_wreath']});
 assert.equal(invalid.graph_skin,SHOWROOM_DEFAULTS.graph_skin);assert.equal(invalid.title,null);assert.deepEqual(invalid.trophy,['tr_wood_medal','tr_iron_badge','tr_copper_cup','tr_scout_pin']);
 const user={purchasedItemsV2:['gs_slate_lines'],achievementRewardItems:['ct_emerald_lodge'],adminGrantedItems:['title_dawn_watch']};
-assert.ok(ownedItemIdsV2(user).has(SHOWROOM_DEFAULTS.profile_emoji));
+assert.deepEqual(SHOWROOM_DEFAULTS,{graph_skin:null,card_theme:null,point_marker:null,companion:null,ambient_effect:null,trophy:[],profile_emoji:null,emoji_border:null});
+assert.equal(ownedItemIdsV2({}).size,0);assert.deepEqual(getChartDecorationsV2(SHOWROOM_DEFAULTS),{});
+for(const forbidden of ['gs_ink_grid','ct_dark_canvas','pm_ring','cp_firefly','ae_dust','pe_squire','eb_rope_knot'])assert.equal(Object.values(SHOWROOM_DEFAULTS).flat().includes(forbidden),false);
 assert.deepEqual(unownedSelectionV2(user,{...SHOWROOM_DEFAULTS,graph_skin:'gs_slate_lines',title:'title_dawn_watch',companion:'cp_scroll'}).map(i=>i.id),['cp_scroll']);
 const borderSvgs=SHOWROOM_CATALOG_V2.filter(i=>i.category==='emoji_border').map((item,index)=>{const svg=renderEmojiBorderV2(item.id);assert.ok(svg.includes(`data-variant="${index}"`));assert.ok(svg.includes(`data-layout="${item.implKey}"`));return svg.replace(/stroke="[^"]+"/g,'').replace(/style="[^"]+"/g,'')});
 assert.equal(new Set(borderSvgs).size,30,'all border layout signatures must be unique');
+for(const [category,render] of [['companion',renderCompanionV2],['trophy',renderTrophyV2],['point_marker',renderMarkerV2],['profile_emoji',renderProfileEmojiV2]]){const signatures=SHOWROOM_CATALOG_V2.filter(i=>i.category===category).map(i=>render(i.id).replace(/hsl\([^)]*\)/g,'COLOR').replace(/fill="#[^"]+"/g,'')),expected=category==='companion'?8:30;assert.equal(new Set(signatures).size,expected,`${category} structural signatures`)}
+const ambientSignatures=SHOWROOM_CATALOG_V2.filter(i=>i.category==='ambient_effect').map(i=>renderAmbientV2(i.id).replace(/hsl\([^)]*\)/g,'COLOR').replace(/--ambient-h:\d+/g,''));assert.ok(new Set(ambientSignatures).size>=15);
+const graphFamilies=new Set(SHOWROOM_CATALOG_V2.filter(i=>i.category==='graph_skin').map(i=>getChartDecorationsV2({graph_skin:i.id}).graphFamily));assert.equal(graphFamilies.size,15);
+const cardFamilies=new Set(SHOWROOM_CATALOG_V2.filter(i=>i.category==='card_theme').map(i=>renderCatalogPreviewV2(i).match(/data-family="(\d+)"/)?.[1]));assert.equal(cardFamilies.size,15);
 assert.ok(getChartDecorationsV2({point_marker:'pm_dawn_relic'}).markerIndex>=0);
 
 const achIds=new Set(ACHIEVEMENTS.map(a=>a.id));assert.ok(Object.keys(ACHIEVEMENT_ITEM_REWARDS_V2).length>=10);
