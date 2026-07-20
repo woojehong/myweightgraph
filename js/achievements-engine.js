@@ -69,7 +69,7 @@ export function computeAchievementState({ user, records, storedRaw, tierData }) 
   const tier        = getTierForScore(totalScore, tiers);
   const newlyEarned = [...validEarned].filter(id => !storedIds.has(id));
 
-  const achievementRewardItems=[...new Set([...(user?.achievementRewardItems||[]),...rewardItemsForAchievementsV2(validEarned)])];
+  const achievementRewardItems=[...new Set([...(user?.achievementRewardItems||[]),...rewardItemsForAchievementsV2(validEarned,tierData?.achievementTrophyRewards)])];
 
   const baseCount = [...validEarned].filter(id => !isMetaAchievement(id)).length;
 

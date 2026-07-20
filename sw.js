@@ -6,7 +6,7 @@ const ASSETS = [
   './js/firebase-config.js', './js/db.js', './js/auth.js',
   './js/chart-render.js', './js/achievements.js', './js/achievements-engine.js',
   './js/util.js', './js/daily-rewards.js', './js/showroom-v2.js',
-  './js/showroom-catalog-v2.js', './js/titles-catalog-v2.js', './js/achievement-item-rewards-v2.js',
+  './js/showroom-catalog-v2.js', './js/showroom-catalog-v4.generated.js', './js/titles-catalog-v2.js', './js/achievement-item-rewards-v2.js',
   './manifest.json', './favicon.png',
   './register-sw.js',
   './assets/showroom-v3/graph_skin/gs_explorer_parchment.webp',

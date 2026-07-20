@@ -10,7 +10,7 @@ export const RARITY_META=Object.freeze({
   legendary:{label:'전설',color:'#FF8000'},
 });
 export const CATEGORY_META=Object.freeze({
-  graph_skin:{name:'그래프 스킨',icon:'📈'}, card_theme:{name:'카드 테마',icon:'🖼️'},
+  graph_skin:{name:'그래프 스킨',icon:'📈'}, line_style:{name:'그래프 선',icon:'〰️'}, card_theme:{name:'카드 테마',icon:'🖼️'},
   point_marker:{name:'포인트 마커',icon:'📍'}, companion:{name:'동반자',icon:'🐾'},
   ambient_effect:{name:'공간 효과',icon:'✨'}, trophy:{name:'트로피',icon:'🏆',multi:true,max:4},
   profile_emoji:{name:'프로필 이모티콘',icon:'🙂'}, emoji_border:{name:'이모티콘 테두리',icon:'⭕'},
@@ -42,16 +42,15 @@ export function normalizeLoadoutV2(raw){
   return out;
 }
 
-const rawOwnershipIds=user=>[
-  ...Object.values(SHOWROOM_DEFAULTS).flat().filter(Boolean),
-  ...(Array.isArray(user?.purchasedItemsV2)?user.purchasedItemsV2:[]),
-  ...(Array.isArray(user?.achievementRewardItems)?user.achievementRewardItems:[]),
-  ...(Array.isArray(user?.adminGrantedItems)?user.adminGrantedItems:[]),
-];
 export function ownedItemIdsV2(user){
-  return new Set(rawOwnershipIds(user).map(canonicalId).filter(id=>{
-    const entry=BY_ID.get(id);return entry&&!entry.testOnly;
-  }));
+  const permanent=[...Object.values(SHOWROOM_DEFAULTS).flat().filter(Boolean),...(user?.purchasedItemsV2||[])];
+  const rewardOrAdmin=[...(user?.achievementRewardItems||[]),...(user?.adminGrantedItems||[])];
+  const owned=new Set(permanent.map(canonicalId).filter(id=>{const entry=BY_ID.get(id);return entry&&!entry.testOnly}));
+  rewardOrAdmin.map(canonicalId).forEach(id=>{
+    const entry=BY_ID.get(id);
+    if(entry&&(!entry.testOnly||entry.category==='trophy'))owned.add(id);
+  });
+  return owned;
 }
 export const ownsItemV2=(user,id)=>id==null||ownedItemIdsV2(user).has(canonicalId(id));
 export function selectedItemIdsV2(raw){
@@ -64,7 +63,9 @@ export function unownedSelectionV2(user,raw){
 export function persistableLoadoutV2(raw){
   const clean=normalizeLoadoutV2(raw);
   for(const category of SHOWROOM_CATEGORIES){
-    if(Array.isArray(clean[category]))clean[category]=clean[category].filter(id=>!getCatalogItemV2(id)?.testOnly);
+    if(Array.isArray(clean[category]))clean[category]=clean[category].filter(id=>{
+      const entry=getCatalogItemV2(id);return entry&&!entry.testOnly||entry?.category==='trophy'&&entry.acquisition==='achievement_only';
+    });
     else if(getCatalogItemV2(clean[category])?.testOnly)clean[category]=SHOWROOM_DEFAULTS[category];
   }
   return clean;
@@ -72,8 +73,10 @@ export function persistableLoadoutV2(raw){
 export function validateCatalogPurchaseV2(itemIds){
   const requested=[...new Set(Array.isArray(itemIds)?itemIds:[itemIds])];
   const entries=requested.map(getCatalogItemV2);
-  if(!entries.length||entries.some(entry=>!entry||!Number.isFinite(entry.price)||entry.price<0))throw new Error('구매할 수 없는 아이템입니다.');
+  if(!entries.length||entries.some(entry=>!entry))throw new Error('구매할 수 없는 아이템입니다.');
+  if(entries.some(entry=>entry.category==='trophy'))throw new Error('트로피는 구매할 수 없으며 업적 달성 또는 관리자 지급으로만 획득할 수 있습니다.');
   if(entries.some(entry=>entry.testOnly||entry.purchasable===false))throw new Error('테스트 아이템은 구매할 수 없습니다.');
+  if(entries.some(entry=>!Number.isFinite(entry.price)||entry.price<0))throw new Error('구매할 수 없는 아이템입니다.');
   if(entries.some(entry=>entry.acquisition==='achievement_only'))throw new Error('업적으로만 획득할 수 있는 칭호입니다.');
   return entries;
 }
@@ -107,17 +110,33 @@ export function titleInfoV2(raw){
 }
 
 const graphColors=Object.freeze({
-  gs_explorer_parchment:['#ffd166','#f4a261','rgba(255,209,102,.24)'],
-  gs_frost_runestone:['#67e8f9','#93c5fd','rgba(103,232,249,.22)'],
-  gs_dragonbone_slab:['#e7d8c5','#f59e0b','rgba(231,216,197,.20)'],
-  gs_cosmic_timekeeper:['#fbbf24','#c4b5fd','rgba(251,191,36,.22)'],
+  gs_explorer_parchment:['#ffd166','#f4a261','rgba(255,209,102,.24)','#302719'],
+  gs_frost_runestone:['#67e8f9','#93c5fd','rgba(103,232,249,.22)','#17283a'],
+  gs_dragonbone_slab:['#e7d8c5','#f59e0b','rgba(231,216,197,.20)','#211b18'],
+  gs_cosmic_timekeeper:['#fbbf24','#c4b5fd','rgba(251,191,36,.22)','#17152d'],
 });
+const validHex=color=>typeof color==='string'&&/^#[a-f0-9]{6}$/i.test(color);
+const rgbOf=color=>validHex(color)?[1,3,5].map(index=>parseInt(color.slice(index,index+2),16)):null;
+const luminance=color=>{const rgb=rgbOf(color);if(!rgb)return null;const linear=rgb.map(value=>{const channel=value/255;return channel<=.04045?channel/12.92:((channel+.055)/1.055)**2.4});return .2126*linear[0]+.7152*linear[1]+.0722*linear[2]};
+export function contrastRatioV2(foreground,background){const a=luminance(foreground),b=luminance(background);if(a===null||b===null)return null;return (Math.max(a,b)+.05)/(Math.min(a,b)+.05)}
+export function lineContrastAdviceV2(foreground,background='#070b12'){
+  const ratio=contrastRatioV2(foreground,background),candidates=['#ffffff','#facc15','#22d3ee','#34d399','#fb7185','#111827'];
+  const recommended=candidates.map(color=>({color,ratio:contrastRatioV2(color,background)})).sort((a,b)=>b.ratio-a.ratio)[0];
+  return {ratio,passes:ratio!==null&&ratio>=3,recommended:recommended.color,recommendedRatio:recommended.ratio};
+}
 export function getChartDecorationsV2(raw){
-  const loadout=normalizeLoadoutV2(raw),skin=getCatalogItemV2(loadout.graph_skin),marker=getCatalogItemV2(loadout.point_marker);
-  if(!skin&&!marker)return {};
+  const loadout=normalizeLoadoutV2(raw),skin=getCatalogItemV2(loadout.graph_skin),marker=getCatalogItemV2(loadout.point_marker),line=getCatalogItemV2(loadout.line_style);
+  if(!skin&&!marker&&!line)return {};
   const colors=graphColors[skin?.id];
+  const lineSpec=line?.renderSpec||{},lineColor=validHex(raw?.lineColor)?raw.lineColor:(lineSpec.color||colors?.[0]);
+  const requestedWidth=Number(raw?.lineWidth),lineWidth=Number.isFinite(requestedWidth)?Math.max(1,Math.min(6,requestedWidth)):lineSpec.width;
+  const rarityBackground={uncommon:'#293039',rare:'#17283a',epic:'#211630',legendary:'#2b1d0d'};
+  const backgroundColor=colors?.[3]||rarityBackground[skin?.rarity]||'#070b12';
   return {
-    actualColor:colors?.[0], maColor:colors?.[1], gridColor:colors?.[2],
+    actualColor:lineColor||colors?.[0], maColor:colors?.[1], gridColor:colors?.[2],
+    lineColor,lineWidth,lineDash:Array.isArray(lineSpec.dash)?lineSpec.dash:undefined,
+    lineGlowBlur:lineSpec.glowBlur,lineTension:lineSpec.tension,
+    lineContrast:lineColor?lineContrastAdviceV2(lineColor,backgroundColor):null,
     markerPreset:marker?.id||null, markerAsset:marker?.asset||null,
   };
 }
@@ -125,7 +144,7 @@ export function getChartDecorationsV2(raw){
 export function applyCardV2(card,raw){
   if(!card)return false;
   const loadout=normalizeLoadoutV2(raw),theme=getCatalogItemV2(loadout.card_theme);
-  const profile=card.matches?.('.cmp-profile')?card:card.querySelector?.(':scope > .cmp-profile');
+  const profile=card.matches?.('.cmp-profile,.sr-profile-head')?card:card.querySelector?.(':scope > .cmp-profile, :scope > .sr-profile-head');
   profile?.querySelector(':scope > .v3-card-theme-frame')?.remove();
   profile?.removeAttribute('data-card-preset');
   if(!theme||!profile)return false;
@@ -159,5 +178,6 @@ export function renderCatalogPreviewV2(entry){
   if(entry.category==='trophy')return renderTrophyV2(entry.id);
   if(entry.category==='point_marker')return renderMarkerV2(entry.id);
   if(entry.category==='ambient_effect')return `<span class="v3-landscape-preview">${renderAmbientV2(entry.id)}</span>`;
+  if(entry.category==='line_style'){const spec=entry.renderSpec||{};return `<span class="v4-line-preview" aria-hidden="true"><span style="border-color:${spec.color||'#00e5aa'};border-top-width:${spec.width||2}px;border-top-style:${spec.dash?.length?'dashed':'solid'};box-shadow:0 0 ${spec.glowBlur||0}px ${spec.color||'#00e5aa'}"></span></span>`}
   return `<span class="v3-landscape-preview">${img(entry,'v3-catalog-landscape')}</span>`;
 }

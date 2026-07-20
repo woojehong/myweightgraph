@@ -1,7 +1,10 @@
-// Maweg showroom catalog v3: eight image-based categories, four purchasable items each.
+import { SHOWROOM_V4_RUNTIME } from './showroom-catalog-v4.generated.js';
+
+// Maweg showroom catalog: V4 fully replaces V3 only after a validated 108-item runtime module exists.
 const item = (category, id, name, rarity, price, asset, visual) => Object.freeze({
   id, category, name, rarity, price, asset, visual, implKey:`${category}:${id}`,
   testOnly:true, purchasable:false,
+  ...(category==='trophy'?{acquisition:'achievement_only'}:{}),
 });
 
 const specs = Object.freeze({
@@ -11,6 +14,7 @@ const specs = Object.freeze({
     ['gs_dragonbone_slab','용골 석판','epic',1800,'webp','고대 용의 뼈가 감싼 흑요석 판'],
     ['gs_cosmic_timekeeper','우주 시계판','legendary',3500,'webp','황금 천체 장치가 움직이는 별빛 판'],
   ],
+  line_style: [],
   card_theme: [
     ['ct_alpine_dawn','설산의 여명','uncommon',500,'webp','새벽 설산이 펼쳐지는 카드 테마'],
     ['ct_sunken_temple','침몰한 신전','rare',1000,'webp','심해 유적과 푸른 빛의 카드 테마'],
@@ -57,19 +61,27 @@ const specs = Object.freeze({
 
 export const SHOWROOM_CATEGORIES = Object.freeze(Object.keys(specs));
 export const SHOWROOM_DEFAULTS = Object.freeze({
-  graph_skin:null, card_theme:null, point_marker:null, companion:null,
+  graph_skin:null, line_style:null, card_theme:null, point_marker:null, companion:null,
   ambient_effect:null, trophy:[], profile_emoji:null, emoji_border:null,
 });
 
-export const SHOWROOM_CATALOG_V2 = Object.freeze(SHOWROOM_CATEGORIES.flatMap(category =>
+const SHOWROOM_CATALOG_V3_FALLBACK = Object.freeze(SHOWROOM_CATEGORIES.flatMap(category =>
   specs[category].map(([id,name,rarity,price,ext,visual]) => item(
     category,id,name,rarity,price,`./assets/showroom-v3/${category}/${id}.${ext}`,visual,
   )),
 ));
+const v4Items=Array.isArray(SHOWROOM_V4_RUNTIME?.items)?SHOWROOM_V4_RUNTIME.items:[];
+const hasCompleteV4=v4Items.length===108
+  &&SHOWROOM_CATEGORIES.every(category=>v4Items.filter(item=>item.category===category).length===12)
+  &&v4Items.every(item=>item.testOnly===true&&item.purchasable===false&&item.persistable===false&&item.price===null
+    &&(item.category==='line_style'?item.asset===null&&item.renderSpec:item.asset?.startsWith('./assets/showroom-v4/')));
+export const SHOWROOM_CATALOG_VERSION=hasCompleteV4?'v4':'v3-fallback';
+export const SHOWROOM_CATALOG_V2=Object.freeze(hasCompleteV4?v4Items:SHOWROOM_CATALOG_V3_FALLBACK);
 
 // Exact V2 ids are retained only as a compatibility index. They are not active catalog entries.
 const LEGACY_IDS_BY_CATEGORY = Object.freeze({
   graph_skin:['gs_ink_grid','gs_slate_lines','gs_mint_trace','gs_ember_ticks','gs_moon_paper','gs_frost_panel','gs_moss_map','gs_copper_rule','gs_crystal_grid','gs_aurora_band','gs_rune_axis','gs_lava_fault','gs_tidal_chart','gs_sunstone','gs_night_forest','gs_void_lattice','gs_storm_scope','gs_dragon_glass','gs_celestial_map','gs_arcane_prism','gs_iron_citadel','gs_phoenix_wake','gs_leviathan_depth','gs_worldroot','gs_thunder_throne','gs_eclipse_dial','gs_astral_forge','gs_primordial_sea','gs_crimson_cataclysm','gs_crown_of_dawn'],
+  line_style:[],
   card_theme:['ct_dark_canvas','ct_field_leather','ct_silver_plate','ct_oak_board','ct_mist_glass','ct_desert_cloth','ct_moss_stone','ct_navy_banner','ct_emerald_lodge','ct_frost_keep','ct_ember_forge','ct_arcane_archive','ct_tidal_shell','ct_sun_temple','ct_wild_hunt','ct_obsidian_gate','ct_storm_bastion','ct_crystal_palace','ct_moonlit_crypt','ct_drake_aerie','ct_clockwork_hall','ct_phoenix_court','ct_abyssal_sanctum','ct_world_tree_hall','ct_celestial_citadel','ct_eclipse_chamber','ct_astral_throne','ct_eternal_forge','ct_primordial_grove','ct_dawn_sovereign'],
   point_marker:['pm_ring','pm_diamond','pm_shield','pm_arrow','pm_hex','pm_leaf','pm_drop','pm_spark','pm_rune_disc','pm_ice_shard','pm_ember_core','pm_gear','pm_moon','pm_claw','pm_wing','pm_prism','pm_storm_eye','pm_drake_scale','pm_sun_seal','pm_void_orb','pm_crown','pm_phoenix_feather','pm_leviathan_eye','pm_worldroot_seed','pm_thunder_hammer','pm_eclipse','pm_astral_compass','pm_eternal_flame','pm_primordial_eye','pm_dawn_relic'],
   companion:['cp_firefly','cp_scroll','cp_moss_slime','cp_cave_bat','cp_camp_owl','cp_spring_sprite','cp_brass_beetle','cp_grumpy_cloud'],
@@ -86,8 +98,10 @@ const aliasPairs=[];
 for(const category of SHOWROOM_CATEGORIES){
   const legacy=LEGACY_IDS_BY_CATEGORY[category];
   legacy.forEach((id,index)=>{
-    const targetIndex=category==='companion' ? Math.min(3,Math.floor(index/2))
-      : index<15 ? 0 : index<21 ? 1 : index<26 ? 2 : 3;
+    const rarityOffsets=activeByCategory[category].length===12?[0,3,6,9]:[0,1,2,3];
+    const targetIndex=category==='companion' ? Math.min(activeByCategory[category].length-1,Math.floor(index/2))
+      : index<15 ? rarityOffsets[0] : index<21 ? rarityOffsets[1]
+      : index<26 ? rarityOffsets[2] : rarityOffsets[3];
     aliasPairs.push([id,activeByCategory[category][targetIndex]]);
   });
 }
@@ -95,26 +109,34 @@ export const LEGACY_SHOWROOM_ID_ALIASES = Object.freeze(Object.fromEntries(alias
 export const resolveShowroomItemIdV2 = id => typeof id==='string' ? (LEGACY_SHOWROOM_ID_ALIASES[id]||id) : id;
 
 export function assertShowroomCatalogV2(catalog=SHOWROOM_CATALOG_V2){
-  if(catalog.length!==32)throw new Error(`showroom catalog: expected 32 items, got ${catalog.length}`);
+  const isV4=catalog.length===108,expectedTotal=isV4?108:32;
+  if(catalog.length!==expectedTotal)throw new Error(`showroom catalog: expected ${expectedTotal} items, got ${catalog.length}`);
   const ids=new Set(),assets=new Set();
   for(const category of SHOWROOM_CATEGORIES){
-    const entries=catalog.filter(entry=>entry.category===category);
-    if(entries.length!==4)throw new Error(`${category}: expected 4 items, got ${entries.length}`);
-    const expected=category==='companion'?['common','common','common','common']:['uncommon','rare','epic','legendary'];
+    const entries=catalog.filter(entry=>entry.category===category),expectedPerCategory=isV4?12:(category==='line_style'?0:4);
+    if(entries.length!==expectedPerCategory)throw new Error(`${category}: expected ${expectedPerCategory} items, got ${entries.length}`);
+    const expected=expectedPerCategory===0?[]:expectedPerCategory===12
+      ? ['uncommon','uncommon','uncommon','rare','rare','rare','epic','epic','epic','legendary','legendary','legendary']
+      : category==='companion'?['common','common','common','common']:['uncommon','rare','epic','legendary'];
     if(entries.map(entry=>entry.rarity).join(',')!==expected.join(','))throw new Error(`${category}: invalid rarity order`);
     for(const entry of entries){
       for(const key of ['id','category','name','rarity','price','visual','implKey','asset','testOnly','purchasable'])if(entry[key]===undefined||entry[key]==='')throw new Error(`${entry.id}: missing ${key}`);
-      if(entry.testOnly!==true||entry.purchasable!==false)throw new Error(`${entry.id}: v3 assets must remain test-only`);
+      if(entry.testOnly!==true||entry.purchasable!==false)throw new Error(`${entry.id}: showroom assets must remain test-only`);
       if(ids.has(entry.id))throw new Error(`duplicate catalog id: ${entry.id}`);ids.add(entry.id);
-      if(assets.has(entry.asset))throw new Error(`duplicate catalog asset: ${entry.asset}`);assets.add(entry.asset);
-      if(!entry.asset.startsWith(`./assets/showroom-v3/${category}/`))throw new Error(`${entry.id}: invalid asset path`);
+      if(entry.asset!==null){if(assets.has(entry.asset))throw new Error(`duplicate catalog asset: ${entry.asset}`);assets.add(entry.asset)}
+      const expectedRoot=expectedPerCategory===12?'./assets/showroom-v4':'./assets/showroom-v3';
+      if(category==='line_style'){
+        if(entry.asset!==null||!entry.renderSpec)throw new Error(`${entry.id}: invalid code-native line style`);
+      }else if(!entry.asset.startsWith(`${expectedRoot}/${category}/`))throw new Error(`${entry.id}: invalid asset path`);
     }
   }
-  if(Object.keys(LEGACY_SHOWROOM_ID_ALIASES).length!==218)throw new Error('legacy alias coverage must be 218');
-  for(const [legacy,target] of Object.entries(LEGACY_SHOWROOM_ID_ALIASES)){
-    const targetItem=catalog.find(entry=>entry.id===target);
-    if(!targetItem)throw new Error(`${legacy}: missing alias target ${target}`);
-    if(!legacy.startsWith(`${({graph_skin:'gs',card_theme:'ct',point_marker:'pm',companion:'cp',ambient_effect:'ae',trophy:'tr',profile_emoji:'pe',emoji_border:'eb'})[targetItem.category]}_`))throw new Error(`${legacy}: cross-category alias`);
+  if(catalog===SHOWROOM_CATALOG_V2){
+    if(Object.keys(LEGACY_SHOWROOM_ID_ALIASES).length!==218)throw new Error('legacy alias coverage must be 218');
+    for(const [legacy,target] of Object.entries(LEGACY_SHOWROOM_ID_ALIASES)){
+      const targetItem=catalog.find(entry=>entry.id===target);
+      if(!targetItem)throw new Error(`${legacy}: missing alias target ${target}`);
+      if(!legacy.startsWith(`${({graph_skin:'gs',card_theme:'ct',point_marker:'pm',companion:'cp',ambient_effect:'ae',trophy:'tr',profile_emoji:'pe',emoji_border:'eb'})[targetItem.category]}_`))throw new Error(`${legacy}: cross-category alias`);
+    }
   }
   return true;
 }

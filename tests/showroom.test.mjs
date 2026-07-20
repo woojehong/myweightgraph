@@ -6,12 +6,13 @@ import {
 } from '../js/showroom-catalog-v2.js';
 import { TITLES_CATALOG_V2, TITLE_RARITY_COLORS } from '../js/titles-catalog-v2.js';
 import { ACHIEVEMENTS } from '../js/achievements.js';
-import { ACHIEVEMENT_ITEM_REWARDS_V2 } from '../js/achievement-item-rewards-v2.js';
+import { ACHIEVEMENT_ITEM_REWARDS_V2, normalizeAchievementTrophyRewardsV2, rewardItemsForAchievementsV2 } from '../js/achievement-item-rewards-v2.js';
 import { fitMainPlotBounds } from '../js/chart-render.js';
 import {
   ALL_CATALOG_V2, V2_CATEGORIES, normalizeLoadoutV2, getCatalogItemV2,
   ownedItemIdsV2, unownedSelectionV2, persistableLoadoutV2, validateCatalogPurchaseV2,
   renderEmojiBorderV2, getChartDecorationsV2,
+  contrastRatioV2, lineContrastAdviceV2,
   renderCompanionV2, renderTrophyV2, renderMarkerV2, renderProfileEmojiV2,
   renderAmbientV2, renderCatalogPreviewV2, applyCardV2,
 } from '../js/showroom-v2.js';
@@ -20,15 +21,15 @@ assert.equal(assertShowroomCatalogV2(),true);
 assert.equal(SHOWROOM_CATALOG_V2.length,32);
 assert.equal(TITLES_CATALOG_V2.length,30);
 assert.equal(ALL_CATALOG_V2.length,62);
-assert.deepEqual(SHOWROOM_CATEGORIES,['graph_skin','card_theme','point_marker','companion','ambient_effect','trophy','profile_emoji','emoji_border']);
+assert.deepEqual(SHOWROOM_CATEGORIES,['graph_skin','line_style','card_theme','point_marker','companion','ambient_effect','trophy','profile_emoji','emoji_border']);
 assert.deepEqual(V2_CATEGORIES,[...SHOWROOM_CATEGORIES,'title']);
 assert.equal(new Set(ALL_CATALOG_V2.map(entry=>entry.id)).size,62);
 assert.equal(new Set(SHOWROOM_CATALOG_V2.map(entry=>entry.asset)).size,32);
 
 for(const category of SHOWROOM_CATEGORIES){
   const entries=SHOWROOM_CATALOG_V2.filter(entry=>entry.category===category);
-  assert.equal(entries.length,4,category);
-  assert.deepEqual(entries.map(entry=>entry.rarity),category==='companion'
+  assert.equal(entries.length,category==='line_style'?0:4,category);
+  assert.deepEqual(entries.map(entry=>entry.rarity),category==='line_style'?[]:category==='companion'
     ? ['common','common','common','common']
     : ['uncommon','rare','epic','legendary']);
 }
@@ -55,7 +56,10 @@ assert.equal(normalized.graph_skin,null);
 assert.equal(normalized.point_marker,null);
 assert.equal(normalized.title,null);
 assert.deepEqual(normalized.trophy,[]);
-assert.deepEqual(SHOWROOM_DEFAULTS,{graph_skin:null,card_theme:null,point_marker:null,companion:null,ambient_effect:null,trophy:[],profile_emoji:null,emoji_border:null});
+assert.deepEqual(SHOWROOM_DEFAULTS,{graph_skin:null,line_style:null,card_theme:null,point_marker:null,companion:null,ambient_effect:null,trophy:[],profile_emoji:null,emoji_border:null});
+assert.equal(contrastRatioV2('#ffffff','#000000'),21);
+assert.equal(lineContrastAdviceV2('#111827','#070b12').passes,false);
+assert.equal(lineContrastAdviceV2('#ffffff','#070b12').passes,true);
 
 const user={purchasedItemsV2:['gs_slate_lines'],achievementRewardItems:['ct_emerald_lodge'],adminGrantedItems:['title_dawn_watch']};
 assert.deepEqual([...ownedItemIdsV2(user)],['title_dawn_watch']);
@@ -65,8 +69,11 @@ assert.equal(getChartDecorationsV2({point_marker:'pm_phoenix_seal'}).markerAsset
 const transactionSnapshot={coins:4200,purchasedItemsV2:['legacy_owned'],achievementRewardItems:['legacy_reward'],adminGrantedItems:[]};
 const transactionBefore=structuredClone(transactionSnapshot);
 assert.throws(()=>validateCatalogPurchaseV2(['gs_explorer_parchment']),/테스트 아이템은 구매할 수 없습니다/);
+assert.throws(()=>validateCatalogPurchaseV2(['tr_summit_compass']),/트로피는 구매할 수 없으며 업적 달성 또는 관리자 지급으로만 획득/);
 assert.deepEqual(transactionSnapshot,transactionBefore,'blocked purchase must not mutate coins or ownership');
-assert.deepEqual(persistableLoadoutV2({graph_skin:'gs_explorer_parchment',companion:'cp_sleepy_golem',trophy:['tr_cosmic_goblet']}),{...SHOWROOM_DEFAULTS,title:null});
+assert.deepEqual(persistableLoadoutV2({graph_skin:'gs_explorer_parchment',companion:'cp_sleepy_golem',trophy:['tr_cosmic_goblet']}),{...SHOWROOM_DEFAULTS,trophy:['tr_cosmic_goblet'],title:null});
+assert.deepEqual([...ownedItemIdsV2({achievementRewardItems:['tr_cosmic_goblet']})],['tr_cosmic_goblet']);
+assert.deepEqual([...ownedItemIdsV2({adminGrantedItems:['tr_giant_horn']})],['tr_giant_horn']);
 
 for(const entry of SHOWROOM_CATALOG_V2){
   const fileUrl=new URL(`../${entry.asset.replace(/^\.\//,'')}`,import.meta.url);
@@ -107,7 +114,7 @@ const fakeProfile={
   dataset:{},querySelector:selector=>selector===':scope > .v3-card-theme-frame'?{remove(){removedOldFrame=true}}:null,
   removeAttribute(name){delete this.dataset[name]},prepend(frame){prependedFrame=frame},
 };
-const fakeCard={matches:()=>false,querySelector:selector=>selector===':scope > .cmp-profile'?fakeProfile:null};
+const fakeCard={matches:()=>false,querySelector:selector=>selector===':scope > .cmp-profile, :scope > .sr-profile-head'?fakeProfile:null};
 const previousDocument=globalThis.document;
 globalThis.document={createElement:tag=>({tagName:tag.toUpperCase(),setAttribute(name,value){this[name]=value}})};
 try{
@@ -121,6 +128,8 @@ const achIds=new Set(ACHIEVEMENTS.map(achievement=>achievement.id));
 for(const [achId,ids] of Object.entries(ACHIEVEMENT_ITEM_REWARDS_V2)){
   assert.ok(achIds.has(achId),achId);for(const id of ids)assert.ok(getCatalogItemV2(id),`${achId}:${id}`);
 }
+assert.deepEqual(normalizeAchievementTrophyRewardsV2({record_1:'tr_summit_compass',bad:'not-a-trophy'}),{record_1:['tr_summit_compass']});
+assert.ok(rewardItemsForAchievementsV2(new Set(['record_1']),{record_1:'tr_summit_compass'}).includes('tr_summit_compass'));
 
 const visualLab=await readFile(new URL('../visual-lab.html',import.meta.url),'utf8');
 assert.ok(visualLab.includes('SHOWROOM_CATALOG_V2'));assert.ok(visualLab.includes('decorateMainPlotV2'));assert.ok(visualLab.includes('<canvas id="demoCanvas"'));assert.equal(visualLab.toLowerCase().includes('firebase'),false);
@@ -133,7 +142,7 @@ assert.equal(css.includes('.showroom-v2-card::before'),false,'card theme must no
 assert.equal(css.includes('--v3-card-image'),false,'card theme background variable must be retired');
 const renderer=await readFile(new URL('../js/showroom-v2.js',import.meta.url),'utf8');
 const cardApplicator=renderer.slice(renderer.indexOf('export function applyCardV2'),renderer.indexOf('export function decorateMainPlotV2'));
-for(const token of ["querySelector?.(':scope > .cmp-profile')","document.createElement('img')",'v3-card-theme-frame','profile.prepend(frame)'])assert.ok(cardApplicator.includes(token),token);
+for(const token of ["querySelector?.(':scope > .cmp-profile, :scope > .sr-profile-head')","document.createElement('img')",'v3-card-theme-frame','profile.prepend(frame)'])assert.ok(cardApplicator.includes(token),token);
 for(const forbidden of ['style.setProperty','background','--v3-card-image','showroom-v2-card'])assert.equal(cardApplicator.includes(forbidden),false,`card theme must not inject ${forbidden}`);
 const mainPlotDecorator=renderer.slice(renderer.indexOf('export function decorateMainPlotV2'),renderer.indexOf('export function renderCatalogPreviewV2'));
 for(const token of ['[data-main-weight-plot="true"]','v3-main-plot-decor','v3-graph-layer',"dataset.aspectRatio='16:9'","dataset.hasGraph=graph?'true':'false'"])assert.ok(mainPlotDecorator.includes(token),token);
@@ -151,7 +160,7 @@ const datasetSource=chart.slice(chart.indexOf('const datasets = ['),chart.indexO
 assert.equal(datasetSource.includes('markerSize'),false,'image marker size must not affect ordinary dataset points');
 assert.equal(chart.includes("text: '체중 (kg)'"),false,'Y-axis title must be removed');
 assert.equal(chart.includes("text: '체중(kg)'"),false,'Y-axis title must be removed');
-for(const token of ['mainPlotDomBoundsPlugin','chart.chartArea','.v3-main-plot-decor[data-showroom-main-plot="true"]','--showroom-main-plot-bottom','fitMainPlotBounds(area,mainPlotAspectRatio||16/9)','plugins: [canvasBgPlugin, mainPlotDomBoundsPlugin'])assert.ok(chart.includes(token),token);
+for(const token of ['mainPlotDomBoundsPlugin','chart.chartArea','.v3-main-plot-decor[data-showroom-main-plot="true"]','--showroom-main-plot-bottom','fitMainPlotBounds(area,mainPlotAspectRatio||16/9)','lineStyleEffectPlugin','showroomLineColor','showroomLineWidth','chartDecorations?.lineDash','chartDecorations?.lineGlowBlur','chartDecorations?.lineTension','plugins: [canvasBgPlugin, lineStyleEffectPlugin, mainPlotDomBoundsPlugin'])assert.ok(chart.includes(token),token);
 const fitted=fitMainPlotBounds({left:58,top:16,right:658,bottom:430},16/9);
 assert.ok(fitted.left>=58,'main plot host must start inside chartArea left');
 assert.ok(fitted.top>=16,'main plot host must start inside chartArea top');
@@ -167,7 +176,7 @@ assert.ok(sw.includes("weight-v59-showroom-images"));assert.equal(sw.includes('c
 for(const entry of SHOWROOM_CATALOG_V2)assert.ok(sw.includes(`'${entry.asset}'`),`sw:${entry.asset}`);
 
 const showroom=await readFile(new URL('../dressroom.html',import.meta.url),'utf8');
-for(const token of ['purchaseCatalogItemsV2','saveShowroomLoadoutV2','현재 범주 4종 검색','unownedSelectionV2','decorateMainPlotV2','data-main-weight-plot="true"','data-chart-subgraphs="diet exercise"','mainPlotAspectRatio:16/9','테스트 중 · 구매 불가','item.purchasable!==false&&!item.testOnly','테스트 아이템은 세션 미리보기 전용이며 저장할 수 없습니다'])assert.ok(showroom.includes(token),token);
+for(const token of ['purchaseCatalogItemsV2','saveShowroomLoadoutV2','현재 범주 검색','unownedSelectionV2','decorateMainPlotV2','data-main-weight-plot="true"','data-chart-subgraphs="diet exercise"','mainPlotAspectRatio:16/9','테스트 중 · 구매 불가','item.purchasable!==false&&!item.testOnly','테스트 아이템은 세션 미리보기 전용이며 저장할 수 없습니다','id="trophyOrder"','renderTrophyOrder','data-trophy-move','보유 트로피 · 전시 순서','id="lineControls"','renderLineControls','id="lineColor"','id="lineWidth"','3:1 미만 경고','추천색'])assert.ok(showroom.includes(token),token);
 assert.ok(showroom.includes('.sr-cats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))'));
 assert.ok(showroom.includes('@media(max-width:520px){.sr-cats{grid-template-columns:repeat(2,minmax(0,1fr))}}'));
 assert.equal(showroom.includes('id="logoutBtn"'),false,'dressroom header must not render the large logout button');
@@ -176,8 +185,15 @@ for(const token of ['decorateMainPlotV2','getChartDecorationsV2','data-main-weig
 for(const token of ['showMaxMarker: false','showMinMarker: true','showCurMarker: false'])assert.ok(compare.includes(token),token);
 for(const token of ['id="markerSize" type="range" min="20" max="44" step="2" value="32"',"localStorage.getItem('compare_marker_size')",'markerSize=Number(size.value)',"localStorage.setItem('compare_marker_size'",'chartDecorations: { ...getChartDecorationsV2(user?.showroomLoadoutV2), markerSize }','.marker-size-control{grid-column:1/-1'])assert.ok(compare.includes(token),token);
 const db=await readFile(new URL('../js/db.js',import.meta.url),'utf8');
-for(const token of ['purchaseCatalogItemsV2','validateCatalogPurchaseV2(itemIds)','persistableLoadoutV2(rawLoadout)','테스트 아이템은 소유권을 추가하거나 회수할 수 없습니다','runTransaction','adminSetCatalogOwnershipV2','adminGrantedItems'])assert.ok(db.includes(token),token);
+for(const token of ['purchaseCatalogItemsV2','validateCatalogPurchaseV2(itemIds)','persistableLoadoutV2(rawLoadout)','트로피 외 테스트 아이템은 소유권을 추가하거나 회수할 수 없습니다','runTransaction','adminSetCatalogOwnershipV2','adminGrantedItems',"item.category==='trophy'"])assert.ok(db.includes(token),token);
 const purchaseSource=db.slice(db.indexOf('export async function purchaseCatalogItemsV2'),db.indexOf('export const purchaseShowroomItem'));
 assert.ok(purchaseSource.indexOf('validateCatalogPurchaseV2(itemIds)')<purchaseSource.indexOf('runTransaction'),'test-only purchase must fail before Firestore transaction');
+const admin=await readFile(new URL('../admin.html',import.meta.url),'utf8');
+for(const token of ['achievementTrophyRewards','data-ach-trophy','saveAchTrophy','트로피 보상 저장됨'])assert.ok(admin.includes(token),token);
+for(const [name,html] of [['admin',admin],['dressroom',showroom]]){
+  const moduleBody=html.match(/<script type="module">([\s\S]*?)<\/script>/)?.[1]||'';
+  const withoutImports=moduleBody.replace(/import[\s\S]*?from\s*['"][^'"]+['"];\s*/g,'');
+  assert.doesNotThrow(()=>new Function(withoutImports),`${name} inline module syntax`);
+}
 
 console.log('showroom image catalog tests: PASS');

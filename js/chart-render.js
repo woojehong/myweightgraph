@@ -585,10 +585,13 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
     datasets.push({ label: '7일 이동평균', data: ma7, borderColor: ORANGE, backgroundColor: 'transparent', borderWidth: 1.8, borderDash: [7,4], pointRadius: 0, tension: .3, order: 2 });
   // 일간은 점이 수백 개라 숨기고, 주간·월간은 각 지점이 보이도록 점 표시
   const mainPointR = labelMode === 'day' ? 0 : (gridCell ? 2.6 : 3.6);
-  datasets.push({ label: '실제 체중', data: pts.map(p => ({ x: p.t, y: p.w })), borderColor: TEAL, backgroundColor: 'transparent', borderWidth: 2.2,
+  const showroomLineColor=chartDecorations?.lineColor||TEAL;
+  const showroomLineWidth=Math.max(1,Math.min(6,Number(chartDecorations?.lineWidth)||2.2));
+  datasets.push({ label: '실제 체중', data: pts.map(p => ({ x: p.t, y: p.w })), borderColor: showroomLineColor, backgroundColor: 'transparent', borderWidth: showroomLineWidth,
+    borderDash:Array.isArray(chartDecorations?.lineDash)?chartDecorations.lineDash:[],showroomLineEffect:{color:showroomLineColor,blur:Math.max(0,Math.min(18,Number(chartDecorations?.lineGlowBlur)||0))},
     pointRadius: mainPointR, pointHoverRadius: 5,
-    pointBackgroundColor: TEAL, pointBorderColor: BG, pointBorderWidth: mainPointR ? 1.5 : 0,
-    tension: .15, spanGaps: false, order: 1 });
+    pointBackgroundColor: showroomLineColor, pointBorderColor: BG, pointBorderWidth: mainPointR ? 1.5 : 0,
+    tension:Number.isFinite(Number(chartDecorations?.lineTension))?Math.max(0,Math.min(.5,Number(chartDecorations.lineTension))):.15, spanGaps: false, order: 1 });
   if (showPrediction && predData.length > 1)
     datasets.push({ label: '예상 체중', data: predData, borderColor: PURPLE, backgroundColor: 'transparent', borderWidth: 1.5, borderDash: [4,6], pointRadius: 3, pointHoverRadius: 6, pointBackgroundColor: PURPLE, tension: .2, order: 3 });
 
@@ -604,6 +607,7 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
     ctx.save(); ctx.fillStyle = chartDecorations.canvasColor; ctx.fillRect(0, 0, width, height);
     const f=Number(chartDecorations.graphFamily);if(Number.isFinite(f)){ctx.strokeStyle=chartDecorations.gridColor||'#ffffff18';ctx.lineWidth=1;const step=10+(f%5)*5;ctx.beginPath();if(f%5===0)for(let x=0;x<width;x+=step){ctx.moveTo(x,0);ctx.lineTo(x,height)}if(f%5===1)for(let y=0;y<height;y+=step){ctx.moveTo(0,y);ctx.lineTo(width,y)}if(f%5===2)for(let x=-height;x<width;x+=step){ctx.moveTo(x,0);ctx.lineTo(x+height,height)}if(f%5===3)for(let r=step;r<Math.max(width,height);r+=step){ctx.moveTo(width/2+r,height/2);ctx.arc(width/2,height/2,r,0,Math.PI*2)}if(f%5===4)for(let x=0;x<width;x+=step)for(let y=0;y<height;y+=step){ctx.moveTo(x+2,y);ctx.arc(x,y,2+(f%3),0,Math.PI*2)}ctx.stroke();ctx.globalAlpha=.12+.04*(f%3);ctx.fillStyle=chartDecorations.actualColor||'#fff';if(f>=5)ctx.fillRect((f*17)%width,0,Math.max(2,width/(18-f)),height);if(f>=10)ctx.fillRect(0,(f*13)%height,width,Math.max(2,height/(23-f)));}ctx.restore();
   }};
+  const lineStyleEffectPlugin={id:'showroomLineStyleEffect',beforeDatasetDraw(chart,args){const effect=chart.data.datasets[args.index]?.showroomLineEffect;if(!effect?.blur)return;chart.ctx.save();chart.ctx.shadowColor=effect.color;chart.ctx.shadowBlur=effect.blur},afterDatasetDraw(chart,args){if(chart.data.datasets[args.index]?.showroomLineEffect?.blur)chart.ctx.restore()}};
   const chartRefW = (canvasMain.parentElement && canvasMain.parentElement.clientWidth) || (window.innerWidth - 32);
   // 비교 화면은 메인 플롯 너비를 16:9로 환산하고 기존 서브그래프 예약 높이를 더한다.
   // 대시보드는 mainPlotAspectRatio를 전달하지 않으므로 기존 계산을 그대로 사용한다.
@@ -664,7 +668,7 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
       },
       interaction: { mode: 'index', intersect: false }
     },
-    plugins: [canvasBgPlugin, mainPlotDomBoundsPlugin, annotPlugin, weeklyBarPlugin, weeklyBarTooltipPlugin, subGraphPlugin, subGraphTooltipPlugin]
+    plugins: [canvasBgPlugin, lineStyleEffectPlugin, mainPlotDomBoundsPlugin, annotPlugin, weeklyBarPlugin, weeklyBarTooltipPlugin, subGraphPlugin, subGraphTooltipPlugin]
   });
   canvasMain._startTs = startTs;
   canvasMain._endTs   = endTs;

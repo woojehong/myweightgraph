@@ -12,14 +12,14 @@
 <body>
   <main class="lab">
     <h1>쇼룸 이미지 랩</h1>
-    <p class="lab-lead">외부 데이터 연결 없이 32개 테스트 에셋과 차트 하부 레이어를 검수합니다. 항목은 세션 미리보기 전용이며 구매하거나 저장할 수 없습니다.</p>
+    <p class="lab-lead">외부 데이터 연결 없이 테스트 카탈로그와 차트 하부 레이어를 검수합니다. 항목은 세션 미리보기 전용이며 구매하거나 저장할 수 없습니다.</p>
     <section class="lab-demo">
       <article id="demoCard" class="lab-card">
-        <div class="lab-profile" id="demoProfile"></div>
+        <div class="lab-profile cmp-profile" id="demoProfile"></div>
         <div class="lab-chart v2-plot-host" id="demoPlot" data-main-weight-plot="true"><canvas id="demoCanvas"></canvas></div>
         <div class="lab-subgraphs"><div class="lab-subgraph" data-subgraph="diet">식단<i></i></div><div class="lab-subgraph exercise" data-subgraph="exercise">운동<i></i></div></div>
       </article>
-      <div class="lab-status"><span>이미지는 캔버스 아래 · 중앙 가독성 마스크 적용</span><span id="status">32 / 32</span></div>
+      <div class="lab-status"><span>이미지는 캔버스 아래 · 중앙 가독성 마스크 적용</span><span id="status">검사 중</span></div>
     </section>
     <div id="catalog"></div>
   </main>
@@ -28,7 +28,7 @@
     import{CATEGORY_META,RARITY_META,applyCardV2,decorateMainPlotV2,getChartDecorationsV2,profileVisualV2,renderCatalogPreviewV2}from'./js/showroom-v2.js';
     const byCategory=category=>SHOWROOM_CATALOG_V2.filter(entry=>entry.category===category);
     const loadout={...SHOWROOM_DEFAULTS,trophy:[]};
-    for(const category of SHOWROOM_CATEGORIES){const first=byCategory(category)[0];loadout[category]=category==='trophy'?[first.id]:first.id}
+    for(const category of SHOWROOM_CATEGORIES){const first=byCategory(category)[0];if(first)loadout[category]=category==='trophy'?[first.id]:first.id}
     const card=document.getElementById('demoCard'),plot=document.getElementById('demoPlot'),canvas=document.getElementById('demoCanvas');
     const imageCache=new Map();
     function imageFor(src){if(!src)return null;if(!imageCache.has(src)){const image=new Image();image.onload=drawChart;image.src=src;imageCache.set(src,image)}return imageCache.get(src)}
@@ -39,16 +39,16 @@
       ctx.strokeStyle='rgba(255,255,255,.14)';ctx.lineWidth=1;ctx.font='10px system-ui';ctx.fillStyle='rgba(255,255,255,.68)';ctx.textAlign='right';
       for(let i=0;i<5;i++){const y=T+(B-T)*i/4;ctx.beginPath();ctx.moveTo(L,y);ctx.lineTo(R,y);ctx.stroke();ctx.fillText(String(86-i*4),L-7,y+3)}
       const points=[[L,B-22],[L+(R-L)*.17,B-51],[L+(R-L)*.34,B-43],[L+(R-L)*.51,B-82],[L+(R-L)*.68,B-74],[L+(R-L)*.84,B-112],[R,B-96]];
-      const decoration=getChartDecorationsV2(loadout),line=decoration.actualColor||'#00e5aa';ctx.strokeStyle=line;ctx.lineWidth=3;ctx.lineJoin='round';ctx.beginPath();points.forEach(([x,y],index)=>index?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.stroke();
+      const decoration=getChartDecorationsV2(loadout),line=decoration.actualColor||'#00e5aa';ctx.strokeStyle=line;ctx.lineWidth=decoration.lineWidth||3;ctx.setLineDash(decoration.lineDash||[]);ctx.shadowColor=line;ctx.shadowBlur=decoration.lineGlowBlur||0;ctx.lineJoin='round';ctx.beginPath();points.forEach(([x,y],index)=>index?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.stroke();ctx.setLineDash([]);ctx.shadowBlur=0;
       const marker=imageFor(decoration.markerAsset);drawMarker(ctx,marker,points[0][0],points[0][1],line);
       ctx.fillStyle='rgba(255,255,255,.7)';ctx.textAlign='center';['1주','2주','3주','4주'].forEach((label,index)=>ctx.fillText(label,L+(R-L)*index/3,H-10));ctx.restore();
     }
     function renderDemo(){
       document.getElementById('demoProfile').innerHTML=`${profileVisualV2(loadout,48)}<span>마웨그 탐험가</span>`;applyCardV2(card,loadout);decorateMainPlotV2(plot,loadout);drawChart();document.querySelectorAll('[data-item]').forEach(button=>button.classList.toggle('active',Object.values(loadout).flat().includes(button.dataset.item)));
     }
-    document.getElementById('catalog').innerHTML=SHOWROOM_CATEGORIES.map(category=>`<section><div class="lab-head"><h2>${CATEGORY_META[category].icon} ${CATEGORY_META[category].name}</h2><span class="lab-count">4개 · 테스트 전용</span></div><div class="lab-grid">${byCategory(category).map(entry=>`<button class="lab-item" data-item="${entry.id}" data-category="${category}"><span class="lab-visual">${renderCatalogPreviewV2(entry)}</span><b style="color:${RARITY_META[entry.rarity].color}">${entry.name}</b><small>${entry.id} · ${RARITY_META[entry.rarity].label} · 구매 불가</small></button>`).join('')}</div></section>`).join('');
+    document.getElementById('catalog').innerHTML=SHOWROOM_CATEGORIES.map(category=>{const entries=byCategory(category);return`<section><div class="lab-head"><h2>${CATEGORY_META[category].icon} ${CATEGORY_META[category].name}</h2><span class="lab-count">${entries.length}개 · 테스트 전용</span></div><div class="lab-grid">${entries.length?entries.map(entry=>`<button class="lab-item" data-item="${entry.id}" data-category="${category}"><span class="lab-visual">${renderCatalogPreviewV2(entry)}</span><b style="color:${RARITY_META[entry.rarity].color}">${entry.name}</b><small>${entry.id} · ${RARITY_META[entry.rarity].label} · 구매 불가</small></button>`).join(''):'<small style="color:#8195aa">전체 108종 등록 완료 후 활성화됩니다.</small>'}</div></section>`}).join('');
     document.querySelectorAll('[data-item]').forEach(button=>button.addEventListener('click',()=>{const category=button.dataset.category;if(category==='trophy'){loadout.trophy=[button.dataset.item]}else loadout[category]=button.dataset.item;renderDemo()}));
-    const probes=SHOWROOM_CATALOG_V2.map(entry=>new Promise(resolve=>{const image=new Image();image.onload=()=>resolve(true);image.onerror=()=>resolve(false);image.src=entry.asset}));Promise.all(probes).then(results=>{const loaded=results.filter(Boolean).length;document.getElementById('status').textContent=`${loaded} / ${results.length}`;document.getElementById('status').style.color=loaded===results.length?'#00e5aa':'#ff6b6b'});
+    const probes=SHOWROOM_CATALOG_V2.map(entry=>entry.asset?new Promise(resolve=>{const image=new Image();image.onload=()=>resolve(true);image.onerror=()=>resolve(false);image.src=entry.asset}):Promise.resolve(true));Promise.all(probes).then(results=>{const loaded=results.filter(Boolean).length;document.getElementById('status').textContent=`${loaded} / ${results.length}`;document.getElementById('status').style.color=loaded===results.length?'#00e5aa':'#ff6b6b'});
     addEventListener('resize',drawChart);renderDemo();
   </script>
 </body>
