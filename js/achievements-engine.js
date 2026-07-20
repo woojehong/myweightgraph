@@ -9,13 +9,12 @@
 //    or the `invalidated` flag).
 //  - Meta achievements (grade/milestone) are computed to a fixpoint so that
 //    score gained from meta achievements can itself unlock further grades.
-//  - Border/title rewards come from three sources: built-in auto mappings
-//    (borders-data.js), admin assignments (settings/tiers), and shop purchases.
+//  - V2 item rewards are permanent once the linked achievement is earned.
 
 import { ACHIEVEMENTS, RETIRED_ACHIEVEMENT_IDS, calculateEarnedIds,
          calculateMetaEarnedIds, calcTotalScore, DEFAULT_TIERS,
          getTierForScore } from './achievements.js';
-import { ACH_BORDER_REWARDS, ACH_TITLE_REWARDS } from './borders-data.js';
+import { rewardItemsForAchievementsV2 } from './achievement-item-rewards-v2.js';
 import { getUser, getWeights, getEarnedAchievements, saveEarnedAchievement,
          updateUser, getTierSettings } from './db.js';
 
@@ -70,28 +69,12 @@ export function computeAchievementState({ user, records, storedRaw, tierData }) 
   const tier        = getTierForScore(totalScore, tiers);
   const newlyEarned = [...validEarned].filter(id => !storedIds.has(id));
 
-  // Rewards
-  const autoBorders = Object.entries(ACH_BORDER_REWARDS)
-    .filter(([achId]) => validEarned.has(achId)).map(([, b]) => b);
-  const assignedBorders = Object.entries(tierData?.borderAssign || {})
-    .filter(([, achId]) => validEarned.has(achId)).map(([bId]) => bId);
-  const unlockedBorders = [...new Set([
-    ...autoBorders, ...assignedBorders, ...(user?.purchasedBorders || []),
-  ])];
-
-  const autoTitles = Object.entries(ACH_TITLE_REWARDS)
-    .filter(([achId]) => validEarned.has(achId)).map(([, t]) => t);
-  const assignedTitles = (tierData?.titles || [])
-    .filter(t => t.achId && validEarned.has(t.achId)).map(t => t.name);
-  const earnedTitles = [...new Set([
-    ...(user?.earnedTitles || []), ...autoTitles, ...assignedTitles,
-    ...(user?.purchasedTitles || []),
-  ])];
+  const achievementRewardItems=[...new Set([...(user?.achievementRewardItems||[]),...rewardItemsForAchievementsV2(validEarned)])];
 
   const baseCount = [...validEarned].filter(id => !isMetaAchievement(id)).length;
 
   return { tiers, tier, validEarned, baseEarned, metaEarned, totalScore,
-           newlyEarned, unlockedBorders, earnedTitles, storedIds, baseCount };
+           newlyEarned, achievementRewardItems, storedIds, baseCount };
 }
 
 // Evaluate + persist. Returns full context for rendering, or null if the
@@ -107,7 +90,7 @@ export async function syncAchievements(uid, opts = {}) {
   if (!user) return null;
 
   const state = computeAchievementState({ user, records, storedRaw, tierData });
-  const { totalScore, newlyEarned, unlockedBorders, earnedTitles } = state;
+  const { totalScore, newlyEarned, achievementRewardItems } = state;
   const adminOverrides = user.adminOverrides || {};
 
   await Promise.all(newlyEarned.map(id => saveEarnedAchievement(uid, id, {
@@ -127,8 +110,7 @@ export async function syncAchievements(uid, opts = {}) {
     updates.coins = (user.coins || 0) + coinsGained;
   }
   if (user.totalScore !== totalScore)                     updates.totalScore = totalScore;
-  if (!sameSet(unlockedBorders, user.unlockedBorders))    updates.unlockedBorders = unlockedBorders;
-  if (!sameSet(earnedTitles, user.earnedTitles))          updates.earnedTitles = earnedTitles;
+  if (!sameSet(achievementRewardItems, user.achievementRewardItems)) updates.achievementRewardItems=achievementRewardItems;
   if (Object.keys(updates).length) await updateUser(uid, updates);
 
   const newAchievements = newlyEarned.map(id => ACH_MAP[id]).filter(Boolean);

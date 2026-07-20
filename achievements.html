@@ -238,7 +238,8 @@ import { clearAuth, saveAuth, isAuthed } from './js/auth.js';
 import { ACHIEVEMENTS, ACHIEVEMENT_CATEGORIES,
          calculateProgress, calculateMetaProgress } from './js/achievements.js';
 import { syncAchievements, queueAchievementPopups } from './js/achievements-engine.js';
-import { BORDER_NAMES, ACH_BORDER_REWARDS, ACH_TITLE_REWARDS } from './js/borders-data.js';
+import { ACHIEVEMENT_ITEM_REWARDS_V2 } from './js/achievement-item-rewards-v2.js';
+import { getCatalogItemV2, RARITY_META, profileVisualV2, titleInfoV2 } from './js/showroom-v2.js';
 import { renderAvatarV2, playAvatarV2 } from './js/avatar-v2.js';
 import { esc } from './js/util.js';
 const VISIBLE_ACHIEVEMENTS = ACHIEVEMENTS.filter(a =>
@@ -261,7 +262,6 @@ function buildNav() {
     { href:`compare.html?user=${uid}`,      icon:'👥', label:'우리 그래프', id:'compare' },
     { href:`achievements.html?user=${uid}`, icon:'🏆', label:'업적',        id:'achievements' },
     { href:`dressroom.html?user=${uid}`,    icon:'✨', label:'쇼룸',        id:'dressroom' },
-    { href:`shop.html?user=${uid}`,         icon:'🛍️', label:'상점',        id:'shop' },
   ];
   const nav = document.getElementById('bottomNav');
   links.forEach(l => {
@@ -274,16 +274,15 @@ function buildNav() {
 
 function setChipData(u, tierColor) {
   const tc = tierColor || '#00e5aa';
-  document.getElementById('chipEmoji').textContent = u.emoji || '⚖️';
-  const displayName = (u.selectedTitle ? u.selectedTitle + ' ' : '') + u.name;
-  document.getElementById('chipName').textContent  = displayName;
+  document.getElementById('chipEmoji').innerHTML = profileVisualV2(u?.showroomLoadoutV2,30);
+  document.getElementById('chipName').textContent  = u.name;
   document.getElementById('chipName').style.color  = tc;
   const chipTitleEl = document.getElementById('chipTitle');
   if (chipTitleEl) chipTitleEl.style.display = 'none';
   const wrap = document.getElementById('chipAvatarWrap');
-  if (wrap) { wrap.className = `avatar-frame chip-avatar${u.selectedBorder?' border-'+u.selectedBorder:''}`; wrap.style.setProperty('--tier-color', tc); }
+  if (wrap) { wrap.className = 'chip-avatar'; wrap.style.setProperty('--tier-color', tc); }
   const titleEl = document.getElementById('chipTitle');
-  if (titleEl) { titleEl.textContent = u.selectedTitle||''; titleEl.style.color = tc; titleEl.style.display = u.selectedTitle?'inline':'none'; }
+  const title=titleInfoV2(u?.showroomLoadoutV2);if (titleEl) { titleEl.textContent=title?.name||'';titleEl.style.color=title?.color||tc;titleEl.style.display=title?'inline':'none'; }
   const scoreEl = document.getElementById('chipScore');
   if (scoreEl) scoreEl.textContent = (u.totalScore>0)?`${u.totalScore} PT`:'';
 }
@@ -478,19 +477,6 @@ function renderAchievements(cat) {
   const el = document.getElementById('achMain');
   if (!el) return;
 
-  // 보상 테이블 사전 계산: 자동 매핑 + 관리자 배정
-  const borderRewards = {};
-  Object.entries(ACH_BORDER_REWARDS).forEach(([aId, bId]) => {
-    const name = BORDER_NAMES[bId];
-    if (name) borderRewards[aId] = name;
-  });
-  Object.entries(_tierData?.borderAssign || {}).forEach(([bId, aId]) => {
-    const name = BORDER_NAMES[bId];
-    if (name) borderRewards[aId] = name;
-  });
-  const titleRewards = { ...ACH_TITLE_REWARDS };
-  (_tierData?.titles || []).forEach(t => { if (t.achId) titleRewards[t.achId] = t.name; });
-
   const list = cat === 'all' ? VISIBLE_ACHIEVEMENTS : VISIBLE_ACHIEVEMENTS.filter(a => a.cat === cat);
 
   // 같은 날 달성 시: 점수 높은 것 → 배열 인덱스 높은 것(더 상위 업적) 순
@@ -518,7 +504,7 @@ function renderAchievements(cat) {
         </div>
       </div>` : '';
     const legEarned = isEarned && a.legendary;
-    const rb = borderRewards[a.id], rt = titleRewards[a.id];
+    const rewards=(ACHIEVEMENT_ITEM_REWARDS_V2[a.id]||[]).map(getCatalogItemV2).filter(Boolean);
     return `<div class="ach-card ${isEarned?'earned':''} ${legEarned?'leg-earned':''} ${isEarned?'':'locked'}">
       <div class="ac-row-top">
         <div class="ac-icon">${a.icon}</div>
@@ -531,10 +517,7 @@ function renderAchievements(cat) {
           ${isEarned && stored?.earnedAt ? `<div class="ac-date">${fmtDate(stored.earnedAt)} 달성</div>` : ''}
           ${progHtml}
         </div>
-        ${rb||rt ? `<div class="ac-rewards">
-          ${rb ? `<div class="ac-reward">🖼️ ${rb}</div>` : ''}
-          ${rt ? `<div class="ac-reward">🏷️ ${rt}</div>` : ''}
-        </div>` : ''}
+        ${rewards.length?`<div class="ac-rewards">${rewards.map(item=>`<div class="ac-reward" style="color:${RARITY_META[item.rarity].color}">🎁 ${esc(item.name)}</div>`).join('')}</div>`:''}
       </div>
     </div>`;
   };
@@ -557,6 +540,7 @@ function renderAchievements(cat) {
 
 // ── 프로필 수정 ──────────────────────────────────────────────────────
 window.openProfileEdit = () => {
+  location.href=`dressroom.html?user=${encodeURIComponent(uid)}`;return;
   selEmoji = _user?.emoji || '⚖️';
   document.getElementById('pEmojiGrid').innerHTML = EMOJIS.map(e =>
     `<button class="p-emoji-btn ${e===selEmoji?'sel':''}" onclick="pickPEmoji('${e}')">${e}</button>`

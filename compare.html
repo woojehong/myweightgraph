@@ -39,7 +39,10 @@
     @media(max-width:767px){ .gran-btn{ padding:4px 10px; font-size:11px; } }
 
     .picker{
-      display:flex; gap:8px; overflow-x:auto; padding:2px 2px 6px;
+      /* Horizontal scrolling creates a vertical clipping boundary too. Keep a
+         generous inner gutter so animated borders/glows never hit that edge. */
+      display:flex; gap:8px; overflow-x:auto; padding:28px 26px 10px;
+      scroll-padding-inline:26px;
       -webkit-overflow-scrolling:touch; scrollbar-width:thin;
     }
     .pick-chip{
@@ -198,7 +201,7 @@ import { isAuthed, clearAuth } from './js/auth.js';
 import { renderChart, aggregateRecords, periodLabel } from './js/chart-render.js';
 import { getTierForScore, DEFAULT_TIERS } from './js/achievements.js';
 import { esc } from './js/util.js';
-import { applyShowroomStyle, getChartDecorations } from './js/showroom-style.js';
+import { applyCardV2, decoratePlotV2, getChartDecorationsV2, profileVisualV2, titleInfoV2 } from './js/showroom-v2.js';
 
 const uid = new URLSearchParams(location.search).get('user') || localStorage.getItem('uid');
 if (!uid) location.href = 'index.html';
@@ -213,7 +216,6 @@ function buildNav() {
     { href:`compare.html?user=${uid}`,      icon:'👥', label:'우리 그래프', id:'compare' },
     { href:`achievements.html?user=${uid}`, icon:'🏆', label:'업적',         id:'achievements' },
     { href:`dressroom.html?user=${uid}`,    icon:'✨', label:'쇼룸',         id:'dressroom' },
-    { href:`shop.html?user=${uid}`,         icon:'🛍️', label:'상점',         id:'shop' },
   ];
   const nav = document.getElementById('bottomNav');
   links.forEach(l => {
@@ -268,7 +270,7 @@ function chartOpts(user) {
     gridCell: true,
     labelMode: viewMode,
     mainPlotAspectRatio: 16 / 9,
-    chartDecorations: getChartDecorations(user?.showroomLoadout),
+    chartDecorations: getChartDecorationsV2(user?.showroomLoadoutV2),
   };
   // 주간·월간은 평균선만 (식단/운동·이동평균·예상 숨김)
   if (viewMode !== 'day') {
@@ -310,16 +312,14 @@ const shortDate = ds => {
 function setChip(u) {
   const tier = getTierForScore(u?.totalScore || 0, TIERS);
   const tc = tier.color || '#00e5aa';
-  document.getElementById('chipEmoji').textContent = u?.emoji || '⚖️';
+  document.getElementById('chipEmoji').innerHTML = profileVisualV2(u?.showroomLoadoutV2,30);
   document.getElementById('chipName').textContent  = u?.name || '-';
   document.getElementById('chipName').style.color  = tc;
   const wrap = document.getElementById('chipAvatarWrap');
-  wrap.className = `avatar-frame chip-avatar${u?.selectedBorder ? ' border-'+u.selectedBorder : ''}`;
+  wrap.className = 'chip-avatar';
   wrap.style.setProperty('--tier-color', tc);
   const titleEl = document.getElementById('chipTitle');
-  titleEl.textContent = u?.selectedTitle || '';
-  titleEl.style.color = tc;
-  titleEl.style.display = u?.selectedTitle ? 'inline' : 'none';
+  const title=titleInfoV2(u?.showroomLoadoutV2);titleEl.textContent=title?.name||'';titleEl.style.color=title?.color||tc;titleEl.style.display=title?'inline':'none';
   const scoreEl = document.getElementById('chipScore');
   scoreEl.textContent = (u?.totalScore > 0) ? `${u.totalScore} PT` : '';
 }
@@ -332,13 +332,11 @@ function renderPicker() {
     const tc = tier.color;
     const idx = selected.indexOf(u.id);
     const sel = idx >= 0;
-    const bClass = u.selectedBorder ? ' border-' + u.selectedBorder : '';
+    const title=titleInfoV2(u.showroomLoadoutV2);
     return `
       <button class="pick-chip ${sel ? 'sel' : ''}" data-id="${u.id}">
         ${sel ? `<span class="pick-num">${idx + 1}</span>` : ''}
-        <div class="avatar-frame pick-avatar${bClass}" style="--tier-color:${tc}">
-          <div class="pick-avatar-inner">${u.emoji || '⚖️'}</div>
-        </div>
+        <div class="pick-avatar">${profileVisualV2(u.showroomLoadoutV2,40)}</div>
         <span class="pick-name">${esc(u.name)}</span>
       </button>`;
   }).join('');
@@ -366,7 +364,7 @@ function destroyGridCharts() {
 function cellHTML(u) {
   const tier = getTierForScore(u.totalScore || 0, TIERS);
   const tc = tier.color;
-  const bClass = u.selectedBorder ? ' border-' + u.selectedBorder : '';
+  const title=titleInfoV2(u.showroomLoadoutV2);
   const recs = aggregateRecords(weightsCache[u.id] || [], viewMode);
   const hasData = recs.filter(r => r.weight != null).length >= 2;
   const body = hasData
@@ -388,15 +386,12 @@ function cellHTML(u) {
     </div>` : '';
 
   // 사용자 프로필 이모지
-  const faceInner = u.emoji || '⚖️';
   return `
     <div class="cmp-cell">
       <div class="cmp-profile">
-        <div class="avatar-frame cmp-avatar${bClass}" style="--tier-color:${tc}">
-          <div class="cmp-avatar-inner">${faceInner}</div>
-        </div>
+        <div class="cmp-avatar">${profileVisualV2(u.showroomLoadoutV2,32)}</div>
         <div class="cmp-info">
-          ${u.selectedTitle ? `<span class="cmp-title" style="color:${tc}">${esc(u.selectedTitle)}</span>` : ''}
+          ${title ? `<span class="cmp-title" style="color:${title.color}">${esc(title.name)}</span>` : ''}
           <span class="cmp-name" style="color:${tc}">${esc(u.name)}</span>
           ${u.totalScore > 0 ? `<span class="cmp-score">${u.totalScore} PT</span>` : ''}
         </div>
@@ -425,7 +420,7 @@ async function renderGrid() {
 
   const users = selected.map(id => allUsers.find(u => u.id === id)).filter(Boolean);
   grid.innerHTML = users.map(cellHTML).join('');
-  [...grid.querySelectorAll('.cmp-cell')].forEach((cell,index) => applyShowroomStyle(cell, users[index]?.showroomLoadout));
+  [...grid.querySelectorAll('.cmp-cell')].forEach((cell,index) => {const u=users[index];applyCardV2(cell,u?.showroomLoadoutV2);const plot=cell.querySelector('.cmp-chart');if(plot)decoratePlotV2(plot,u?.showroomLoadoutV2)});
 
   // 캔버스가 DOM에 들어간 뒤 차트 렌더
   users.forEach(u => {

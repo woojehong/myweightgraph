@@ -233,28 +233,19 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
     });
     ctx.restore();
   }
+  const markerHits=new Map();
   function dot(ctx, px, py, color, r) {
-    const stamp = chartDecorations?.stampStyle || 'circle';
-    ctx.save(); ctx.fillStyle = color; ctx.strokeStyle = BG; ctx.lineWidth = 2;
-    if (stamp === 'flag') {
-      ctx.beginPath(); ctx.moveTo(px-r*.7,py+r); ctx.lineTo(px-r*.7,py-r); ctx.lineTo(px+r,py-r*.55); ctx.lineTo(px-r*.7,py); ctx.closePath(); ctx.fill(); ctx.stroke();
-    } else if (stamp === 'spark') {
-      ctx.beginPath();
-      for(let i=0;i<8;i++){const a=-Math.PI/2+i*Math.PI/4,rr=i%2?r*.38:r*1.25;const x=px+Math.cos(a)*rr,y=py+Math.sin(a)*rr;i?ctx.lineTo(x,y):ctx.moveTo(x,y)}
-      ctx.closePath(); ctx.fill(); ctx.stroke();
-    } else if (stamp === 'crown') {
-      ctx.beginPath(); ctx.moveTo(px-r,py+r*.7); ctx.lineTo(px-r*.8,py-r*.7); ctx.lineTo(px-r*.25,py); ctx.lineTo(px,py-r); ctx.lineTo(px+r*.25,py); ctx.lineTo(px+r*.8,py-r*.7); ctx.lineTo(px+r,py+r*.7); ctx.closePath(); ctx.fill(); ctx.stroke();
-    } else if (stamp === 'meteor') {
-      ctx.beginPath(); ctx.moveTo(px-r*1.7,py+r*1.3); ctx.lineTo(px-r*.35,py+r*.15); ctx.strokeStyle=color; ctx.lineWidth=3; ctx.stroke();
-      ctx.beginPath(); ctx.arc(px,py,r*.8,0,Math.PI*2); ctx.fill(); ctx.strokeStyle=BG; ctx.lineWidth=2; ctx.stroke();
-    } else {
-      ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI*2); ctx.fill(); ctx.stroke();
-    }
-    ctx.restore();
+    const key=`${Math.round(px)}:${Math.round(py)}`,hit=markerHits.get(key)||0;markerHits.set(key,hit+1);
+    const angle=hit*Math.PI*2/3;px+=hit?Math.cos(angle)*9:0;py+=hit?Math.sin(angle)*9:0;
+    const variant=Math.max(0,Number(chartDecorations?.markerIndex)||0),points=4+(variant%5);
+    ctx.save();ctx.fillStyle=color;ctx.strokeStyle=BG;ctx.lineWidth=2;ctx.beginPath();
+    for(let i=0;i<points*2;i++){const a=-Math.PI/2+i*Math.PI/points,rr=i%2?r*.45:r*(1+(variant%3)*.12),x=px+Math.cos(a)*rr,y=py+Math.sin(a)*rr;i?ctx.lineTo(x,y):ctx.moveTo(x,y)}
+    ctx.closePath();ctx.fill();ctx.stroke();ctx.restore();
   }
 
   // ── 어노테이션 플러그인 ──────────────────────────────────────────────
   const annotPlugin = { id: 'annot', afterDatasetsDraw(chart) {
+    markerHits.clear();
     const ctx = chart.ctx, xs = chart.scales.x, ys = chart.scales.y;
     const gx = v => xs.getPixelForValue(v), gy = v => ys.getPixelForValue(v), area = chart.chartArea;
     const scale = Math.max(0.6, Math.min(2.0, (endTs - startTs) / (xs.max - xs.min)));
@@ -576,10 +567,9 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
   if (show7dayMA)
     datasets.push({ label: '7일 이동평균', data: ma7, borderColor: ORANGE, backgroundColor: 'transparent', borderWidth: 1.8, borderDash: [7,4], pointRadius: 0, tension: .3, order: 2 });
   // 일간은 점이 수백 개라 숨기고, 주간·월간은 각 지점이 보이도록 점 표시
-  const mainPointR = chartDecorations?.pointRadius ?? (labelMode === 'day' ? 0 : (gridCell ? 2.6 : 3.6));
+  const mainPointR = labelMode === 'day' ? 0 : (gridCell ? 2.6 : 3.6);
   datasets.push({ label: '실제 체중', data: pts.map(p => ({ x: p.t, y: p.w })), borderColor: TEAL, backgroundColor: 'transparent', borderWidth: 2.2,
     pointRadius: mainPointR, pointHoverRadius: 5,
-    pointStyle: chartDecorations?.pointStyle || 'circle',
     pointBackgroundColor: TEAL, pointBorderColor: BG, pointBorderWidth: mainPointR ? 1.5 : 0,
     tension: .15, spanGaps: false, order: 1 });
   if (showPrediction && predData.length > 1)

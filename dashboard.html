@@ -156,6 +156,7 @@ import { renderChart, calcStats, aggregateRecords, periodLabel } from './js/char
 import { getTierForScore, DEFAULT_TIERS } from './js/achievements.js';
 import { BORDER_NAMES } from './js/borders-data.js';
 import { esc } from './js/util.js';
+import { profileVisualV2, titleInfoV2 } from './js/showroom-v2.js';
 
 const uid = new URLSearchParams(location.search).get('user') || localStorage.getItem('uid');
 const isAdminView = new URLSearchParams(location.search).get('admin_view') === '1';
@@ -170,7 +171,6 @@ function buildNav(uid) {
     {href:`compare.html?user=${uid}`,      icon:'👥', label:'우리 그래프', id:'compare'},
     {href:`achievements.html?user=${uid}`, icon:'🏆', label:'업적',        id:'achievements'},
     {href:`dressroom.html?user=${uid}`,    icon:'✨', label:'쇼룸',        id:'dressroom'},
-    {href:`shop.html?user=${uid}`,         icon:'🛍️', label:'상점',        id:'shop'},
   ];
   const nav=document.getElementById('bottomNav');
   links.forEach(l=>{
@@ -346,6 +346,7 @@ const EMOJIS = ['⚖️','💪','🔥','👑','🏃','🌟','🎯','🦁','🐯'
 let selectedProfileEmoji = '';
 
 window.openProfileEdit = () => {
+  location.href=`dressroom.html?user=${encodeURIComponent(uid)}`;return;
   if(isAdminView) return;
   selectedProfileEmoji = document.getElementById('chipEmoji').textContent;
   const grid = document.getElementById('profileEmojiGrid');
@@ -476,19 +477,17 @@ window.chartZoomOut = () => {
 
 function setChipData(u, tierColor) {
   const tc = tierColor || '#00e5aa';
-  document.getElementById('chipEmoji').textContent = u.emoji || '⚖️';
+  document.getElementById('chipEmoji').innerHTML = profileVisualV2(u?.showroomLoadoutV2,30);
   document.getElementById('chipName').textContent  = u.name;
   document.getElementById('chipName').style.color  = tc;
   const wrap = document.getElementById('chipAvatarWrap');
   if (wrap) {
-    wrap.className = `avatar-frame chip-avatar${u.selectedBorder ? ' border-'+u.selectedBorder : ''}`;
+    wrap.className = 'chip-avatar';
     wrap.style.setProperty('--tier-color', tc);
   }
   const titleEl = document.getElementById('chipTitle');
   if (titleEl) {
-    titleEl.textContent  = u.selectedTitle || '';
-    titleEl.style.color  = tc;
-    titleEl.style.display = u.selectedTitle ? 'inline' : 'none';
+    const title=titleInfoV2(u?.showroomLoadoutV2);titleEl.textContent=title?.name||'';titleEl.style.color=title?.color||tc;titleEl.style.display=title?'inline':'none';
   }
   const scoreEl = document.getElementById('chipScore');
   if (scoreEl) scoreEl.textContent = (u.totalScore > 0) ? `${u.totalScore} PT` : '';
