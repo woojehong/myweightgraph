@@ -1,101 +1,159 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <script>location.replace('dashboard.html');</script>
-  <style>html{display:none!important}</style>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
   <meta name="theme-color" content="#080c13">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" href="favicon.png">
   <link rel="stylesheet" href="css/style.css">
-  <link rel="stylesheet" href="css/avatar-v2.css">
-  <title>드레스룸 | 마웨그</title>
+  <title>쇼룸 | 마웨그</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
   <style>
     body{background:#080c13;overflow-x:hidden}
-    .dressroom{min-height:100vh;display:grid;grid-template-rows:auto 1fr;color:var(--text)}
-    .dr-top{height:58px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:0 18px;border-bottom:1px solid rgba(255,255,255,.09);background:rgba(8,12,19,.96);position:relative;z-index:10}
-    .dr-back{justify-self:start}.dr-save{justify-self:end}.dr-brand{text-align:center}.dr-brand strong{display:block;font-size:15px;letter-spacing:.12em}.dr-brand span{font-size:9px;color:var(--muted);letter-spacing:.18em}
-    .dr-main{display:grid;grid-template-columns:210px minmax(300px,1fr) 310px;min-height:calc(100vh - 58px)}
-    .dr-cats,.dr-items{background:rgba(13,18,27,.92);padding:18px 12px}
-    .dr-cats{border-right:1px solid rgba(255,255,255,.08)}.dr-items{border-left:1px solid rgba(255,255,255,.08)}
-    .dr-section-label{font-size:10px;color:var(--muted);letter-spacing:.12em;margin:0 8px 10px}
-    .dr-cat{width:100%;display:flex;align-items:center;gap:10px;padding:10px 12px;margin-bottom:4px;border:1px solid transparent;border-radius:8px;background:transparent;color:var(--muted);text-align:left;cursor:pointer}
-    .dr-cat:hover{background:rgba(255,255,255,.04);color:var(--text)}.dr-cat.active{border-color:rgba(0,229,170,.45);background:rgba(0,229,170,.09);color:var(--teal)}.dr-cat i{font-style:normal;width:18px;text-align:center}
-    .dr-stage{position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;background:radial-gradient(ellipse at 50% 45%,rgba(42,70,88,.42),transparent 54%),linear-gradient(180deg,#101824 0%,#090d14 68%,#05070a 100%)}
-    .dr-stage::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px),linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px);background-size:54px 54px;mask-image:linear-gradient(to bottom,transparent,#000 35%,#000)}
-    #avatarStage{position:relative;z-index:2;display:flex;align-items:flex-end;justify-content:center;width:100%;height:100%;padding:30px 10px 22px;cursor:grab}#avatarStage:active{cursor:grabbing}
-    #avatarStage .avatar-v2{height:min(76vh,720px);width:min(62vw,610px)}
-    .stage-name{position:absolute;left:20px;bottom:18px;z-index:4}.stage-name strong{display:block;font-size:18px}.stage-name span{font-size:11px;color:var(--teal)}
-    .stage-tools{position:absolute;right:18px;bottom:18px;z-index:4;display:flex;gap:6px}
-    .dr-item-head{padding:2px 8px 14px;border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:12px}.dr-item-head strong{display:block;font-size:18px}.dr-item-head span{font-size:11px;color:var(--muted)}
-    .dr-item-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.dr-item{position:relative;min-height:92px;padding:10px;border:1px solid rgba(255,255,255,.09);border-radius:9px;background:rgba(255,255,255,.025);color:var(--text);text-align:left;cursor:pointer}.dr-item:hover{border-color:rgba(255,255,255,.22)}.dr-item.selected{border-color:var(--teal);background:rgba(0,229,170,.08);box-shadow:inset 0 0 0 1px rgba(0,229,170,.18)}
-    .dr-item.locked::after{content:'잠금';position:absolute;right:7px;top:7px;font-size:9px;color:#ffd166;border:1px solid rgba(255,209,102,.32);border-radius:10px;padding:2px 6px}.dr-item-icon{height:35px;display:flex;align-items:center;font-size:22px;color:var(--teal)}.dr-item b,.dr-item small{display:block}.dr-item small{color:var(--muted);margin-top:3px}.dr-price{color:#ffd166!important}
-    .dr-toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,18px);padding:10px 16px;border:1px solid rgba(0,229,170,.4);border-radius:9px;background:#111a25;color:var(--text);opacity:0;pointer-events:none;transition:.2s;z-index:30}.dr-toast.show{opacity:1;transform:translate(-50%,0)}
-    @media(max-width:900px){.dr-main{grid-template-columns:78px minmax(0,1fr) 260px}.dr-cat{justify-content:center;padding:10px 4px}.dr-cat span{display:none}.dr-cats{padding:14px 8px}.dr-section-label{display:none}}
-    @media(max-width:680px){.dr-top{height:52px;padding:0 10px}.dr-main{display:flex;flex-direction:column;min-height:calc(100vh - 52px)}.dr-stage{height:54vh;min-height:390px;order:0}.dr-cats{order:1;border:0;border-top:1px solid rgba(255,255,255,.08);display:flex;overflow-x:auto;padding:8px}.dr-cat{flex:0 0 54px;margin:0 3px}.dr-items{order:2;border:0;border-top:1px solid rgba(255,255,255,.08);padding:14px 12px 28px}.dr-item-grid{grid-template-columns:repeat(2,1fr)}#avatarStage .avatar-v2{height:48vh;width:78vw}.stage-name{left:12px;bottom:10px}.stage-tools{right:10px;bottom:10px}.dr-brand span{display:none}}
+    .sr-shell{max-width:1180px;margin:0 auto;padding:18px 16px 94px}
+    .sr-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:16px}
+    .sr-head h1{font-size:24px;margin:0}.sr-head p{font-size:12px;color:var(--muted);margin:5px 0 0}
+    .sr-actions{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}
+    .sr-layout{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(320px,.85fr);gap:16px;align-items:start;min-width:0}
+    .sr-preview-panel,.sr-control-panel{background:rgba(13,18,27,.8);border:1px solid var(--border);border-radius:15px;padding:14px;min-width:0}
+    .sr-preview-label{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--muted);margin-bottom:10px}
+    .sr-dirty{color:#ffd166;display:none}.sr-dirty.show{display:inline}
+    .sr-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 2px 4px;min-width:0;min-height:320px}
+    .sr-profile{display:flex;align-items:center;gap:9px;padding:0 8px 8px}.sr-profile-icon{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:#111923;border:1px solid var(--border);font-size:18px}.sr-profile-info{display:flex;flex-direction:column}.sr-profile-name{font-weight:800;font-size:14px}.sr-profile-title{font-size:9px;color:var(--teal)}
+    .sr-chart{position:relative;width:100%;min-height:245px}.sr-empty{min-height:245px;display:grid;place-items:center;color:var(--muted);font-size:12px}
+    .sr-cat-list{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px;min-width:0;max-width:100%}.sr-cat{padding:8px 4px;border:1px solid var(--border);border-radius:9px;background:var(--surface2);color:var(--muted);font-size:10px;line-height:1.25}.sr-cat i{display:block;font-style:normal;font-size:17px;margin-bottom:3px}.sr-cat.active{color:var(--teal);border-color:rgba(0,229,170,.5);background:rgba(0,229,170,.08)}
+    .sr-control-head{display:flex;justify-content:space-between;align-items:end;border-bottom:1px solid var(--border);padding-bottom:10px;margin-bottom:10px}.sr-control-head strong{font-size:17px}.sr-control-head span{font-size:10px;color:var(--muted)}
+    .sr-items{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.sr-item{min-width:0;min-height:116px;text-align:left;padding:10px;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,.025);color:var(--text);position:relative}.sr-item:hover{border-color:rgba(255,255,255,.25)}.sr-item.selected{border-color:var(--teal);background:rgba(0,229,170,.08);box-shadow:inset 0 0 0 1px rgba(0,229,170,.15)}.sr-item.unowned::after{content:'미보유 · 미리보기 가능';position:absolute;top:7px;right:7px;color:#ffd166;font-size:8px;border:1px solid rgba(255,209,102,.35);border-radius:10px;padding:2px 5px}.sr-item-icon{display:grid;place-items:center;width:38px;height:38px;border-radius:10px;background:linear-gradient(145deg,rgba(0,229,170,.17),rgba(92,103,255,.14));font-size:22px;margin-bottom:7px}.sr-item b,.sr-item small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.sr-item b{font-size:11px}.sr-item small{font-size:9px;color:var(--muted);margin-top:3px}.sr-price{color:#ffd166!important}
+    .sr-help{font-size:10px;color:var(--muted);margin:11px 2px 0;line-height:1.55}
+    @media(max-width:820px){.sr-layout{grid-template-columns:1fr}.sr-control-panel{order:2}.sr-preview-panel{order:1}.sr-cat-list{grid-template-columns:repeat(7,minmax(54px,1fr));overflow-x:auto}.sr-cat{min-width:54px}}
+    @media(max-width:520px){.sr-shell{padding:12px 10px 88px}.sr-head{display:block}.sr-actions{justify-content:flex-start;margin-top:10px}.sr-preview-panel,.sr-control-panel{padding:10px}.sr-card{min-height:280px}.sr-items{grid-template-columns:repeat(2,minmax(0,1fr))}.sr-item{min-height:110px;padding:8px}.sr-cat-list{gap:4px}.sr-cat{font-size:9px}.sr-chart,.sr-empty{min-height:210px}}
+    @media(max-width:340px){.sr-items{gap:6px}.sr-item b{font-size:10px}.sr-actions .btn{padding:8px 10px;font-size:11px}}
   </style>
 </head>
 <body>
-<div class="dressroom">
-  <header class="dr-top">
-    <button class="btn btn-ghost btn-sm dr-back" type="button" id="backBtn">← 프로필</button>
-    <div class="dr-brand"><strong>DRESS ROOM</strong><span>AVATAR CUSTOMIZATION</span></div>
-    <button class="btn btn-primary btn-sm dr-save" type="button" id="saveBtn">변경 저장</button>
-  </header>
-  <main class="dr-main">
-    <aside class="dr-cats"><div class="dr-section-label">CUSTOMIZE</div><div id="categoryList"></div></aside>
-    <section class="dr-stage" aria-label="아바타 미리보기">
-      <div id="avatarStage"></div>
-      <div class="stage-name"><strong id="avatarName">불러오는 중</strong><span id="avatarTitle">기본 아바타</span></div>
-      <div class="stage-tools"><button class="btn btn-ghost btn-sm" type="button" id="motionBtn">▶ 모션</button><button class="btn btn-ghost btn-sm" type="button" id="resetBtn">↺ 초기화</button></div>
+<header class="top-bar">
+  <div></div>
+  <a href="index.html?select=1" class="mweg-header-wrap" style="justify-self:center"><span class="mweg-title">마웨그</span><span class="mweg-subtitle">My Weight Graph</span></a>
+  <button class="btn btn-ghost btn-sm" id="logoutBtn" type="button">로그아웃</button>
+</header>
+<main class="sr-shell">
+  <div class="sr-head">
+    <div><h1>쇼룸</h1><p>우리 그래프 카드를 꾸민 뒤 저장해 공개 설정에 반영하세요.</p></div>
+    <div class="sr-actions">
+      <button class="btn btn-ghost btn-sm" id="defaultBtn" type="button">초기화</button>
+      <button class="btn btn-ghost btn-sm" id="revertBtn" type="button">되돌리기</button>
+      <button class="btn btn-primary btn-sm" id="saveBtn" type="button">변경 저장</button>
+    </div>
+  </div>
+  <div class="sr-layout">
+    <section class="sr-preview-panel" aria-label="우리 그래프 카드 미리보기">
+      <div class="sr-preview-label"><span>실제 우리 그래프 카드 미리보기</span><span class="sr-dirty" id="dirtyLabel">저장 전 임시 조합</span></div>
+      <article class="sr-card" id="previewCard"><div class="loading"><div class="spinner"></div> 미리보기 불러오는 중...</div></article>
     </section>
-    <aside class="dr-items"><div class="dr-item-head"><strong id="slotTitle">체형</strong><span id="slotDesc">장착할 외형을 선택하세요.</span></div><div class="dr-item-grid" id="itemGrid"></div></aside>
-  </main>
-</div>
+    <section class="sr-control-panel">
+      <div class="sr-cat-list" id="categoryList"></div>
+      <div class="sr-control-head"><strong id="categoryTitle">그래프 스킨</strong><span id="categoryHint">1개 선택</span></div>
+      <div class="sr-items" id="itemList"></div>
+      <p class="sr-help">미보유 상품도 자유롭게 조합해 볼 수 있지만 저장할 수는 없습니다. 트로피는 최대 4개까지 전시됩니다.</p>
+    </section>
+  </div>
+</main>
 <nav class="bottom-nav" id="bottomNav"></nav>
-<div class="dr-toast" id="toast"></div>
+<div class="toast" id="toast"></div>
+
 <script type="module">
-import { getUser, updateUser } from './js/db.js';
+import { getUser, getWeights, getSettings, updateUser } from './js/db.js';
+import { isAuthed, clearAuth } from './js/auth.js';
+import { renderChart } from './js/chart-render.js';
 import { esc } from './js/util.js';
-import { DEFAULT_AVATAR_V2, AVATAR_V2_CATEGORIES, AVATAR_V2_ITEMS, normalizeAvatarV2, renderAvatarV2, ownedAvatarV2Item, playAvatarV2 } from './js/avatar-v2.js';
+import { SHOWROOM_CATEGORIES, DEFAULT_SHOWROOM_LOADOUT, itemsForCategory, normalizeShowroomLoadout, isShowroomItemOwned, unownedLoadoutItems } from './js/showroom-data.js';
+import { applyShowroomStyle, getChartDecorations } from './js/showroom-style.js';
 
 const uid = new URLSearchParams(location.search).get('user') || localStorage.getItem('uid');
-if (!uid) location.href = 'index.html';
-let user = null, draft = normalizeAvatarV2(), activeSlot = 'body', toastTimer;
-const byId = id => document.getElementById(id);
+if (!uid) location.href='index.html';
+const byId=id=>document.getElementById(id);
+let user=null, records=[], settings={}, saved=normalizeShowroomLoadout(), draft=normalizeShowroomLoadout(), activeCategory='graph_skin', toastTimer;
 
 function buildNav(){
   const links=[
-    {href:`input.html?user=${uid}`,icon:'✍️',label:'입력',id:'input'},
-    {href:`dashboard.html?user=${uid}`,icon:'📈',label:'내 그래프',id:'dashboard'},
-    {href:`compare.html?user=${uid}`,icon:'📊',label:'모아보기',id:'compare'},
+    {href:`input.html?user=${uid}`,icon:'✏️',label:'데이터 입력',id:'input'},
+    {href:`dashboard.html?user=${uid}`,icon:'📊',label:'내 그래프',id:'dashboard'},
+    {href:`compare.html?user=${uid}`,icon:'👥',label:'우리 그래프',id:'compare'},
     {href:`achievements.html?user=${uid}`,icon:'🏆',label:'업적',id:'achievements'},
+    {href:`dressroom.html?user=${uid}`,icon:'✨',label:'쇼룸',id:'dressroom'},
     {href:`shop.html?user=${uid}`,icon:'🛍️',label:'상점',id:'shop'},
-    {href:`dressroom.html?user=${uid}`,icon:'⚔️',label:'드레스룸',id:'dressroom'},
   ];
-  byId('bottomNav').innerHTML=links.map(link=>`<a href="${link.href}" class="${link.id==='dressroom'?'active':''}"><span class="icon">${link.icon}</span>${link.label}</a>`).join('');
+  byId('bottomNav').innerHTML=links.map(l=>`<a href="${l.href}" class="${l.id==='dressroom'?'active':''}"><span class="icon">${l.icon}</span>${l.label}</a>`).join('');
+}
+function toast(message,type='ok'){const t=byId('toast');t.textContent=message;t.className=`toast show ${type}`;clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.className='toast',2400)}
+function equalLoadout(a,b){return JSON.stringify(normalizeShowroomLoadout(a))===JSON.stringify(normalizeShowroomLoadout(b))}
+function syncDirty(){byId('dirtyLabel').classList.toggle('show',!equalLoadout(saved,draft))}
+function itemGlyph(item){if(!item.id)return '○';return {graph_skin:'▦',card_theme:'▣',point_marker:'◆',record_stamp:'⚑',companion:'♧',ambient_effect:'✦',trophy:'♜'}[item.category]||'◇'}
+
+function renderCategories(){
+  byId('categoryList').innerHTML=SHOWROOM_CATEGORIES.map(c=>`<button class="sr-cat ${c.id===activeCategory?'active':''}" type="button" data-category="${c.id}"><i>${c.icon}</i>${c.name}</button>`).join('');
+  byId('categoryList').querySelectorAll('[data-category]').forEach(button=>button.onclick=()=>{activeCategory=button.dataset.category;renderCategories();renderItems()});
+}
+function isSelected(category,item){const value=draft[category.id];return category.mode==='multi'?(item.id===null?value.length===0:value.includes(item.id)):value===item.id}
+function renderItems(){
+  const category=SHOWROOM_CATEGORIES.find(c=>c.id===activeCategory)||SHOWROOM_CATEGORIES[0];
+  byId('categoryTitle').textContent=category.name;
+  byId('categoryHint').textContent=category.mode==='multi'?`최대 ${category.max}개 선택`:'1개 선택';
+  const items=itemsForCategory(category.id);
+  byId('itemList').innerHTML=items.map((item,index)=>{
+    const owned=isShowroomItemOwned(user,item.id),selected=isSelected(category,item);
+    return `<button class="sr-item ${selected?'selected':''} ${owned?'':'unowned'}" type="button" data-index="${index}"><span class="sr-item-icon">${itemGlyph(item)}</span><b>${esc(item.name)}</b><small>${esc(item.note)}</small>${item.price?`<small class="sr-price">🪙 ${item.price.toLocaleString('ko-KR')}</small>`:'<small>기본 제공</small>'}</button>`;
+  }).join('');
+  byId('itemList').querySelectorAll('[data-index]').forEach(button=>button.onclick=()=>selectItem(category,items[Number(button.dataset.index)]));
+}
+function selectItem(category,item){
+  if(category.mode==='multi'){
+    if(item.id===null){draft.trophy=[]}
+    else if(draft.trophy.includes(item.id)){draft.trophy=draft.trophy.filter(id=>id!==item.id)}
+    else if(draft.trophy.length>=category.max){toast(`트로피는 최대 ${category.max}개까지 전시할 수 있어요.`,'err');return}
+    else draft.trophy=[...draft.trophy,item.id];
+  }else draft[category.id]=item.id;
+  if(!isShowroomItemOwned(user,item.id))toast('미보유 상품은 미리보기만 가능합니다.');
+  renderItems();renderPreview();syncDirty();
 }
 
-function toast(message){const el=byId('toast');el.textContent=message;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),2200)}
-function renderStage(){byId('avatarStage').innerHTML=renderAvatarV2(draft,{size:560,label:`${user?.name||''} 아바타`});}
-function renderCategories(){byId('categoryList').innerHTML=AVATAR_V2_CATEGORIES.map(c=>`<button class="dr-cat ${c.id===activeSlot?'active':''}" type="button" data-slot="${esc(c.id)}"><i>${c.icon}</i><span>${esc(c.name)}</span></button>`).join('');byId('categoryList').querySelectorAll('[data-slot]').forEach(b=>b.onclick=()=>{activeSlot=b.dataset.slot;renderCategories();renderItems()})}
-function itemIcon(item){if(item.slot==='body')return `<img src="${esc(item.asset)}" alt="" style="height:42px;width:42px;object-fit:contain;object-position:center top">`;if(item.slot==='animation')return '▶';if(item.id===null)return '∅';return {face:'◉',hair:'⌁',headgear:'♢',top:'▱',bottom:'▥',shoes:'⌞',rightHand:'╱',leftHand:'╲',pose:'♙',effect:'✦'}[item.slot]||'◇'}
-function renderItems(){const cat=AVATAR_V2_CATEGORIES.find(c=>c.id===activeSlot);byId('slotTitle').textContent=cat?.name||'';const items=AVATAR_V2_ITEMS.filter(i=>i.slot===activeSlot);byId('itemGrid').innerHTML=items.map((item,index)=>{const owned=ownedAvatarV2Item(user,item)&&!item.locked;const selected=draft[activeSlot]===item.id;return `<button class="dr-item ${selected?'selected':''} ${owned?'':'locked'}" type="button" data-index="${index}"><span class="dr-item-icon">${itemIcon(item)}</span><b>${esc(item.name)}</b><small>${esc(item.note)}</small>${item.price?`<small class="dr-price">🪙 ${item.price.toLocaleString('ko-KR')}</small>`:''}</button>`}).join('');byId('itemGrid').querySelectorAll('[data-index]').forEach(b=>b.onclick=()=>{const item=items[Number(b.dataset.index)];draft[activeSlot]=item.id;renderStage();renderItems();if(!ownedAvatarV2Item(user,item)||item.locked)toast('미보유 아이템은 미리보기만 가능합니다.')})}
-function currentLocked(){return AVATAR_V2_CATEGORIES.map(c=>AVATAR_V2_ITEMS.find(i=>i.slot===c.id&&i.id===draft[c.id])).filter(Boolean).find(i=>!ownedAvatarV2Item(user,i)||i.locked)}
+function renderPreview(){
+  const card=byId('previewCard');
+  card.querySelector('canvas')?._chartInstance?.destroy?.();
+  const hasData=records.filter(record=>record.weight!=null).length>=2;
+  card.innerHTML=`<div class="sr-profile"><div class="sr-profile-icon">${esc(user?.emoji||'⚖️')}</div><div class="sr-profile-info">${user?.selectedTitle?`<span class="sr-profile-title">${esc(user.selectedTitle)}</span>`:''}<span class="sr-profile-name">${esc(user?.name||'사용자')}</span></div></div>${hasData?'<div class="sr-chart"><canvas id="previewChart"></canvas></div>':'<div class="sr-empty">그래프를 그리려면 체중 기록이 2개 이상 필요해요.</div>'}`;
+  applyShowroomStyle(card,draft);
+  const canvas=byId('previewChart');
+  if(canvas)requestAnimationFrame(()=>renderChart(records,user,canvas,null,{...settings,showWeeklyBar:false,showDietGraph:true,showExerciseGraph:true,gridCell:true,labelMode:'day',mainPlotAspectRatio:16/9,chartDecorations:getChartDecorations(draft)}));
+}
 
-byId('backBtn').onclick=()=>history.length>1?history.back():location.href=`achievements.html?user=${encodeURIComponent(uid)}`;
-byId('motionBtn').onclick=()=>playAvatarV2(byId('avatarStage').querySelector('.avatar-v2'),draft.animation);
-byId('resetBtn').onclick=()=>{draft=normalizeAvatarV2(DEFAULT_AVATAR_V2);renderStage();renderItems();toast('기본 외형으로 되돌렸습니다.')};
-byId('avatarStage').onclick=()=>playAvatarV2(byId('avatarStage').querySelector('.avatar-v2'),draft.animation);
-byId('saveBtn').onclick=async()=>{const locked=currentLocked();if(locked){toast(`${locked.name}은 아직 보유하지 않은 아이템입니다.`);return}byId('saveBtn').disabled=true;try{await updateUser(uid,{avatarV2:draft});user.avatarV2={...draft};toast('아바타를 저장했습니다.')}catch(e){toast('저장 실패: '+e.message)}finally{byId('saveBtn').disabled=false}};
+byId('defaultBtn').onclick=()=>{draft=normalizeShowroomLoadout(DEFAULT_SHOWROOM_LOADOUT);renderItems();renderPreview();syncDirty();toast('기본 조합으로 초기화했습니다.')};
+byId('revertBtn').onclick=()=>{draft=normalizeShowroomLoadout(saved);renderItems();renderPreview();syncDirty();toast('마지막 저장 상태로 되돌렸습니다.')};
+byId('saveBtn').onclick=async()=>{
+  const missing=unownedLoadoutItems(user,draft);
+  if(missing.length){toast(`미보유 상품은 저장할 수 없어요: ${missing.map(item=>item.name).join(', ')}`,'err');return}
+  const button=byId('saveBtn');button.disabled=true;
+  try{const clean=normalizeShowroomLoadout(draft);await updateUser(uid,{showroomLoadout:clean});saved=normalizeShowroomLoadout(clean);user.showroomLoadout=clean;syncDirty();toast('우리 그래프 공개 설정에 반영했습니다.')}
+  catch(error){toast('저장 실패: '+error.message,'err')}finally{button.disabled=false}
+};
+byId('logoutBtn').onclick=()=>{clearAuth();localStorage.removeItem('uid');location.href='index.html'};
 
-async function init(){user=await getUser(uid);if(!user)throw new Error('사용자를 찾을 수 없습니다.');draft=normalizeAvatarV2(user.avatarV2);byId('avatarName').textContent=user.name||'사용자';byId('avatarTitle').textContent=user.selectedTitle||'기본 아바타';renderCategories();renderItems();renderStage()}
-renderCategories();
-renderItems();
-renderStage();
-buildNav();
-init().catch(e=>toast(e.message));
+async function init(){
+  buildNav();
+  user=await getUser(uid);
+  if(!user){localStorage.removeItem('uid');location.href='index.html';return}
+  if(user.passwordHash&&!isAuthed(uid,user.passwordHash)){location.href=`index.html?auth_required=${encodeURIComponent(uid)}`;return}
+  [records,settings]=await Promise.all([getWeights(uid),getSettings(uid,user)]);
+  saved=normalizeShowroomLoadout(user.showroomLoadout);draft=normalizeShowroomLoadout(saved);
+  renderCategories();renderItems();renderPreview();syncDirty();
+}
+renderCategories();renderItems();buildNav();
+init().catch(error=>{byId('previewCard').innerHTML=`<div class="sr-empty">오류: ${esc(error.message)}</div>`});
 </script>
+<script src="register-sw.js"></script>
 </body>
 </html>

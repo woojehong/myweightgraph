@@ -9,6 +9,7 @@ import { firebaseConfig, DEFAULT_GOAL }               from "./firebase-config.js
 import { sha256 }                                     from "./auth.js";
 import { DAILY_REWARD_POINTS, activityDay, isCurrentActivityDay,
          isDailyComplete }                            from "./daily-rewards.js";
+import { getShowroomItem }                            from "./showroom-data.js";
 
 const app  = initializeApp(firebaseConfig);
 const db   = getFirestore(app);
@@ -129,6 +130,33 @@ export async function setUserPassword(userId, newPassword) {
 }
 export async function updateUser(userId, data) {
   await setDocR(doc(db, 'users', userId), data, { merge: true });
+}
+
+// 쇼룸 상품 전용 원자 구매. 한 트랜잭션 안에서 최신 잔액과 보유 목록을 다시
+// 확인하므로 빠른 중복 클릭이나 여러 탭 구매로 인한 이중 차감을 막는다.
+// 기존 users/{uid}.coins 및 updateUser 기반 문서 구조는 그대로 유지한다.
+export async function purchaseShowroomItem(userId, itemId) {
+  await _ready;
+  const item = getShowroomItem(itemId);
+  if (!item || !item.id || !Number.isFinite(item.price) || item.price <= 0) {
+    throw new Error('구매할 수 없는 쇼룸 상품입니다.');
+  }
+  const userRef = doc(db, 'users', userId);
+  return runTransaction(db, async tx => {
+    const snap = await tx.get(userRef);
+    if (!snap.exists()) throw new Error('사용자를 찾을 수 없습니다.');
+    const user = snap.data();
+    const owned = Array.isArray(user.purchasedShowroomItems) ? user.purchasedShowroomItems : [];
+    const balance = Number.isFinite(user.coins) ? user.coins : 0;
+    if (owned.includes(item.id)) return { purchased: false, coins: balance, item };
+    if (balance < item.price) throw new Error('코인이 부족해요.');
+    const coins = balance - item.price;
+    tx.update(userRef, {
+      coins,
+      purchasedShowroomItems: [...owned, item.id],
+    });
+    return { purchased: true, coins, item };
+  });
 }
 export async function deleteUser(userId) {
   await _ready;

@@ -191,7 +191,7 @@ function renderUserList() {
   const el = document.getElementById('userList');
   if (!allUsers.length) { el.innerHTML='<p class="text-muted" style="padding:10px 0;font-size:13px">사용자 없음</p>'; return; }
   const last = allUsers.length - 1;
-  el.innerHTML = `<div style="font-size:11px;color:var(--muted);padding:2px 2px 8px">▲▼로 순서를 바꾸면 로그인·모아보기 등 모든 목록에 적용됩니다.</div>` +
+  el.innerHTML = `<div style="font-size:11px;color:var(--muted);padding:2px 2px 8px">▲▼로 순서를 바꾸면 로그인·우리 그래프 등 모든 목록에 적용됩니다.</div>` +
     allUsers.map((u, idx) => `
     <div class="user-list-item ${u.id===selectedUid?'active':''}" onclick="selectUser('${u.id}')">
       <div class="ord-col">
@@ -1101,11 +1101,11 @@ function subCollapsible(id, label, content, accent) {
 function buildAchRewardContent() {
   let html = `<p style="font-size:12px;color:var(--muted);margin-bottom:12px">각 업적에 테두리·칭호 보상을 배정하세요. 달성 시 자동 잠금해제됩니다.</p>`;
 
-  // ── 위업 모아보기 ──────────────────────────────────────────────────
+  // ── 위업 한눈에 보기 ────────────────────────────────────────────────
   const legendaryAchs = ACHIEVEMENTS.filter(a => a.legendary);
   let legHtml = `<p style="font-size:11px;color:var(--muted);margin:6px 0 4px">전체 카테고리의 위업만 모아서 보는 뷰예요. 보상 설정은 여기서도 가능해요.</p>`;
   legendaryAchs.forEach(a => { legHtml += achRewardRow(a); });
-  html += subCollapsible('achleg', '⭐ 위업 모아보기', legHtml, 'rgba(255,215,0,.25)');
+  html += subCollapsible('achleg', '⭐ 위업 한눈에 보기', legHtml, 'rgba(255,215,0,.25)');
 
   // ── 카테고리별 ─────────────────────────────────────────────────────
   ACHIEVEMENT_CATEGORIES.forEach(cat => {

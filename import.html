@@ -86,10 +86,10 @@ function buildNav() {
   const links = [
     { href:`input.html?user=${uid}`,        icon:'✏️',  label:'데이터 입력', id:'input' },
     { href:`dashboard.html?user=${uid}`,    icon:'📊', label:'내 그래프',   id:'dashboard' },
-    { href:`compare.html?user=${uid}`,      icon:'👥', label:'모아보기',     id:'compare' },
+    { href:`compare.html?user=${uid}`,      icon:'👥', label:'우리 그래프', id:'compare' },
     { href:`achievements.html?user=${uid}`, icon:'🏆', label:'업적',        id:'achievements' },
+    { href:`dressroom.html?user=${uid}`,    icon:'✨', label:'쇼룸',        id:'dressroom' },
     { href:`shop.html?user=${uid}`,         icon:'🛍️', label:'상점',        id:'shop' },
-    { href:`dressroom.html?user=${uid}`,    icon:'⚔️', label:'드레스룸',    id:'dressroom' },
   ];
   const nav = document.getElementById('bottomNav');
   links.forEach(l => {

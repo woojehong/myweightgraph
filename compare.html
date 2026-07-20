@@ -7,8 +7,8 @@
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="favicon.png">
   <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
-  <title>그래프 모아보기 | 마웨그</title>
-  <meta property="og:title" content="그래프 모아보기 | 마웨그">
+  <title>우리 그래프 | 마웨그</title>
+  <meta property="og:title" content="우리 그래프 | 마웨그">
   <meta property="og:description" content="여러 사용자의 체중 그래프를 한눈에 비교해 보세요.">
   <meta property="og:type" content="website">
   <meta property="og:image" content="https://woojehong.github.io/myweightgraph/favicon.png">
@@ -197,8 +197,8 @@ import { getUser, getUsers, getWeights, getSettings, getTierSettings } from './j
 import { isAuthed, clearAuth } from './js/auth.js';
 import { renderChart, aggregateRecords, periodLabel } from './js/chart-render.js';
 import { getTierForScore, DEFAULT_TIERS } from './js/achievements.js';
-import { renderAvatarV2, playAvatarV2 } from './js/avatar-v2.js';
 import { esc } from './js/util.js';
+import { applyShowroomStyle, getChartDecorations } from './js/showroom-style.js';
 
 const uid = new URLSearchParams(location.search).get('user') || localStorage.getItem('uid');
 if (!uid) location.href = 'index.html';
@@ -210,10 +210,10 @@ function buildNav() {
   const links = [
     { href:`input.html?user=${uid}`,        icon:'✏️', label:'데이터 입력', id:'input' },
     { href:`dashboard.html?user=${uid}`,    icon:'📊', label:'내 그래프',   id:'dashboard' },
-    { href:`compare.html?user=${uid}`,      icon:'👥', label:'모아보기',     id:'compare' },
+    { href:`compare.html?user=${uid}`,      icon:'👥', label:'우리 그래프', id:'compare' },
     { href:`achievements.html?user=${uid}`, icon:'🏆', label:'업적',         id:'achievements' },
+    { href:`dressroom.html?user=${uid}`,    icon:'✨', label:'쇼룸',         id:'dressroom' },
     { href:`shop.html?user=${uid}`,         icon:'🛍️', label:'상점',         id:'shop' },
-    { href:`dressroom.html?user=${uid}`,    icon:'⚔️', label:'드레스룸',     id:'dressroom' },
   ];
   const nav = document.getElementById('bottomNav');
   links.forEach(l => {
@@ -253,10 +253,10 @@ function saveSelected() {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(selected)); } catch (e) {}
 }
 
-// 모아보기 차트 옵션: 메인 체중 + 식단 + 운동만 (주간막대 제외).
+// 우리 그래프 차트 옵션: 메인 체중 + 식단 + 운동만 (주간막대 제외).
 // 최고/최저/현재는 점만 찍고(말풍선·리더선 없음) 값은 프로필 줄 배지로 표시.
 // gridCell=true → 칸 너비에 맞춰 그래프가 좌우/상하로 꽉 차도록 종횡비·여백 계산.
-function chartOpts() {
+function chartOpts(user) {
   const base = {
     ...S,
     showWeeklyBar: false,
@@ -267,6 +267,8 @@ function chartOpts() {
     showCurMarker: true,
     gridCell: true,
     labelMode: viewMode,
+    mainPlotAspectRatio: 16 / 9,
+    chartDecorations: getChartDecorations(user?.showroomLoadout),
   };
   // 주간·월간은 평균선만 (식단/운동·이동평균·예상 숨김)
   if (viewMode !== 'day') {
@@ -400,12 +402,7 @@ function cellHTML(u) {
         </div>
         ${markers}
       </div>
-      <div class="cmp-content ${showAvatars?'':'avatar-hidden'}">
-        ${body}
-        <button class="cmp-avatar-stage" type="button" data-avatar-user="${esc(u.id)}" aria-label="${esc(u.name)} 아바타 모션 재생">
-          ${renderAvatarV2(u.avatarV2,{size:88,label:`${u.name} 아바타`})}
-        </button>
-      </div>
+      <div class="cmp-content avatar-hidden">${body}</div>
     </div>`;
 }
 
@@ -428,18 +425,15 @@ async function renderGrid() {
 
   const users = selected.map(id => allUsers.find(u => u.id === id)).filter(Boolean);
   grid.innerHTML = users.map(cellHTML).join('');
-  grid.querySelectorAll('[data-avatar-user]').forEach(button => {
-    button.addEventListener('click', () => playAvatarV2(button.querySelector('.avatar-v2')));
-  });
+  [...grid.querySelectorAll('.cmp-cell')].forEach((cell,index) => applyShowroomStyle(cell, users[index]?.showroomLoadout));
 
   // 캔버스가 DOM에 들어간 뒤 차트 렌더
-  const opts = chartOpts();
   users.forEach(u => {
     const cv = document.getElementById('cv_' + u.id);
     const recs = aggregateRecords(weightsCache[u.id] || [], viewMode);
     if (cv && recs.filter(r => r.weight != null).length >= 2) {
       try {
-        renderChart(recs, u, cv, null, opts);
+        renderChart(recs, u, cv, null, chartOpts(u));
       }
       catch (e) { console.warn('renderChart failed for', u.id, e); }
     }
@@ -482,7 +476,7 @@ async function init() {
 
   document.getElementById('logoutBtn').style.display = '';
   setChip(curUser);
-  document.title = '그래프 모아보기 | 마웨그';
+  document.title = '우리 그래프 | 마웨그';
 
   // 선택 복원: 저장된 목록(존재하는 유저만) → 없으면 현재 사용자 기본 선택
   const ids = new Set(users.map(u => u.id));

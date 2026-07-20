@@ -75,6 +75,8 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
     gridCell          = false,
     labelMode         = 'day',   // 마커·툴팁 라벨 표기 단위
     padRight          = 0,       // 우측 추가 여백 (아바타 표시 영역 등)
+    chartDecorations  = null,    // 우리 그래프/쇼룸에서만 전달하는 꾸미기 옵션
+    mainPlotAspectRatio = null,  // 메인 플롯 비율 (서브그래프 높이는 별도 유지)
   } = options;
 
   if (canvasMain._chartInstance) canvasMain._chartInstance.destroy();
@@ -194,9 +196,13 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
   const startTs = pts[0].t - 6*86400000;
 
   // ── 색상 ─────────────────────────────────────────────────────────────
-  const TEAL   = '#00e5aa', ORANGE = '#ffa726', RED = '#ef5350';
+  const TEAL   = chartDecorations?.actualColor || '#00e5aa';
+  const ORANGE = chartDecorations?.maColor || '#ffa726';
+  const RED = '#ef5350';
   const BLUE   = '#4fc3f7', GREEN  = '#66bb6a', BG  = '#0d1117';
-  const PURPLE = 'rgba(180,130,255,0.85)', GRID = 'rgba(255,255,255,0.07)', TICK = 'rgba(255,255,255,0.6)';
+  const PURPLE = 'rgba(180,130,255,0.85)';
+  const GRID = chartDecorations?.gridColor || 'rgba(255,255,255,0.07)';
+  const TICK = 'rgba(255,255,255,0.6)';
 
   // ── 말풍선 유틸 ──────────────────────────────────────────────────────
   const BP = 5, BLH = 15, BOFF = 100;
@@ -228,8 +234,23 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
     ctx.restore();
   }
   function dot(ctx, px, py, color, r) {
-    ctx.save(); ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI*2);
-    ctx.fillStyle = color; ctx.fill(); ctx.strokeStyle = BG; ctx.lineWidth = 2; ctx.stroke(); ctx.restore();
+    const stamp = chartDecorations?.stampStyle || 'circle';
+    ctx.save(); ctx.fillStyle = color; ctx.strokeStyle = BG; ctx.lineWidth = 2;
+    if (stamp === 'flag') {
+      ctx.beginPath(); ctx.moveTo(px-r*.7,py+r); ctx.lineTo(px-r*.7,py-r); ctx.lineTo(px+r,py-r*.55); ctx.lineTo(px-r*.7,py); ctx.closePath(); ctx.fill(); ctx.stroke();
+    } else if (stamp === 'spark') {
+      ctx.beginPath();
+      for(let i=0;i<8;i++){const a=-Math.PI/2+i*Math.PI/4,rr=i%2?r*.38:r*1.25;const x=px+Math.cos(a)*rr,y=py+Math.sin(a)*rr;i?ctx.lineTo(x,y):ctx.moveTo(x,y)}
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+    } else if (stamp === 'crown') {
+      ctx.beginPath(); ctx.moveTo(px-r,py+r*.7); ctx.lineTo(px-r*.8,py-r*.7); ctx.lineTo(px-r*.25,py); ctx.lineTo(px,py-r); ctx.lineTo(px+r*.25,py); ctx.lineTo(px+r*.8,py-r*.7); ctx.lineTo(px+r,py+r*.7); ctx.closePath(); ctx.fill(); ctx.stroke();
+    } else if (stamp === 'meteor') {
+      ctx.beginPath(); ctx.moveTo(px-r*1.7,py+r*1.3); ctx.lineTo(px-r*.35,py+r*.15); ctx.strokeStyle=color; ctx.lineWidth=3; ctx.stroke();
+      ctx.beginPath(); ctx.arc(px,py,r*.8,0,Math.PI*2); ctx.fill(); ctx.strokeStyle=BG; ctx.lineWidth=2; ctx.stroke();
+    } else {
+      ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+    }
+    ctx.restore();
   }
 
   // ── 어노테이션 플러그인 ──────────────────────────────────────────────
@@ -555,9 +576,10 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
   if (show7dayMA)
     datasets.push({ label: '7일 이동평균', data: ma7, borderColor: ORANGE, backgroundColor: 'transparent', borderWidth: 1.8, borderDash: [7,4], pointRadius: 0, tension: .3, order: 2 });
   // 일간은 점이 수백 개라 숨기고, 주간·월간은 각 지점이 보이도록 점 표시
-  const mainPointR = labelMode === 'day' ? 0 : (gridCell ? 2.6 : 3.6);
+  const mainPointR = chartDecorations?.pointRadius ?? (labelMode === 'day' ? 0 : (gridCell ? 2.6 : 3.6));
   datasets.push({ label: '실제 체중', data: pts.map(p => ({ x: p.t, y: p.w })), borderColor: TEAL, backgroundColor: 'transparent', borderWidth: 2.2,
     pointRadius: mainPointR, pointHoverRadius: 5,
+    pointStyle: chartDecorations?.pointStyle || 'circle',
     pointBackgroundColor: TEAL, pointBorderColor: BG, pointBorderWidth: mainPointR ? 1.5 : 0,
     tension: .15, spanGaps: false, order: 1 });
   if (showPrediction && predData.length > 1)
@@ -569,12 +591,27 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
     grid: { color: GRID }, border: { color: 'rgba(255,255,255,.15)' }
   };
 
+  const canvasBgPlugin = { id:'showroomCanvasBackground', beforeDraw(chart) {
+    if (!chartDecorations?.canvasColor) return;
+    const { ctx, width, height } = chart;
+    ctx.save(); ctx.fillStyle = chartDecorations.canvasColor; ctx.fillRect(0, 0, width, height); ctx.restore();
+  }};
+  const chartRefW = (canvasMain.parentElement && canvasMain.parentElement.clientWidth) || (window.innerWidth - 32);
+  // 비교 화면은 메인 플롯 너비를 16:9로 환산하고 기존 서브그래프 예약 높이를 더한다.
+  // 대시보드는 mainPlotAspectRatio를 전달하지 않으므로 기존 계산을 그대로 사용한다.
+  const mainPlotW = Math.max(40, chartRefW - ((isMobile || tight) ? 9 : 140) - padRight - Y_AXIS_W);
+  const fixedPlotTotalH = mainPlotAspectRatio
+    ? (mainPlotW / mainPlotAspectRatio) + BAR_AREA_H + 46
+    : null;
+
   canvasMain._chartInstance = new Chart(canvasMain.getContext('2d'), {
     type: 'line', data: { datasets },
     options: {
       responsive: true,
-      aspectRatio: gridCell
-        ? Math.max(0.45, ((canvasMain.parentElement && canvasMain.parentElement.clientWidth) || (window.innerWidth - 32)) / (240 + BAR_AREA_H))
+      aspectRatio: fixedPlotTotalH
+        ? chartRefW / fixedPlotTotalH
+        : gridCell
+        ? Math.max(0.45, chartRefW / (240 + BAR_AREA_H))
         : (isMobile
             ? Math.max(0.5, (window.innerWidth - 32) / (260 + BAR_AREA_H))
             : 1.65),
@@ -610,7 +647,7 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
       },
       interaction: { mode: 'index', intersect: false }
     },
-    plugins: [annotPlugin, weeklyBarPlugin, weeklyBarTooltipPlugin, subGraphPlugin, subGraphTooltipPlugin]
+    plugins: [canvasBgPlugin, annotPlugin, weeklyBarPlugin, weeklyBarTooltipPlugin, subGraphPlugin, subGraphTooltipPlugin]
   });
   canvasMain._startTs = startTs;
   canvasMain._endTs   = endTs;

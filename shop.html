@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
   <title>상점 | 마웨그</title>
   <meta property="og:title" content="상점 | 마웨그">
-  <meta property="og:description" content="코인으로 테두리와 칭호를 꾸며보세요.">
+  <meta property="og:description" content="코인으로 그래프와 프로필을 꾸며보세요.">
   <meta property="og:type" content="website">
   <meta property="og:image" content="https://woojehong.github.io/myweightgraph/favicon.png">
   <link rel="stylesheet" href="css/style.css">
@@ -177,13 +177,13 @@
 <div class="toast" id="toast"></div>
 
 <script type="module">
-import { getUser, updateUser, getTierSettings } from './js/db.js';
+import { getUser, updateUser, getTierSettings, purchaseShowroomItem } from './js/db.js';
 import { clearAuth, isAuthed } from './js/auth.js';
 import { esc } from './js/util.js';
 import { RARITY_INFO, getShopBorders, ACH_TITLE_REWARDS } from './js/borders-data.js';
 import { getTierForScore, DEFAULT_TIERS } from './js/achievements.js';
 import { SHOP_TITLES } from './js/shop-data.js';
-import { AVATAR_V2_CATEGORIES, AVATAR_V2_ITEMS, renderAvatarV2, normalizeAvatarV2, ownedAvatarV2Item } from './js/avatar-v2.js';
+import { SHOWROOM_CATEGORIES, SHOWROOM_ITEMS, getShowroomItem, isShowroomItemOwned } from './js/showroom-data.js';
 
 const uid = new URLSearchParams(location.search).get('user') || localStorage.getItem('uid');
 if (!uid) location.href = 'index.html';
@@ -195,7 +195,7 @@ const RARITY_ORDER   = Object.keys(RARITY_INFO); // common → mythic
 
 let _user = null;
 let coins = 0;
-let curTab = 'borders';   // borders | titles
+let curTab = 'showroom';  // showroom | borders | titles
 let pending = null;       // { kind, id, name, price } — kind: border | title
 let _titleRefs = [];      // stable index list for onclick handlers
 let _tiers = DEFAULT_TIERS;
@@ -256,10 +256,10 @@ function buildNav() {
   const links = [
     { href: `input.html?user=${uid}`,        icon: '✏️',  label: '데이터 입력', id: 'input' },
     { href: `dashboard.html?user=${uid}`,    icon: '📊', label: '내 그래프',   id: 'dashboard' },
-    { href: `compare.html?user=${uid}`,      icon: '👥', label: '모아보기',     id: 'compare' },
+    { href: `compare.html?user=${uid}`,      icon: '👥', label: '우리 그래프', id: 'compare' },
     { href: `achievements.html?user=${uid}`, icon: '🏆', label: '업적',        id: 'achievements' },
+    { href: `dressroom.html?user=${uid}`,    icon: '✨', label: '쇼룸',        id: 'dressroom' },
     { href: `shop.html?user=${uid}`,         icon: '🛍️', label: '상점',        id: 'shop' },
-    { href: `dressroom.html?user=${uid}`,    icon: '⚔️', label: '드레스룸',    id: 'dressroom' },
   ];
   const nav = document.getElementById('bottomNav');
   nav.innerHTML = '';
@@ -372,34 +372,29 @@ function renderTitlesTab() {
     ${rewardRows}`;
 }
 
-function avatarPreview(item) {
-  if (item.slot === 'body') return renderAvatarV2({ ...normalizeAvatarV2(_user.avatarV2), body:item.id }, { size:64, label:item.name });
-  const icon = AVATAR_V2_CATEGORIES.find(c => c.id === item.slot)?.icon || '◇';
-  return `<div style="font-size:30px;color:var(--teal)">${icon}</div>`;
+function showroomPreview(item) {
+  const glyph={graph_skin:'▦',card_theme:'▣',point_marker:'◆',record_stamp:'⚑',companion:'♧',ambient_effect:'✦',trophy:'♜'}[item.category]||'◇';
+  return `<div class="sc-prev" style="font-size:32px;color:var(--teal)">${glyph}</div>`;
 }
 
-function avatarCard(item) {
-  const owned = ownedAvatarV2Item(_user,item) && !item.locked;
-  const eligible = tierEligible(item);
-  let button;
-  if (owned) button = `<a class="sc-btn equip" href="dressroom.html?user=${uid}">드레스룸</a>`;
-  else if (!eligible) button = `<button class="sc-btn lock" disabled>💠 다이아 이상</button>`;
-  else if (item.locked) button = `<button class="sc-btn lock" disabled>준비 중</button>`;
-  else button = buyBtnHtml(`openBuyAvatar('${esc(item.slot)}','${esc(item.id)}')`,item.price);
-  return `<div class="shop-card ${owned?'equipped':''} ${eligible?'':'locked'}">
-    <div class="sc-prev">${avatarPreview(item)}</div>
+function showroomCard(item) {
+  const owned=isShowroomItemOwned(_user,item.id);
+  const button=owned
+    ? `<a class="sc-btn equip" href="dressroom.html?user=${encodeURIComponent(uid)}">쇼룸에서 적용</a>`
+    : buyBtnHtml(`openBuyShowroom('${esc(item.id)}')`,item.price);
+  return `<div class="shop-card ${owned?'equipped':''}">
+    ${showroomPreview(item)}
     <div class="sc-name">${esc(item.name)}</div>
-    <div class="sc-note">${esc(item.note||'')}</div>
-    ${item.minTier?'<div class="sc-rarity" style="color:#8da2ff">💠 다이아 이상</div>':''}
+    <div class="sc-note">${esc(item.note)}</div>
     ${button}</div>`;
 }
 
-function renderAvatarShopTab() {
-  return AVATAR_V2_CATEGORIES.map(category => {
-    const items=AVATAR_V2_ITEMS.filter(item=>item.slot===category.id&&item.price>0);
-    if(!items.length)return '';
-    return `<div class="rarity-head"><span>${category.icon} ${esc(category.name)}</span><span class="rh-line"></span><span>${items.length}개</span></div><div class="shop-grid">${items.map(avatarCard).join('')}</div>`;
-  }).join('');
+function renderShowroomTab() {
+  return `<p style="font-size:11px;color:var(--muted);margin:0 0 10px">그래프 카드 상품은 모두 구매할 수 있습니다. 3,000코인으로 여러 범주의 중급 조합도 만들 수 있어요.</p>`+
+    SHOWROOM_CATEGORIES.map(category=>{
+      const items=SHOWROOM_ITEMS.filter(item=>item.category===category.id&&item.id);
+      return `<div class="rarity-head"><span>${category.icon} ${esc(category.name)}</span><span class="rh-line"></span><span>${items.length}개</span></div><div class="shop-grid">${items.map(showroomCard).join('')}</div>`;
+    }).join('');
 }
 
 /* ── tab switching / main render ─────────────────────────────────── */
@@ -407,12 +402,12 @@ function renderAvatarShopTab() {
 function renderTab() {
   const el = document.getElementById('tabContent');
   if (!el) return;
-  el.innerHTML = curTab === 'borders' ? renderBordersTab() : curTab === 'titles' ? renderTitlesTab() : renderAvatarShopTab();
+  el.innerHTML = curTab === 'showroom' ? renderShowroomTab() : curTab === 'borders' ? renderBordersTab() : renderTitlesTab();
   document.querySelectorAll('.shop-tab').forEach(b =>
     b.classList.toggle('active', b.dataset.tab === curTab));
 }
 
-window.setTab = tab => { curTab = tab === 'avatar' ? 'borders' : tab; renderTab(); };
+window.setTab = tab => { curTab = ['showroom','borders','titles'].includes(tab) ? tab : 'showroom'; renderTab(); };
 
 /* ── equip actions ───────────────────────────────────────────────── */
 
@@ -465,15 +460,30 @@ window.openBuyTitle = idx => {
   openBuyModal({ kind: 'title', id: t.name, name: t.name, price: t.price },
     `<span class="tr-badge">${esc(t.name)}</span>`);
 };
-window.openBuyAvatar = (slot,id) => {
-  const item=AVATAR_V2_ITEMS.find(candidate=>candidate.slot===slot&&String(candidate.id)===String(id));
-  if(!item||ownedAvatarV2Item(_user,item)||!tierEligible(item)||item.locked)return;
-  openBuyModal({kind:'avatar',id:`${slot}:${id}`,name:item.name,price:item.price},avatarPreview(item));
+window.openBuyShowroom = id => {
+  const item=getShowroomItem(id);
+  if(!item||isShowroomItemOwned(_user,id))return;
+  openBuyModal({kind:'showroom',id,name:item.name,price:item.price},showroomPreview(item));
 };
 window.confirmBuy = async () => {
   if (!pending) return;
   const { kind, id, price } = pending;
   if (coins < price) { showToast('코인이 부족해요 😢', 'err'); window.closeBuy(); return; }
+
+  const btn = document.getElementById('buyConfirmBtn');
+  btn.disabled = true;
+  if(kind==='showroom'){
+    const oldCoins=coins;
+    try{
+      const result=await purchaseShowroomItem(uid,id);
+      coins=result.coins;
+      _user.coins=coins;
+      _user.purchasedShowroomItems=[...new Set([...arr(_user.purchasedShowroomItems),id])];
+      window.closeBuy();renderTab();animateCoins(oldCoins,coins);showToast(result.purchased?'구매 완료! 🎉':'이미 보유한 상품입니다.');
+    }catch(e){showToast('구매 실패: '+e.message,'err')}
+    finally{btn.disabled=false}
+    return;
+  }
 
   const upd = { coins: coins - price };
   const pushUnique = (list, v) => { const a = [...arr(list)]; if (!a.includes(v)) a.push(v); return a; };
@@ -483,15 +493,11 @@ window.confirmBuy = async () => {
   } else if (kind === 'title') {
     upd.purchasedTitles  = pushUnique(_user.purchasedTitles, id);
     upd.earnedTitles     = pushUnique(_user.earnedTitles, id);
-  } else if (kind === 'avatar') {
-    upd.avatarItemsV2 = pushUnique(_user.avatarItemsV2, id);
   } else {
     window.closeBuy();
     return;
   }
 
-  const btn = document.getElementById('buyConfirmBtn');
-  btn.disabled = true;
   try { await updateUser(uid, upd); }
   catch (e) { btn.disabled = false; showToast('구매 실패: ' + e.message, 'err'); return; }
   btn.disabled = false;
@@ -535,9 +541,9 @@ async function init() {
       <div class="wallet-hint">업적 달성 = 코인 적립 · 모든 아이템 구매 가능</div>
     </div>
     <div class="shop-tabs">
-      <button class="shop-tab active" data-tab="borders" onclick="setTab('borders')">🖼️ 테두리</button>
+      <button class="shop-tab active" data-tab="showroom" onclick="setTab('showroom')">✨ 쇼룸</button>
+      <button class="shop-tab" data-tab="borders" onclick="setTab('borders')">🖼️ 테두리</button>
       <button class="shop-tab" data-tab="titles" onclick="setTab('titles')">🏷️ 칭호</button>
-      <button class="shop-tab" data-tab="avatar" onclick="setTab('avatar')">⚔️ 아바타</button>
     </div>
     <div id="tabContent" class="mt-12"></div>`;
 
