@@ -7,6 +7,7 @@ import {
 import { TITLES_CATALOG_V2, TITLE_RARITY_COLORS } from '../js/titles-catalog-v2.js';
 import { ACHIEVEMENTS } from '../js/achievements.js';
 import { ACHIEVEMENT_ITEM_REWARDS_V2 } from '../js/achievement-item-rewards-v2.js';
+import { fitMainPlotBounds } from '../js/chart-render.js';
 import {
   ALL_CATALOG_V2, V2_CATEGORIES, normalizeLoadoutV2, getCatalogItemV2,
   ownedItemIdsV2, unownedSelectionV2, persistableLoadoutV2, validateCatalogPurchaseV2,
@@ -96,21 +97,53 @@ for(const [achId,ids] of Object.entries(ACHIEVEMENT_ITEM_REWARDS_V2)){
 }
 
 const visualLab=await readFile(new URL('../visual-lab.html',import.meta.url),'utf8');
-assert.ok(visualLab.includes('SHOWROOM_CATALOG_V2'));assert.ok(visualLab.includes('decoratePlotV2'));assert.ok(visualLab.includes('<canvas id="demoCanvas"'));assert.equal(visualLab.toLowerCase().includes('firebase'),false);
+assert.ok(visualLab.includes('SHOWROOM_CATALOG_V2'));assert.ok(visualLab.includes('decorateMainPlotV2'));assert.ok(visualLab.includes('<canvas id="demoCanvas"'));assert.equal(visualLab.toLowerCase().includes('firebase'),false);
+assert.ok(visualLab.includes('data-main-weight-plot="true"'));
+assert.ok(visualLab.includes('data-subgraph="diet"'));assert.ok(visualLab.includes('data-subgraph="exercise"'));
 const css=await readFile(new URL('../css/style.css',import.meta.url),'utf8');
-for(const token of ['.v3-plot-underlay','z-index:0','.v3-ambient-layer','mask-image:radial-gradient','.v2-plot-host>canvas','z-index:2!important','.v2-companion','.v2-trophies'])assert.ok(css.includes(token),token);
+for(const token of ['.v3-main-plot-decor','aspect-ratio:16/9','z-index:0','.v3-ambient-layer','mask-image:radial-gradient','.v2-plot-host>canvas','z-index:2!important','.v2-companion','.v2-trophies'])assert.ok(css.includes(token),token);
+assert.equal(css.includes('.v3-card-plot-layer'),false,'card theme must not create a graph layer');
+const renderer=await readFile(new URL('../js/showroom-v2.js',import.meta.url),'utf8');
+const mainPlotDecorator=renderer.slice(renderer.indexOf('export function decorateMainPlotV2'),renderer.indexOf('export function renderCatalogPreviewV2'));
+for(const token of ['[data-main-weight-plot="true"]','v3-main-plot-decor','v3-graph-layer',"dataset.aspectRatio='16:9'"])assert.ok(mainPlotDecorator.includes(token),token);
+assert.equal(mainPlotDecorator.includes('card_theme'),false,'card theme is card-only');
+assert.equal(mainPlotDecorator.includes('v3-card-plot-layer'),false,'card theme layer must not be injected into plots');
+assert.ok(renderer.includes('options.mainPlot===true?decorateMainPlotV2(plot,raw):false'),'legacy API must require explicit mainPlot opt-in');
 const chart=await readFile(new URL('../js/chart-render.js',import.meta.url),'utf8');
-assert.equal((chart.match(/dot\(ctx,/g)||[]).length-1,3,'image point marker is limited to max/min/current');
+assert.equal((chart.match(/dot\(ctx,/g)||[]).length-1,3,'max/min/current marker calls stay explicit');
+assert.equal((chart.match(/dot\(ctx, mix, miy, GREEN, 7, true\)/g)||[]).length,1,'image point marker is rendered exactly once at the lowest point');
 assert.ok(chart.includes('chartDecorations?.markerAsset'));assert.ok(chart.includes('ctx.drawImage(markerImage'));
+assert.ok(chart.includes('Number(chartDecorations?.markerSize) || 32'));
+assert.ok(chart.includes('Math.max(20, Math.min(44'));
+assert.ok(chart.includes('ctx.drawImage(markerImage,px-markerSize/2,py-markerSize/2,markerSize,markerSize)'));
+const datasetSource=chart.slice(chart.indexOf('const datasets = ['),chart.indexOf('const sharedX ='));
+assert.equal(datasetSource.includes('markerSize'),false,'image marker size must not affect ordinary dataset points');
+assert.equal(chart.includes("text: '체중 (kg)'"),false,'Y-axis title must be removed');
+assert.equal(chart.includes("text: '체중(kg)'"),false,'Y-axis title must be removed');
+for(const token of ['mainPlotDomBoundsPlugin','chart.chartArea','.v3-main-plot-decor[data-showroom-main-plot="true"]','--showroom-main-plot-bottom','fitMainPlotBounds(area,mainPlotAspectRatio||16/9)','plugins: [canvasBgPlugin, mainPlotDomBoundsPlugin'])assert.ok(chart.includes(token),token);
+const fitted=fitMainPlotBounds({left:58,top:16,right:658,bottom:430},16/9);
+assert.ok(fitted.left>=58,'main plot host must start inside chartArea left');
+assert.ok(fitted.top>=16,'main plot host must start inside chartArea top');
+assert.ok(fitted.bottom<=430,'main plot host must not reach subgraph reservation below chartArea');
+assert.ok(Math.abs(fitted.width/fitted.height-16/9)<1e-9,'main plot host must remain exactly 16:9');
+assert.ok(mainPlotDecorator.includes('<span class="v2-trophies">'),'trophy shelf must be a child of the chartArea-bound host');
+assert.ok(css.includes('.v2-trophies{position:absolute;z-index:4;left:6px;top:6px'),'trophy shelf must be pinned to the host top-left');
+assert.equal((visualLab.match(/drawMarker\(ctx,marker,/g)||[]).length,1,'visual lab must show the image marker only at the lowest point');
+assert.equal((visualLab.match(/drawMarker\(ctx,/g)||[]).length-1,1,'visual lab must render exactly one point marker');
 
 const sw=await readFile(new URL('../sw.js',import.meta.url),'utf8');
 assert.ok(sw.includes("weight-v59-showroom-images"));assert.equal(sw.includes('c.addAll(ASSETS).catch'),false);
 for(const entry of SHOWROOM_CATALOG_V2)assert.ok(sw.includes(`'${entry.asset}'`),`sw:${entry.asset}`);
 
 const showroom=await readFile(new URL('../dressroom.html',import.meta.url),'utf8');
-for(const token of ['purchaseCatalogItemsV2','saveShowroomLoadoutV2','현재 범주 4종 검색','unownedSelectionV2','decoratePlotV2','테스트 중 · 구매 불가','item.purchasable!==false&&!item.testOnly','테스트 아이템은 세션 미리보기 전용이며 저장할 수 없습니다'])assert.ok(showroom.includes(token),token);
+for(const token of ['purchaseCatalogItemsV2','saveShowroomLoadoutV2','현재 범주 4종 검색','unownedSelectionV2','decorateMainPlotV2','data-main-weight-plot="true"','data-chart-subgraphs="diet exercise"','mainPlotAspectRatio:16/9','테스트 중 · 구매 불가','item.purchasable!==false&&!item.testOnly','테스트 아이템은 세션 미리보기 전용이며 저장할 수 없습니다'])assert.ok(showroom.includes(token),token);
+assert.ok(showroom.includes('.sr-cats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))'));
+assert.ok(showroom.includes('@media(max-width:520px){.sr-cats{grid-template-columns:repeat(2,minmax(0,1fr))}}'));
+assert.equal(showroom.includes('id="logoutBtn"'),false,'dressroom header must not render the large logout button');
 const compare=await readFile(new URL('../compare.html',import.meta.url),'utf8');
-assert.ok(compare.includes('decoratePlotV2'));assert.ok(compare.includes('getChartDecorationsV2'));
+for(const token of ['decorateMainPlotV2','getChartDecorationsV2','data-main-weight-plot="true"','mainPlotAspectRatio: 16 / 9','id="dietToggle" type="checkbox"','id="exerciseToggle" type="checkbox"','for="dietToggle"','for="exerciseToggle"',"localStorage.getItem('compare_show_diet') === 'true'","localStorage.getItem('compare_show_exercise') === 'true'","persistSubgraphToggle('compare_show_diet'","persistSubgraphToggle('compare_show_exercise'",'showDietGraph,','showExerciseGraph,','renderGrid()'])assert.ok(compare.includes(token),token);
+for(const token of ['showMaxMarker: false','showMinMarker: true','showCurMarker: false'])assert.ok(compare.includes(token),token);
+for(const token of ['id="markerSize" type="range" min="20" max="44" step="2" value="32"',"localStorage.getItem('compare_marker_size')",'markerSize=Number(size.value)',"localStorage.setItem('compare_marker_size'",'chartDecorations: { ...getChartDecorationsV2(user?.showroomLoadoutV2), markerSize }','.marker-size-control{grid-column:1/-1'])assert.ok(compare.includes(token),token);
 const db=await readFile(new URL('../js/db.js',import.meta.url),'utf8');
 for(const token of ['purchaseCatalogItemsV2','validateCatalogPurchaseV2(itemIds)','persistableLoadoutV2(rawLoadout)','테스트 아이템은 소유권을 추가하거나 회수할 수 없습니다','runTransaction','adminSetCatalogOwnershipV2','adminGrantedItems'])assert.ok(db.includes(token),token);
 const purchaseSource=db.slice(db.indexOf('export async function purchaseCatalogItemsV2'),db.indexOf('export const purchaseShowroomItem'));

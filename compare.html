@@ -37,6 +37,15 @@
     .gran-btn:hover{ color:var(--text); }
     .gran-btn.active{ background:rgba(0,229,170,.14); border-color:var(--teal); color:var(--teal); }
     @media(max-width:767px){ .gran-btn{ padding:4px 10px; font-size:11px; } }
+    .subgraph-toggles{display:flex;justify-content:flex-end;gap:7px;margin:-2px 0 7px}
+    .subgraph-toggle{display:flex;align-items:center;gap:6px;min-height:32px;padding:5px 10px;border:1px solid var(--border);border-radius:9px;background:var(--surface2);color:var(--muted);font-size:11px;font-weight:700;cursor:pointer}
+    .subgraph-toggle:focus-within{outline:2px solid var(--teal);outline-offset:2px}
+    .subgraph-toggle input{width:16px;height:16px;margin:0;accent-color:var(--teal)}
+    .subgraph-toggle:has(input:checked){border-color:var(--teal);color:var(--teal);background:rgba(0,229,170,.1)}
+    .marker-size-control{display:flex;align-items:center;gap:7px;min-height:32px;padding:4px 10px;border:1px solid var(--border);border-radius:9px;background:var(--surface2);color:var(--muted);font-size:11px;font-weight:700}
+    .marker-size-control input{width:96px;accent-color:var(--teal)}
+    .marker-size-control output{min-width:34px;color:var(--teal);font-variant-numeric:tabular-nums;text-align:right}
+    @media(max-width:520px){.subgraph-toggles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.subgraph-toggle{justify-content:center;padding-inline:7px}.marker-size-control{grid-column:1/-1;justify-content:center}.marker-size-control input{min-width:120px;max-width:190px;flex:1}}
 
     .picker{
       /* Horizontal scrolling creates a vertical clipping boundary too. Keep a
@@ -184,6 +193,11 @@
       <button class="gran-btn"        data-m="week"  onclick="setViewMode('week')">주간</button>
       <button class="gran-btn"        data-m="month" onclick="setViewMode('month')">월간</button>
     </div>
+    <div class="subgraph-toggles" aria-label="보조 그래프 표시 설정">
+      <label class="subgraph-toggle" for="dietToggle"><input id="dietToggle" type="checkbox">식단 표시</label>
+      <label class="subgraph-toggle" for="exerciseToggle"><input id="exerciseToggle" type="checkbox">운동 표시</label>
+      <label class="marker-size-control" for="markerSize"><span>포인트 크기</span><input id="markerSize" type="range" min="20" max="44" step="2" value="32"><output id="markerSizeValue" for="markerSize">32px</output></label>
+    </div>
     <div class="picker" id="picker">
       <div class="loading"><div class="spinner"></div></div>
     </div>
@@ -201,7 +215,7 @@ import { isAuthed, clearAuth } from './js/auth.js';
 import { renderChart, aggregateRecords, periodLabel } from './js/chart-render.js';
 import { getTierForScore, DEFAULT_TIERS } from './js/achievements.js';
 import { esc } from './js/util.js';
-import { applyCardV2, decoratePlotV2, getChartDecorationsV2, profileVisualV2, titleInfoV2 } from './js/showroom-v2.js';
+import { applyCardV2, decorateMainPlotV2, getChartDecorationsV2, profileVisualV2, titleInfoV2 } from './js/showroom-v2.js';
 
 const uid = new URLSearchParams(location.search).get('user') || localStorage.getItem('uid');
 if (!uid) location.href = 'index.html';
@@ -233,8 +247,22 @@ const weightsCache = {}; // uid -> records
 // 일간/주간/월간 — 항상 '일간'으로 시작 (새로고침 시 초기화, 저장 안 함)
 let viewMode = 'day';
 let showAvatars = localStorage.getItem('compare_show_avatars_v2') !== '0';
+let showDietGraph = localStorage.getItem('compare_show_diet') === 'true';
+let showExerciseGraph = localStorage.getItem('compare_show_exercise') === 'true';
+const storedMarkerSize=Number(localStorage.getItem('compare_marker_size'));
+let markerSize=Number.isFinite(storedMarkerSize)&&storedMarkerSize>=20&&storedMarkerSize<=44?Math.round(storedMarkerSize/2)*2:32;
 function syncAvatarToggle(){document.getElementById('avToggle')?.classList.toggle('active',showAvatars)}
 window.toggleAvatars=()=>{showAvatars=!showAvatars;try{localStorage.setItem('compare_show_avatars_v2',showAvatars?'1':'0')}catch(e){}syncAvatarToggle();renderGrid()};
+function persistSubgraphToggle(key,enabled){try{enabled?localStorage.setItem(key,'true'):localStorage.removeItem(key)}catch(e){}}
+function bindSubgraphToggles(){
+  const diet=document.getElementById('dietToggle'),exercise=document.getElementById('exerciseToggle'),size=document.getElementById('markerSize'),sizeValue=document.getElementById('markerSizeValue');
+  diet.checked=showDietGraph;exercise.checked=showExerciseGraph;
+  size.value=String(markerSize);sizeValue.value=`${markerSize}px`;
+  diet.addEventListener('change',()=>{showDietGraph=diet.checked;persistSubgraphToggle('compare_show_diet',showDietGraph);renderGrid()});
+  exercise.addEventListener('change',()=>{showExerciseGraph=exercise.checked;persistSubgraphToggle('compare_show_exercise',showExerciseGraph);renderGrid()});
+  size.addEventListener('input',()=>{sizeValue.value=`${size.value}px`});
+  size.addEventListener('change',()=>{markerSize=Number(size.value);try{localStorage.setItem('compare_marker_size',String(markerSize))}catch(e){}renderGrid()});
+}
 window.setViewMode = m => {
   if (viewMode === m) return;
   viewMode = m;
@@ -255,22 +283,22 @@ function saveSelected() {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(selected)); } catch (e) {}
 }
 
-// 우리 그래프 차트 옵션: 메인 체중 + 식단 + 운동만 (주간막대 제외).
+// 우리 그래프 차트 옵션: 메인 체중 + 사용자가 켠 식단/운동만 (주간막대 제외).
 // 최고/최저/현재는 점만 찍고(말풍선·리더선 없음) 값은 프로필 줄 배지로 표시.
 // gridCell=true → 칸 너비에 맞춰 그래프가 좌우/상하로 꽉 차도록 종횡비·여백 계산.
 function chartOpts(user) {
   const base = {
     ...S,
     showWeeklyBar: false,
-    showDietGraph: true,
-    showExerciseGraph: true,
-    showMaxMarker: true,
+    showDietGraph,
+    showExerciseGraph,
+    showMaxMarker: false,
     showMinMarker: true,
-    showCurMarker: true,
+    showCurMarker: false,
     gridCell: true,
     labelMode: viewMode,
     mainPlotAspectRatio: 16 / 9,
-    chartDecorations: getChartDecorationsV2(user?.showroomLoadoutV2),
+    chartDecorations: { ...getChartDecorationsV2(user?.showroomLoadoutV2), markerSize },
   };
   // 주간·월간은 평균선만 (식단/운동·이동평균·예상 숨김)
   if (viewMode !== 'day') {
@@ -368,7 +396,7 @@ function cellHTML(u) {
   const recs = aggregateRecords(weightsCache[u.id] || [], viewMode);
   const hasData = recs.filter(r => r.weight != null).length >= 2;
   const body = hasData
-    ? `<div class="cmp-chart"><canvas id="cv_${u.id}"></canvas></div>`
+    ? `<div class="cmp-chart" data-main-weight-plot="true" data-chart-subgraphs="diet exercise"><canvas id="cv_${u.id}"></canvas></div>`
     : `<div class="cmp-empty">데이터가 부족해요</div>`;
 
   // 최고(빨강)/최저(초록)/현재(파랑) 배지 — 프로필 줄 오른쪽
@@ -420,7 +448,7 @@ async function renderGrid() {
 
   const users = selected.map(id => allUsers.find(u => u.id === id)).filter(Boolean);
   grid.innerHTML = users.map(cellHTML).join('');
-  [...grid.querySelectorAll('.cmp-cell')].forEach((cell,index) => {const u=users[index];applyCardV2(cell,u?.showroomLoadoutV2);const plot=cell.querySelector('.cmp-chart');if(plot)decoratePlotV2(plot,u?.showroomLoadoutV2)});
+  [...grid.querySelectorAll('.cmp-cell')].forEach((cell,index) => {const u=users[index];applyCardV2(cell,u?.showroomLoadoutV2);const plot=cell.querySelector('[data-main-weight-plot="true"]');if(plot)decorateMainPlotV2(plot,u?.showroomLoadoutV2)});
 
   // 캔버스가 DOM에 들어간 뒤 차트 렌더
   users.forEach(u => {
@@ -485,6 +513,7 @@ async function init() {
   saveSelected();
 
   syncAvatarToggle();
+  bindSubgraphToggles();
   renderPicker();
   renderGrid();
 }

@@ -3,6 +3,15 @@
 // Parse 'YYYY-MM-DD' as LOCAL midnight (new Date('YYYY-MM-DD') is UTC and shifts buckets in non-KST timezones)
 const parseDs = ds => (typeof ds === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(ds)) ? new Date(ds + 'T00:00:00') : new Date(ds);
 
+export function fitMainPlotBounds(chartArea, requestedRatio = 16 / 9) {
+  const ratio = Number(requestedRatio) > 0 ? Number(requestedRatio) : 16 / 9;
+  const areaW = Math.max(0, chartArea.right - chartArea.left), areaH = Math.max(0, chartArea.bottom - chartArea.top);
+  let width = areaW, height = width / ratio;
+  if (height > areaH) { height = areaH; width = height * ratio; }
+  const left = chartArea.left + (areaW - width) / 2, top = chartArea.top;
+  return { left, top, width, height, bottom: top + height };
+}
+
 
 // ── 일간/주간/월간 집계 ────────────────────────────────────────────────
 // mode: 'day' | 'week' | 'month'
@@ -207,6 +216,7 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
   // ── 말풍선 유틸 ──────────────────────────────────────────────────────
   const BP = 5, BLH = 15, BOFF = 100;
   const markerImage = chartDecorations?.markerAsset ? new Image() : null;
+  const markerSize = Math.max(20, Math.min(44, Number(chartDecorations?.markerSize) || 32));
   if (markerImage) {
     markerImage.decoding = 'async';
     markerImage.onload = () => canvasMain._chartInstance?.draw?.();
@@ -240,14 +250,13 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
     ctx.restore();
   }
   const markerHits=new Map();
-  function dot(ctx, px, py, color, r) {
+  function dot(ctx, px, py, color, r, useMarkerImage=false) {
     const key=`${Math.round(px)}:${Math.round(py)}`,hit=markerHits.get(key)||0;markerHits.set(key,hit+1);
     const angle=hit*Math.PI*2/3;px+=hit?Math.cos(angle)*9:0;py+=hit?Math.sin(angle)*9:0;
     ctx.save();
-    if(markerImage?.complete&&markerImage.naturalWidth){
-      const size=Math.max(24,r*3.6);
+    if(useMarkerImage&&markerImage?.complete&&markerImage.naturalWidth){
       ctx.shadowColor='rgba(0,0,0,.85)';ctx.shadowBlur=5;
-      ctx.drawImage(markerImage,px-size/2,py-size/2,size,size);ctx.restore();return;
+      ctx.drawImage(markerImage,px-markerSize/2,py-markerSize/2,markerSize,markerSize);ctx.restore();return;
     }
     ctx.fillStyle=color;ctx.strokeStyle=BG;ctx.lineWidth=2;ctx.beginPath();ctx.arc(px,py,r,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.restore();
   }
@@ -269,11 +278,10 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
         drawBox(ctx, gx(mp.t), gy(mp.w), gx(mp.t)+12, gy(mp.w)+Math.round(14*scale), [`최고  ${maxW.toFixed(1)} kg`, lbl(mp.date)], '195,65,42', chart, sBP, sBLH, sFont0, sFont1);
     }
     if (showMinMarker) {
-      const lastIdx = pts.length - 1;
-      const drawMinIdx = minIndices.filter(i => i !== lastIdx);
+      const drawMinIdx = minIndices;
       if (drawMinIdx.length > 0) {
         const mi = pts[drawMinIdx[drawMinIdx.length-1]], mix = gx(mi.t), miy = gy(mi.w);
-        dot(ctx, mix, miy, GREEN, 7);
+        dot(ctx, mix, miy, GREEN, 7, true);
         if (!tight) {
           const minLines = [`최저  ${minW.toFixed(1)} kg`, ...drawMinIdx.slice(0, 2).map(i => lbl(pts[i].date))];
           drawBox(ctx, mix, miy, mix+12, miy+Math.round(14*scale), minLines, '34,128,50', chart, sBP, sBLH, sFont0, sFont1);
@@ -603,6 +611,16 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
   const fixedPlotTotalH = mainPlotAspectRatio
     ? (mainPlotW / mainPlotAspectRatio) + BAR_AREA_H + 46
     : null;
+  const mainPlotDomBoundsPlugin = { id:'showroomMainPlotDomBounds', afterLayout(chart) {
+    const parent=chart.canvas?.parentElement,host=parent?.querySelector(':scope > .v3-main-plot-decor[data-showroom-main-plot="true"]');
+    if(!host||!chart.chartArea)return;
+    const area=chart.chartArea,{left,top,width,height,bottom}=fitMainPlotBounds(area,mainPlotAspectRatio||16/9);
+    Object.assign(host.style,{inset:'auto',left:`${left}px`,top:`${top}px`,width:`${width}px`,height:`${height}px`});
+    host.dataset.chartAreaBound='true';
+    parent.style.setProperty('--showroom-main-plot-left',`${left}px`);parent.style.setProperty('--showroom-main-plot-top',`${top}px`);
+    parent.style.setProperty('--showroom-main-plot-width',`${width}px`);parent.style.setProperty('--showroom-main-plot-height',`${height}px`);
+    parent.style.setProperty('--showroom-main-plot-bottom',`${bottom}px`);
+  }};
 
   canvasMain._chartInstance = new Chart(canvasMain.getContext('2d'), {
     type: 'line', data: { datasets },
@@ -638,7 +656,6 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
         y: { min: yMin, max: yMax, grid: { color: GRID },
           ticks: { color: TICK, font: { size: 11 }, stepSize: 5, callback: v => v },
           border: { color: 'rgba(255,255,255,.15)' },
-          title: { display: true, text: '체중 (kg)', color: TICK, font: { size: 11 } },
           afterFit(s) { s.width = Y_AXIS_W; } },
         y2: { min: yMin, max: yMax, position: 'right', grid: { drawOnChartArea: false },
           ticks: { color: TICK, font: { size: 11 }, stepSize: 5, callback: v => v },
@@ -647,7 +664,7 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
       },
       interaction: { mode: 'index', intersect: false }
     },
-    plugins: [canvasBgPlugin, annotPlugin, weeklyBarPlugin, weeklyBarTooltipPlugin, subGraphPlugin, subGraphTooltipPlugin]
+    plugins: [canvasBgPlugin, mainPlotDomBoundsPlugin, annotPlugin, weeklyBarPlugin, weeklyBarTooltipPlugin, subGraphPlugin, subGraphTooltipPlugin]
   });
   canvasMain._startTs = startTs;
   canvasMain._endTs   = endTs;

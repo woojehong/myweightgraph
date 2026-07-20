@@ -134,18 +134,21 @@ export function applyCardV2(card,raw){
   card.dataset.cardPreset=theme.id;
 }
 
-export function decoratePlotV2(plot,raw){
-  if(!plot)return;
-  plot.querySelector(':scope > .v3-plot-underlay')?.remove();
+export function decorateMainPlotV2(plot,raw){
+  if(!plot?.matches?.('[data-main-weight-plot="true"]'))return false;
+  plot.querySelector(':scope > .v3-main-plot-decor')?.remove();
   const loadout=normalizeLoadoutV2(raw),graph=getCatalogItemV2(loadout.graph_skin),ambient=getCatalogItemV2(loadout.ambient_effect);
-  const companion=getCatalogItemV2(loadout.companion),theme=getCatalogItemV2(loadout.card_theme);
+  const companion=getCatalogItemV2(loadout.companion);
   const trophies=loadout.trophy.map(getCatalogItemV2).filter(Boolean);
-  if(!graph&&!ambient&&!companion&&!trophies.length&&!theme)return;
+  if(!graph&&!ambient&&!companion&&!trophies.length)return false;
   const host=document.createElement('div');
-  host.className='v3-plot-underlay';host.setAttribute('aria-hidden','true');
-  host.innerHTML=`${img(theme,'v3-card-plot-layer')}${img(graph,'v3-graph-layer')}${img(ambient,'v3-ambient-layer')}<span class="v3-plot-scrim"></span>${companion?`<span class="v2-companion">${renderCompanionV2(companion.id)}</span>`:''}<span class="v2-trophies">${trophies.map(entry=>renderTrophyV2(entry.id)).join('')}</span>`;
+  host.className='v3-main-plot-decor';host.setAttribute('aria-hidden','true');host.dataset.showroomMainPlot='true';host.dataset.aspectRatio='16:9';
+  host.innerHTML=`${img(graph,'v3-graph-layer')}${img(ambient,'v3-ambient-layer')}<span class="v3-plot-scrim"></span>${companion?`<span class="v2-companion">${renderCompanionV2(companion.id)}</span>`:''}<span class="v2-trophies">${trophies.map(entry=>renderTrophyV2(entry.id)).join('')}</span>`;
   plot.prepend(host);
+  return true;
 }
+// Compatibility wrapper: callers must explicitly opt into the main 16:9 weight plot.
+export function decoratePlotV2(plot,raw,options={}){return options.mainPlot===true?decorateMainPlotV2(plot,raw):false}
 
 export function renderCatalogPreviewV2(entry){
   if(entry.category==='profile_emoji')return renderProfileEmojiV2(entry.id,64);
