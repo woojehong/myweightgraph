@@ -363,6 +363,79 @@ const LINE_LAYER = {
     }
     ctx.restore();
   },
+  // ⑲ 칼날 섬광: 4갈래 별빛 번쩍임 (천본앵 칼날 반사)
+  glint(ctx, pts, acc, L, T, base) {
+    const total = acc[acc.length - 1] || 1, n = L.count || 5;
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round';
+    for (let i = 0; i < n; i++) {
+      const ph = ((T / ((L.period || 2600) * (.7 + rnd(i, 3) * .6))) + rnd(i, 1)) % 1;
+      const s = Math.sin(ph * Math.PI); if (s < .1) continue;
+      const p = atDistance(pts, acc, rnd(i, 2) * total);
+      const r = (L.size ?? 9) * s;
+      ctx.strokeStyle = withAlpha(L.color || '#fff', (L.alpha ?? .95) * s);
+      ctx.lineWidth = L.width ?? 1.4;
+      ctx.beginPath();
+      ctx.moveTo(p.x - r, p.y); ctx.lineTo(p.x + r, p.y);
+      ctx.moveTo(p.x, p.y - r); ctx.lineTo(p.x, p.y + r);
+      ctx.stroke();
+      ctx.fillStyle = withAlpha(L.color || '#fff', (L.alpha ?? .95) * s);
+      ctx.beginPath(); ctx.arc(p.x, p.y, (L.core ?? 1.6) * s, 0, TAU); ctx.fill();
+    }
+    ctx.restore();
+  },
+  // ⑳ 이탈 꽃잎/파편: 선에서 떨어져 회전하며 흩어짐
+  detach(ctx, pts, acc, L, T, base) {
+    const total = acc[acc.length - 1] || 1, n = L.count || 24;
+    ctx.save();
+    for (let i = 0; i < n; i++) {
+      const sp = (L.period || 3400) * (.55 + rnd(i, 3) * .9);
+      const ph = ((T / sp) + rnd(i, 1)) % 1;
+      const p = atDistance(pts, acc, rnd(i, 2) * total);
+      const ang = rnd(i, 4) * TAU;
+      const dist = ph * (L.spread ?? 34);
+      const x = p.x + Math.cos(ang) * dist + Math.sin(ph * 5 + i) * 4;
+      const y = p.y + Math.sin(ang) * dist * .7 - ph * (L.lift ?? 8);
+      ctx.save();
+      ctx.translate(x, y); ctx.rotate(ang + ph * (L.spin ?? 5));
+      ctx.globalAlpha = (L.alpha ?? .9) * (1 - ph);
+      ctx.fillStyle = L.colors ? L.colors[i % L.colors.length] : (L.color || '#ffb7d5');
+      const s = L.size ?? 4;
+      // 꽃잎 모양
+      ctx.beginPath();
+      ctx.moveTo(0, -s);
+      ctx.quadraticCurveTo(s * .7, 0, 0, s);
+      ctx.quadraticCurveTo(-s * .7, 0, 0, -s);
+      ctx.fill();
+      ctx.restore();
+    }
+    ctx.restore();
+  },
+  // ㉑ 룬 각인: 선을 따라 룬 문양이 점등
+  runeMarks(ctx, pts, acc, L, T, base) {
+    const total = acc[acc.length - 1] || 1;
+    const gap = L.gap ?? 34, n = Math.max(1, Math.floor(total / gap));
+    ctx.save(); ctx.lineCap = 'round';
+    for (let i = 0; i < n; i++) {
+      const ph = ((T / (L.period || 4300)) + i / n) % 1;
+      const g = Math.max(0, Math.sin(ph * Math.PI));
+      if (g < .08) continue;
+      const p = atDistance(pts, acc, (i + .5) * gap);
+      const r = (L.size ?? 6) * (.7 + .3 * g);
+      ctx.strokeStyle = withAlpha(L.color || '#9fe8ff', (L.alpha ?? .9) * g);
+      ctx.lineWidth = L.width ?? 1.3;
+      ctx.shadowColor = withAlpha(L.color || '#9fe8ff', .9); ctx.shadowBlur = 8 * g;
+      // 육각 룬
+      ctx.beginPath();
+      for (let k = 0; k < 6; k++) {
+        const a = (k / 6) * TAU + i;
+        const x = p.x + Math.cos(a) * r, y = p.y + Math.sin(a) * r;
+        k ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+      }
+      ctx.closePath(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(p.x - r * .5, p.y); ctx.lineTo(p.x + r * .5, p.y); ctx.stroke();
+    }
+    ctx.restore();
+  },
   // 부드러운 발광 배경 (보조)
   aura(ctx, pts, _acc, L, T, base) {
     ctx.save(); ctx.lineJoin = ctx.lineCap = 'round';
@@ -687,6 +760,129 @@ const AMB_LAYER = {
     ctx.fillStyle = g;
     ctx.fillRect(area.left, area.top, area.right - area.left, area.bottom - area.top);
   },
+  // 빙정 파편: 각진 얼음 조각이 회전하며 흩날림
+  shards(ctx, area, L, T) {
+    const n = L.count || 18, w = area.right - area.left, h = area.bottom - area.top;
+    ctx.save();
+    for (let i = 0; i < n; i++) {
+      const sp = (L.period || 4200) * (.5 + rnd(i, 1) * .8);
+      const ph = ((T / sp) + rnd(i, 2)) % 1;
+      const x = area.left + ((rnd(i, 3) + ph * (L.drift ?? .26)) % 1) * w;
+      const y = area.top + ph * h;
+      const bf = bandFactor(x, y, area); if (bf <= 0) continue;
+      const s = (L.size ?? 5) * (.5 + rnd(i, 5));
+      ctx.save();
+      ctx.translate(x, y); ctx.rotate(ph * (L.spin ?? 7) + i);
+      ctx.globalAlpha = (L.alpha ?? .7) * bf;
+      ctx.fillStyle = L.color || '#dff2ff';
+      ctx.beginPath();                       // 마름모 결정
+      ctx.moveTo(0, -s); ctx.lineTo(s * .45, 0); ctx.lineTo(0, s); ctx.lineTo(-s * .45, 0);
+      ctx.closePath(); ctx.fill();
+      ctx.restore();
+    }
+    ctx.restore();
+  },
+  // 귀화(鬼火): 물방울 모양 혼불이 흔들리며 떠오름
+  wisps(ctx, area, L, T) {
+    const n = L.count || 10, w = area.right - area.left, h = area.bottom - area.top;
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < n; i++) {
+      const sp = (L.period || 7400) * (.6 + rnd(i, 1) * .8);
+      const ph = ((T / sp) + rnd(i, 2)) % 1;
+      const x = area.left + ((rnd(i, 3)) % 1) * w + Math.sin(ph * 5 + i) * 14;
+      const y = area.bottom - ph * h * .95;
+      const bf = bandFactor(x, y, area); if (bf <= 0) continue;
+      const flick = .7 + .3 * Math.sin(T / 140 + i * 2);
+      const s = (L.size ?? 7) * flick * Math.sin(ph * Math.PI);
+      const g = ctx.createRadialGradient(x, y, 0, x, y, s * 2.4);
+      g.addColorStop(0, withAlpha(L.core || '#eaffff', (L.alpha ?? .85) * bf));
+      g.addColorStop(.45, withAlpha(L.color || '#7fffd4', (L.alpha ?? .85) * bf * .7));
+      g.addColorStop(1, withAlpha(L.color || '#7fffd4', 0));
+      ctx.fillStyle = g;
+      ctx.beginPath();                        // 아래로 늘어진 불꽃
+      ctx.ellipse(x, y, s, s * 1.7, 0, 0, TAU);
+      ctx.fill();
+    }
+    ctx.restore();
+  },
+  // 꽃잎 소용돌이: 중심을 향해 휘몰아치는 꽃잎 (천본앵)
+  vortex(ctx, area, L, T) {
+    const n = L.count || 44;
+    const cx = (area.left + area.right) / 2, cy = (area.top + area.bottom) / 2;
+    const rMax = Math.hypot(area.right - cx, area.bottom - cy);
+    ctx.save();
+    for (let i = 0; i < n; i++) {
+      const sp = (L.period || 5200) * (.6 + rnd(i, 1) * .8);
+      const ph = ((T / sp) + rnd(i, 2)) % 1;
+      const r = rMax * (L.inward ? (1 - ph) : ph) * (.55 + rnd(i, 6) * .6);
+      const ang = rnd(i, 3) * TAU + ph * (L.twist ?? 4.2);
+      const x = cx + Math.cos(ang) * r, y = cy + Math.sin(ang) * r * .72;
+      const bf = bandFactor(x, y, area); if (bf <= 0) continue;
+      ctx.save();
+      ctx.translate(x, y); ctx.rotate(ang + ph * 6);
+      ctx.globalAlpha = (L.alpha ?? .85) * bf * Math.sin(ph * Math.PI);
+      ctx.fillStyle = L.colors ? L.colors[i % L.colors.length] : (L.color || '#ffb7d5');
+      const s = (L.size ?? 5) * (.6 + rnd(i, 5) * .7);
+      ctx.beginPath();
+      ctx.moveTo(0, -s);
+      ctx.quadraticCurveTo(s * .72, 0, 0, s);
+      ctx.quadraticCurveTo(-s * .72, 0, 0, -s);
+      ctx.fill();
+      ctx.restore();
+    }
+    ctx.restore();
+  },
+  // 피안화: 가장자리에 방사형 실꽃이 피고 짐
+  lily(ctx, area, L, T) {
+    const n = L.count || 5, w = area.right - area.left, h = area.bottom - area.top;
+    ctx.save(); ctx.lineCap = 'round';
+    for (let i = 0; i < n; i++) {
+      const ph = ((T / (L.period || 9000)) + rnd(i, 1)) % 1;
+      const bloom = Math.sin(ph * Math.PI);
+      if (bloom < .06) continue;
+      const x = area.left + w * (rnd(i, 2) < .5 ? .06 + rnd(i, 3) * .16 : .78 + rnd(i, 3) * .16);
+      const y = area.top + h * (.55 + rnd(i, 4) * .4);
+      const bf = bandFactor(x, y, area); if (bf <= 0) continue;
+      const R = (L.size ?? 14) * bloom;
+      ctx.strokeStyle = withAlpha(L.color || '#ff3355', (L.alpha ?? .8) * bf * bloom);
+      ctx.lineWidth = L.width ?? 1.3;
+      for (let k = 0; k < (L.petals ?? 8); k++) {
+        const a = (k / (L.petals ?? 8)) * TAU + i;
+        ctx.beginPath(); ctx.moveTo(x, y);
+        ctx.quadraticCurveTo(x + Math.cos(a) * R * .7, y + Math.sin(a) * R * .5 - R * .4,
+                             x + Math.cos(a) * R, y + Math.sin(a) * R);
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+  },
+  // 룬 서클: 마법진이 서서히 떠올랐다 사라짐 (회전 없음)
+  runeRing(ctx, area, L, T) {
+    const n = L.count || 2;
+    ctx.save();
+    for (let i = 0; i < n; i++) {
+      const ph = ((T / (L.period || 8300)) + i / n) % 1;
+      const fade = Math.sin(ph * Math.PI);
+      if (fade < .05) continue;
+      const w = area.right - area.left, h = area.bottom - area.top;
+      const cx = area.left + w * (i ? .82 : .18), cy = area.top + h * (i ? .26 : .74);
+      const R = (L.size ?? 28) * (.85 + .15 * fade);
+      const bf = bandFactor(cx, cy, area); if (bf <= 0) continue;
+      const a = (L.alpha ?? .55) * fade * bf;
+      ctx.strokeStyle = withAlpha(L.color || '#9fe8ff', a);
+      ctx.lineWidth = L.width ?? 1.2;
+      ctx.beginPath(); ctx.arc(cx, cy, R, 0, TAU); ctx.stroke();
+      ctx.beginPath(); ctx.arc(cx, cy, R * .72, 0, TAU); ctx.stroke();
+      for (let k = 0; k < (L.ticks ?? 8); k++) {
+        const ang = (k / (L.ticks ?? 8)) * TAU;
+        ctx.beginPath();
+        ctx.moveTo(cx + Math.cos(ang) * R * .72, cy + Math.sin(ang) * R * .72);
+        ctx.lineTo(cx + Math.cos(ang) * R, cy + Math.sin(ang) * R);
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+  },
   // 느리게 지나가는 거대 실루엣
   silhouette(ctx, area, L, T) {
     const ph = (T / (L.period || 15000)) % 1;
@@ -787,6 +983,65 @@ const LINE_FX = {
                          {k:'physics',count:24,period:5300,wind:16,lift:18,grav:10,size:1.6,alpha:.85,additive:1,
                           colors:['#c9a7ff','#7fd4ff','#ffffff']},
                          {k:'chain',gap:24,size:3,alpha:.5,period:9700,width:1,color:'#b0a0ff'}] },
+
+  // ── 테마 확장 12종: 얼음왕관 / 황천 / 천본앵 ──
+  // 고급
+  ls_frostbite:{ layers:[{k:'spikes',len:6,every:3,alpha:.7,period:4300,color:'#cfefff',width:1.3},
+                         {k:'aura',mult:2.2,alpha:.2,period:5300,color:'#9fe8ff'}] },
+  ls_soulthread:{layers:[{k:'wobble',amp:2.6,freq:.5,period:3700,alpha:.7,mult:.9,color:'#7fffd4'},
+                         {k:'aura',mult:2.4,alpha:.2,blur:8,period:4700,color:'#4fd9a8'}] },
+  ls_petal_light:{layers:[{k:'detach',count:10,period:4300,spread:20,size:3.2,alpha:.8,color:'#ffb7d5'},
+                         {k:'aura',mult:2,alpha:.18,period:5900,color:'#ff9ec4'}] },
+  // 희귀
+  ls_icecrown_rune:{layers:[{k:'aura',mult:2.8,alpha:.24,blur:10,period:4300,color:'#7fd4ff'},
+                         {k:'runeMarks',gap:36,size:6,alpha:.9,period:4300,color:'#bfe9ff'},
+                         {k:'spikes',len:8,every:3,alpha:.6,period:5300,color:'#e8faff',width:1.4}] },
+  ls_sanzu:    { layers:[{k:'clipFill',mult:3,period:4700,color:'#3a6f8f',color2:'#7fffd4',alpha:.8},
+                         {k:'pulse',count:3,size:2.6,blur:12,period:3700,alpha:.85,color:'#aaffe8'},
+                         {k:'wobble',amp:2.2,freq:.45,period:3100,alpha:.5,mult:.6,color:'#9fe8d8'}] },
+  ls_senbon_light:{layers:[{k:'detach',count:20,period:3400,spread:30,size:4,alpha:.9,
+                          colors:['#ffb7d5','#ff8ab4','#ffd6e8']},
+                         {k:'glint',count:3,size:7,period:3100,alpha:.8,color:'#fff0f6'},
+                         {k:'aura',mult:2.2,alpha:.2,period:5300,color:'#ff9ec4'}] },
+  // 영웅
+  ls_frostmourne:{layers:[{k:'bloom',passes:3,mult:1.4,alpha:.22,period:4300,color:'#5fd0ff'},
+                         {k:'spikes',len:12,every:2,alpha:.9,period:4700,color:'#e8faff',width:1.7},
+                         {k:'runeMarks',gap:40,size:6,alpha:.8,period:5300,color:'#9fe8ff'},
+                         {k:'physics',count:20,period:4200,wind:14,lift:-18,grav:-8,size:1.8,alpha:.75,
+                          additive:1,colors:['#bfe9ff','#7fd4ff','#eaffff']}] },
+  ls_hellgate: { layers:[{k:'bloom',passes:3,mult:1.4,alpha:.22,period:3700,color:'#b0304f'},
+                         {k:'clipFill',mult:3.2,period:4300,color:'#5c0f2a',color2:'#ff3355',alpha:.85},
+                         {k:'physics',count:24,period:3000,wind:22,lift:28,grav:16,size:2,alpha:.85,
+                          additive:1,colors:['#ff3355','#ff7a4a','#3a1030']},
+                         {k:'glint',count:3,size:8,period:3700,alpha:.7,color:'#ffd0d8'}] },
+  ls_senbonzakura:{layers:[{k:'bloom',passes:3,mult:1.3,alpha:.2,period:4100,color:'#ff8ab4'},
+                         {k:'detach',count:30,period:2800,spread:40,size:4.6,alpha:.95,spin:7,
+                          colors:['#ffb7d5','#ff7aa8','#ffd6e8','#ffffff']},
+                         {k:'glint',count:5,size:9,period:2300,alpha:.95,color:'#ffffff'},
+                         {k:'sweep',color:'#ffe0ee',len:.12,period:3700,alpha:.85,mult:1.6,blur:14}] },
+  // 전설
+  ls_icecrown_throne:{layers:[{k:'bloom',passes:4,mult:1.6,alpha:.26,period:4700,color:'#5fd0ff'},
+                         {k:'clipFill',mode:'stars',mult:3.4,count:26,period:6700,color:'#eaffff',size:1.3,alpha:.9},
+                         {k:'spikes',len:14,every:1,alpha:.95,period:4300,color:'#ffffff',width:1.9},
+                         {k:'runeMarks',gap:32,size:7,alpha:.9,period:5300,color:'#9fe8ff'},
+                         {k:'sweep',color:'#ffffff',len:.13,period:5900,alpha:.95,mult:1.8,blur:18},
+                         {k:'physics',count:26,period:5300,wind:18,lift:-22,grav:-10,size:1.9,alpha:.85,
+                          additive:1,colors:['#bfe9ff','#7fd4ff','#ffffff']}] },
+  ls_yomotsu:  { layers:[{k:'bloom',passes:4,mult:1.5,alpha:.24,period:5300,color:'#7a2b4f'},
+                         {k:'clipFill',mult:3.4,period:5900,color:'#2a0a20',color2:'#7fffd4',alpha:.85},
+                         {k:'runeMarks',gap:38,size:6,alpha:.75,period:6100,color:'#ff5577'},
+                         {k:'physics',count:28,period:4300,wind:16,lift:24,grav:12,size:2,alpha:.9,
+                          additive:1,colors:['#ff3355','#7fffd4','#c0a0ff']},
+                         {k:'glint',count:4,size:9,period:4700,alpha:.8,color:'#ffe0e8'},
+                         {k:'wobble',amp:3,freq:.42,period:3700,alpha:.5,mult:.7,color:'#9fe8d8'}] },
+  ls_senbon_kageyoshi:{layers:[{k:'bloom',passes:4,mult:1.6,alpha:.26,period:3700,color:'#ff7aa8'},
+                         {k:'detach',count:44,period:2400,spread:52,size:5.2,alpha:.98,spin:9,
+                          colors:['#ffb7d5','#ff6f9f','#ffd6e8','#ffffff','#ff9ec4']},
+                         {k:'glint',count:7,size:11,period:1900,alpha:.98,color:'#ffffff',width:1.6},
+                         {k:'sweep',color:'#fff0f6',len:.14,period:3100,alpha:.95,mult:2,blur:18},
+                         {k:'segments',colors:['#ff6f9f','#ffb7d5','#ffffff','#ff9ec4'],period:5300,alpha:.7,mult:1.2},
+                         {k:'physics',count:22,period:3400,wind:26,lift:20,grav:14,size:1.8,alpha:.85,
+                          additive:1,colors:['#ffb7d5','#ffffff']}] },
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -873,6 +1128,51 @@ const AMB_FX = {
                           {k:'flash',color:'#fff6d0',alpha:.3,period:7300},
                           {k:'bokeh',count:6,colors:['#ffe9a8','#ffd0e8'],alpha:.24,size:16,period:12000},
                           {k:'edgeGlow',color:'#ffe9a8',alpha:.26,period:5900,from:'bottom'}] },
+
+  // ── 테마 확장 12종: 얼음왕관 / 황천 / 천본앵 ──
+  // 고급
+  ae_frostair:  { layers:[{k:'shards',count:12,color:'#dff2ff',alpha:.55,size:4,period:5200}] },
+  ae_soulmote:  { layers:[{k:'wisps',count:5,color:'#7fffd4',core:'#eaffff',alpha:.7,size:6,period:8200}] },
+  ae_sakura_light:{layers:[{k:'confetti',count:14,colors:['#ffb7d5','#ffd6e8'],alpha:.6,size:6,ratio:.5,period:9000}] },
+  // 희귀
+  ae_icefall:   { layers:[{k:'shards',count:20,color:'#eaf8ff',alpha:.65,size:5.5,period:4200,drift:.3},
+                          {k:'edgeGlow',color:'#7fd4ff',alpha:.22,period:6700}] },
+  ae_ghostflame:{ layers:[{k:'wisps',count:9,color:'#7fffd4',core:'#eaffff',alpha:.8,size:7,period:7400},
+                          {k:'motes',count:8,color:'#aaffe8',alpha:.35,size:1.4,period:11000}] },
+  ae_petalstream:{layers:[{k:'vortex',count:34,colors:['#ffb7d5','#ff8ab4','#ffd6e8'],alpha:.7,size:4.5,period:6200,twist:3.4},
+                          {k:'edgeGlow',color:'#ff9ec4',alpha:.2,period:6100}] },
+  // 영웅
+  ae_icecrown:  { layers:[{k:'shards',count:26,color:'#eaf8ff',alpha:.7,size:6,period:3600,drift:.34},
+                          {k:'confetti',count:22,color:'#ffffff',alpha:.5,size:2.8,ratio:1,period:4200},
+                          {k:'runeRing',count:2,color:'#9fe8ff',alpha:.45,period:8300,size:26},
+                          {k:'edgeGlow',color:'#5fd0ff',alpha:.3,period:5900}] },
+  ae_sanzu:     { layers:[{k:'wisps',count:12,color:'#7fffd4',core:'#eaffff',alpha:.8,size:8,period:7000},
+                          {k:'smoke',count:10,color:'#4a5a6a',alpha:.28,size:16,period:9700},
+                          {k:'lily',count:4,color:'#ff3355',alpha:.6,period:9000,size:12},
+                          {k:'edgeGlow',color:'#3f7f7a',alpha:.24,period:6700,from:'bottom'}] },
+  ae_senbon:    { layers:[{k:'vortex',count:44,colors:['#ffb7d5','#ff7aa8','#ffd6e8','#ffffff'],alpha:.85,size:5,period:5200,twist:4.2},
+                          {k:'meteors',count:3,color:'#ffffff',alpha:.5,period:3700,len:22,width:1.4},
+                          {k:'edgeGlow',color:'#ff8ab4',alpha:.26,period:5300},
+                          {k:'bokeh',count:5,colors:['#ffd6e8','#ffffff'],alpha:.2,size:15,period:11000}] },
+  // 전설
+  ae_lichking:  { layers:[{k:'shards',count:34,color:'#eaf8ff',alpha:.75,size:7,period:3200,drift:.4},
+                          {k:'confetti',count:28,color:'#ffffff',alpha:.55,size:3,ratio:1,period:3800},
+                          {k:'runeRing',count:2,color:'#9fe8ff',alpha:.6,period:7600,size:32,ticks:10},
+                          {k:'wisps',count:7,color:'#7fd4ff',core:'#ffffff',alpha:.6,size:6,period:8600},
+                          {k:'silhouette',color:'#bfe9ff',alpha:.11,period:16000,y:.24},
+                          {k:'edgeGlow',color:'#5fd0ff',alpha:.32,period:5600}] },
+  ae_yomi:      { layers:[{k:'lily',count:6,color:'#ff3355',alpha:.75,period:8600,size:16,petals:9},
+                          {k:'wisps',count:13,color:'#7fffd4',core:'#eaffff',alpha:.8,size:8,period:6800},
+                          {k:'smoke',count:14,color:'#3a2a3a',alpha:.34,size:18,period:9000},
+                          {k:'runeRing',count:2,color:'#ff5577',alpha:.45,period:9400,size:26},
+                          {k:'confetti',count:16,color:'#6a4a5a',alpha:.4,size:3,ratio:.9,period:7300},
+                          {k:'edgeGlow',color:'#5a1030',alpha:.3,period:6100,from:'bottom'}] },
+  ae_senbon_kageyoshi:{layers:[{k:'vortex',count:58,colors:['#ffb7d5','#ff6f9f','#ffd6e8','#ffffff','#ff9ec4'],alpha:.9,size:5.6,period:4400,twist:5},
+                          {k:'vortex',count:30,colors:['#ffffff','#ffd6e8'],alpha:.6,size:3.4,period:6800,twist:-3.6,inward:1},
+                          {k:'meteors',count:4,color:'#ffffff',alpha:.6,period:3100,len:26,width:1.6},
+                          {k:'bokeh',count:7,colors:['#ffd6e8','#ffffff','#ff9ec4'],alpha:.26,size:18,period:12000},
+                          {k:'flash',color:'#fff0f6',alpha:.24,period:7900},
+                          {k:'edgeGlow',color:'#ff7aa8',alpha:.3,period:5300}] },
 };
 
 // ── 애니메이션 드라이버 ─────────────────────────────────────────────────────
@@ -966,27 +1266,39 @@ export const LINE_STYLE_ITEMS = Object.freeze([
   mk('line_style','ls_thread','떨림 실선','uncommon','가늘게 진동하는 실 같은 선',{fx:'ls_thread',width:2,tension:.2}),
   mk('line_style','ls_ringchain','고리 사슬','uncommon','작은 고리가 선을 따라 이어짐',{fx:'ls_ringchain',width:2.2,tension:.18}),
   mk('line_style','ls_beat','비트 파선','uncommon','짧은 대시가 규칙적으로 내달림',{fx:'ls_beat',width:2.3,tension:.12}),
-  // 희귀 6
+  mk('line_style','ls_frostbite','서리 맺힘','uncommon','선 위에 작은 서리 결정이 돋음',{fx:'ls_frostbite',width:2.2,tension:.18}),
+  mk('line_style','ls_soulthread','혼선(魂線)','uncommon','청록 혼불빛이 일렁이는 실',{fx:'ls_soulthread',width:2.2,tension:.2}),
+  mk('line_style','ls_petal_light','꽃잎 실','uncommon','선에서 꽃잎이 하나둘 떨어짐',{fx:'ls_petal_light',width:2.2,tension:.2}),
+  // 희귀 9
   mk('line_style','ls_vein','흐르는 광맥','rare','밝은 광점이 선을 빠르게 주파',{fx:'ls_vein',width:2.4,tension:.2}),
   mk('line_style','ls_psi','사이오닉 선','rare','양옆 평행선과 결정 가시',{fx:'ls_psi',width:2.3,tension:.18}),
   mk('line_style','ls_netthread','골망 실','rare','두 가닥이 꼬이며 직조',{fx:'ls_netthread',width:2.2,tension:.22}),
   mk('line_style','ls_scale','비늘 선','rare','반달 비늘이 선을 덮고 반짝임',{fx:'ls_scale',width:2.3,tension:.2}),
   mk('line_style','ls_race','삼색 레이스','rare','세 대시가 다른 속도로 경주',{fx:'ls_race',width:2.3,tension:.18}),
   mk('line_style','ls_ripplewave','물결 파동','rare','선 자체가 물결처럼 일렁임',{fx:'ls_ripplewave',width:2.3,tension:.2}),
-  // 영웅 6
+  mk('line_style','ls_icecrown_rune','얼음왕관 룬각인','rare','룬이 점등되며 서리가 돋음',{fx:'ls_icecrown_rune',width:2.4,tension:.18}),
+  mk('line_style','ls_sanzu','삼도천','rare','선 안으로 혼불 강물이 흐름',{fx:'ls_sanzu',width:2.4,tension:.2}),
+  mk('line_style','ls_senbon_light','천본앵 산화','rare','꽃잎이 흩어지고 칼날이 번뜩임',{fx:'ls_senbon_light',width:2.3,tension:.2}),
+  // 영웅 9
   mk('line_style','ls_heatline','화공 열선','epic','열대가 훑고 불티가 위로 솟음',{fx:'ls_heatline',width:2.6,tension:.18}),
   mk('line_style','ls_current','심장로 전류','epic','각진 번개가 선 위를 내달림',{fx:'ls_current',width:2.4,tension:.15}),
   mk('line_style','ls_afterimage','기억의 잔상','epic','어긋난 복제선 3겹의 잔상',{fx:'ls_afterimage',width:2.4,tension:.2}),
   mk('line_style','ls_aqua','유수 관로','epic','선 안쪽에 물이 차오르며 출렁임',{fx:'ls_aqua',width:2.6,tension:.2}),
   mk('line_style','ls_starfield','별의 강','epic','선 내부를 별이 흘러 지나감',{fx:'ls_starfield',width:2.6,tension:.2}),
   mk('line_style','ls_windborne','풍매','epic','바람 물리로 입자가 흩날림',{fx:'ls_windborne',width:2.4,tension:.2}),
-  // 전설 6
+  mk('line_style','ls_frostmourne','서릿날','epic','룬검의 냉기가 위로 피어오름',{fx:'ls_frostmourne',width:2.6,tension:.18}),
+  mk('line_style','ls_hellgate','황천문','epic','핏빛 강물과 재가 솟구침',{fx:'ls_hellgate',width:2.6,tension:.2}),
+  mk('line_style','ls_senbonzakura','천본앵','epic','꽃잎 칼날이 흩날리며 번뜩임',{fx:'ls_senbonzakura',width:2.6,tension:.2}),
+  // 전설 9
   mk('line_style','ls_frost','서리 결정선','legendary','선 전체에서 결정 가시가 자람',{fx:'ls_frost',width:2.6,tension:.18}),
   mk('line_style','ls_gem_trail','여섯 보석 궤적','legendary','구간마다 색이 바뀌는 무지개 궤적',{fx:'ls_gem_trail',width:2.6,tension:.2}),
   mk('line_style','ls_spotlight','우승 스포트라이트','legendary','조명 띠가 선을 훑는 시상식',{fx:'ls_spotlight',width:2.8,tension:.2}),
   mk('line_style','ls_prism_bloom','프리즘 블룸','legendary','빛이 누적되며 폭발하는 무지개',{fx:'ls_prism_bloom',width:2.8,tension:.2}),
   mk('line_style','ls_dragon','용린 화염','legendary','비늘과 화염 물리가 함께 타오름',{fx:'ls_dragon',width:2.8,tension:.2}),
   mk('line_style','ls_cosmos','우주의 강','legendary','별·성운·궤도 입자가 한꺼번에',{fx:'ls_cosmos',width:2.8,tension:.2}),
+  mk('line_style','ls_icecrown_throne','얼음왕관 옥좌','legendary','룬·결정·냉기 폭풍이 총동원',{fx:'ls_icecrown_throne',width:2.8,tension:.18}),
+  mk('line_style','ls_yomotsu','황천비도','legendary','혼불과 핏빛 룬이 뒤섞인 저승길',{fx:'ls_yomotsu',width:2.8,tension:.2}),
+  mk('line_style','ls_senbon_kageyoshi','천본앵 경신','legendary','수천 꽃잎 칼날이 몰아치는 절경',{fx:'ls_senbon_kageyoshi',width:2.8,tension:.2}),
 ]);
 
 export const AMBIENT_EFFECT_ITEMS = Object.freeze([
@@ -997,25 +1309,37 @@ export const AMBIENT_EFFECT_ITEMS = Object.freeze([
   mk('ambient_effect','ae_snowlight','가랑눈','uncommon','작은 눈송이가 조용히 내림',{fx:'ae_snowlight'}),
   mk('ambient_effect','ae_petal','꽃잎 흩날림','uncommon','분홍 꽃잎이 회전하며 떨어짐',{fx:'ae_petal'}),
   mk('ambient_effect','ae_bokeh','빛망울','uncommon','초점 나간 빛망울이 떠다님',{fx:'ae_bokeh'}),
-  // 희귀 6
+  mk('ambient_effect','ae_frostair','서릿바람','uncommon','얼음 결정이 흩날림',{fx:'ae_frostair'}),
+  mk('ambient_effect','ae_soulmote','혼불','uncommon','청록 혼불이 조용히 떠오름',{fx:'ae_soulmote'}),
+  mk('ambient_effect','ae_sakura_light','벚꽃','uncommon','연분홍 꽃잎이 내려앉음',{fx:'ae_sakura_light'}),
+  // 희귀 9
   mk('ambient_effect','ae_spore','포자 유동','rare','포자가 기둥처럼 솟아오름',{fx:'ae_spore'}),
   mk('ambient_effect','ae_feather','부엉이 깃털','rare','큰 깃털이 회전하며 떨어짐',{fx:'ae_feather'}),
   mk('ambient_effect','ae_grass','잔디 바람','rare','하단 잔디가 바람에 눕는다',{fx:'ae_grass'}),
   mk('ambient_effect','ae_rain','빗줄기','rare','사선 비가 촘촘히 내림',{fx:'ae_rain'}),
   mk('ambient_effect','ae_leaffall','낙엽','rare','가을 잎이 회전하며 떨어짐',{fx:'ae_leaffall'}),
   mk('ambient_effect','ae_bubble','기포','rare','물방울이 흔들리며 상승',{fx:'ae_bubble'}),
-  // 영웅 6
+  mk('ambient_effect','ae_icefall','빙정 낙하','rare','얼음 파편이 회전하며 떨어짐',{fx:'ae_icefall'}),
+  mk('ambient_effect','ae_ghostflame','귀화(鬼火)','rare','도깨비불이 흔들리며 떠오름',{fx:'ae_ghostflame'}),
+  mk('ambient_effect','ae_petalstream','화류(花流)','rare','꽃잎이 소용돌이치며 흐름',{fx:'ae_petalstream'}),
+  // 영웅 9
   mk('ambient_effect','ae_roar','함성 파동','epic','원형 파동이 밖으로 확산',{fx:'ae_roar'}),
   mk('ambient_effect','ae_firearrow','불화살비','epic','꼬리를 단 불화살이 쏟아짐',{fx:'ae_firearrow'}),
   mk('ambient_effect','ae_holo','홀로 격자','epic','격자와 스캔라인이 훑고 지나감',{fx:'ae_holo'}),
   mk('ambient_effect','ae_thunder','뇌우','epic','섬광이 번쩍이고 비가 몰아침',{fx:'ae_thunder'}),
   mk('ambient_effect','ae_smokestack','연무','epic','연기 기둥이 피어올라 흩어짐',{fx:'ae_smokestack'}),
   mk('ambient_effect','ae_swarm','군무','epic','무리가 함께 몰려다님',{fx:'ae_swarm'}),
-  // 전설 6
+  mk('ambient_effect','ae_icecrown','얼음왕관 서리폭풍','epic','빙정과 눈보라, 룬 마법진',{fx:'ae_icecrown'}),
+  mk('ambient_effect','ae_sanzu','삼도천','epic','혼불과 안개, 피안화가 핀 강가',{fx:'ae_sanzu'}),
+  mk('ambient_effect','ae_senbon','천본앵','epic','꽃잎이 소용돌이치며 번뜩임',{fx:'ae_senbon'}),
+  // 전설 9
   mk('ambient_effect','ae_blizzard','서리폭풍','legendary','눈보라와 바람줄기가 몰아침',{fx:'ae_blizzard'}),
   mk('ambient_effect','ae_gem_nebula','보석 성운','legendary','거대한 색 덩어리가 유영',{fx:'ae_gem_nebula'}),
   mk('ambient_effect','ae_ceremony','우승 세리머니','legendary','색종이와 스포트라이트가 쏟아짐',{fx:'ae_ceremony'}),
   mk('ambient_effect','ae_galaxy','나선 은하','legendary','은하 팔이 천천히 회전',{fx:'ae_galaxy'}),
   mk('ambient_effect','ae_volcano','화산','legendary','분출과 연기, 불티가 뒤섞임',{fx:'ae_volcano'}),
   mk('ambient_effect','ae_finale','대미의 불꽃','legendary','폭죽이 연달아 터지는 피날레',{fx:'ae_finale'}),
+  mk('ambient_effect','ae_lichking','얼음왕관 성채','legendary','폭설·빙정·룬진·성채 실루엣',{fx:'ae_lichking'}),
+  mk('ambient_effect','ae_yomi','황천(黃泉)','legendary','피안화와 혼불이 뒤덮은 저승',{fx:'ae_yomi'}),
+  mk('ambient_effect','ae_senbon_kageyoshi','천본앵 경신','legendary','이중 소용돌이 꽃잎 폭풍',{fx:'ae_senbon_kageyoshi'}),
 ]);
