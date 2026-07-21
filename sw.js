@@ -1,4 +1,4 @@
-const CACHE = 'weight-v71-today-center';
+const CACHE = 'weight-v72-quest-expand';
 const ASSETS = [
   './index.html', './dashboard.html', './input.html', './import.html',
   './achievements.html', './compare.html', './dressroom.html', './shop.html', './guide.html', './visual-lab.html',

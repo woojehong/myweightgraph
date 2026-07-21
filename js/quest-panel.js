@@ -32,8 +32,17 @@ function questRow(q, color){
     </div>`;
 }
 
-// 한 줄 요약(항상 보임) + 펼치면 상세. 기본은 전부 접힘.
-function section({key, title, note, color, list, cap, bonus}){
+// 기본은 펼침. 사용자가 접으면 그 상태를 기억한다.
+const COLLAPSE_KEY = 'quest_collapsed';
+function collapsedSet(){
+  try { return new Set(JSON.parse(localStorage.getItem(COLLAPSE_KEY) || '[]')); }
+  catch { return new Set(); }
+}
+function saveCollapsed(set){
+  try { localStorage.setItem(COLLAPSE_KEY, JSON.stringify([...set])); } catch {}
+}
+
+function section({key, title, note, color, list, cap, bonus, collapsed}){
   const bonusEarned = bonus ? rawEarned(bonus) : 0;
   const bonusTotal  = bonus ? sumPoints(bonus) : 0;
   const earned = cappedEarned(list, cap) + bonusEarned;
@@ -49,17 +58,17 @@ function section({key, title, note, color, list, cap, bonus}){
     (ORDER[a.tier] ?? 0) - (ORDER[b.tier] ?? 0) || a.points - b.points);
 
   return `
-    <div class="q-sec" data-key="${key}">
-      <button class="q-head" onclick="toggleQuestSection('${key}')" aria-expanded="false">
+    <div class="q-sec${collapsed?'':' open'}" data-key="${key}">
+      <button class="q-head" onclick="toggleQuestSection('${key}')" aria-expanded="${collapsed?'false':'true'}">
         <span class="q-hl">
           <span class="q-title" style="color:${color}">${title}</span>
-          <span class="q-caret">▸</span>
+          <span class="q-caret">${collapsed?'▸':'▾'}</span>
         </span>
         <span class="q-sum" style="color:${color}">${earned}<em>/${total}P</em></span>
         <span class="q-mini"><i style="width:${pct(earned/total)}%;background:${color}"></i></span>
         <span class="q-cnt">달성 ${doneN}/${list.length}</span>
       </button>
-      <div class="q-body" hidden>
+      <div class="q-body"${collapsed?' hidden':''}>
         <div class="q-capinfo">
           <span>${esc(note)}</span>
           ${cap!=null?`<span>상한 <b style="color:${color}">${cap}P</b></span>
@@ -79,7 +88,6 @@ export const QUEST_PANEL_CSS = `
 .q-wrap{display:grid;grid-template-columns:1fr;gap:5px;margin:14px 0 12px;align-items:start}
 @media(min-width:768px){.q-wrap{grid-template-columns:repeat(3,1fr);gap:8px}}
 .q-sec{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:9px 10px;min-width:0}
-.q-sec.open{grid-column:1/-1}
 .q-head{display:grid;gap:5px;width:100%;background:none;border:none;padding:0;cursor:pointer;text-align:left}
 .q-hl{display:flex;align-items:center;justify-content:space-between}
 .q-caret{color:var(--muted);font-size:10px}
@@ -92,6 +100,7 @@ export const QUEST_PANEL_CSS = `
 .q-capinfo{display:flex;gap:10px;flex-wrap:wrap;font-size:10px;color:var(--muted);margin-bottom:7px}
 .q-capinfo b{font-weight:800}
 .q-body{display:grid;gap:5px;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)}
+.q-body[hidden]{display:none}
 .q-bonus-h{font-size:9px;color:var(--muted);margin-top:6px;padding-top:6px;border-top:1px dashed var(--border)}
 .q-row{display:grid;gap:4px}
 .q-line{display:flex;align-items:center;gap:6px}
@@ -115,11 +124,12 @@ export function questPanelHTML(records, todayRecord, buddyDates){
   const w = weeklyProgress(records);
   const m = monthlyProgress(records, undefined, buddyDates);
 
+  const col = collapsedSet();
   return `
     <div class="q-wrap">
-      ${section({key:'d',title:'일간',note:'오전 6시 초기화 · 완주 44P + 보너스 6P',color:'#00e5aa',list:d,cap:null,bonus:db})}
-      ${section({key:'w',title:'주간',note:`일요일 초기화 · ${daysLeftInWeek()}일 남음`,color:'#4fc3f7',list:w,cap:WEEKLY_CAP})}
-      ${section({key:'m',title:'월간',note:`${daysLeftInMonth()}일 남음`,color:'#ffa726',list:m,cap:MONTHLY_CAP})}
+      ${section({key:'d',title:'일간',note:'오전 6시 초기화 · 완주 44P + 보너스 6P',color:'#00e5aa',list:d,cap:null,bonus:db,collapsed:col.has('d')})}
+      ${section({key:'w',title:'주간',note:`일요일 초기화 · ${daysLeftInWeek()}일 남음`,color:'#4fc3f7',list:w,cap:WEEKLY_CAP,collapsed:col.has('w')})}
+      ${section({key:'m',title:'월간',note:`${daysLeftInMonth()}일 남음`,color:'#ffa726',list:m,cap:MONTHLY_CAP,collapsed:col.has('m')})}
     </div>`;
 }
 
@@ -137,5 +147,8 @@ export function installQuestToggle(){
     sec.classList.toggle('open', open);
     head.setAttribute('aria-expanded', open ? 'true' : 'false');
     caret.textContent = open ? '▾' : '▸';
+    const set = collapsedSet();
+    if (open) set.delete(key); else set.add(key);
+    saveCollapsed(set);
   };
 }

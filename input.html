@@ -105,7 +105,7 @@
     .pr-ex.no{border-color:var(--red);color:var(--red);background:rgba(239,83,80,.12)}
     .pr-water{flex:1;min-width:26px;height:7px;background:rgba(255,255,255,.08);
       border-radius:4px;overflow:hidden}
-    .pr-water i{display:block;height:100%;background:#4fc3f7;border-radius:4px}
+    .pr-water i{display:block;height:100%;background:#4fc3f7;border-radius:4px;min-width:0;transition:width .15s}
     .pr-wnum{font-size:10px;color:var(--muted);width:26px;text-align:right;flex-shrink:0}
     @media(max-width:400px){.pr-water,.pr-wnum{display:none}}
 
@@ -146,14 +146,15 @@
     /* 데스크탑: 컴팩트 레이아웃 (라이프 섹션은 아래 줄로 래핑) */
     @media(min-width:768px) {
       /* 카드를 내용 크기에 맞게 + 가운데 정렬 */
-      .day-card { display:inline-flex; flex-direction:row; align-items:center; flex-wrap:wrap;
+      .day-card:not(.tdy-card) { display:inline-flex; flex-direction:row; align-items:center; flex-wrap:wrap;
                   gap:14px 18px; padding:14px 24px; margin-bottom:10px; width:auto !important;
                   max-width:min(860px, 100%); }
+      /* 오늘 카드는 세로 스택 + 전체 폭 유지 */
+      .tdy-card { display:block; width:100%; max-width:100%; margin-bottom:10px; }
       .dc-life { flex-basis:100%; margin-top:0; padding-top:10px;
                  flex-direction:row; flex-wrap:wrap; gap:8px 20px; }
       .dc-life-row { flex-wrap:nowrap; }
       .dc-life-label { width:auto; min-width:46px; font-size:12px; }
-      #content { display:flex; flex-direction:column; align-items:center; }
       .day-card .dc-top { margin-bottom:0; flex-shrink:0; min-width:180px; }
       .day-card .dc-name { font-size:18px; }
       .day-card .dc-date { font-size:14px; }
