@@ -24,7 +24,7 @@ function questRow(q, color){
       <div class="q-line">
         <span class="q-ico" style="${done?`color:${color}`:''}">${done?'✔':'○'}</span>
         ${q.tier?`<em class="q-tier t-${q.tier}">${TIER_LABEL[q.tier]}</em>`:''}
-        <span class="q-name">${esc(q.label)}</span>
+        <span class="q-name" title="${esc(q.label)}">${esc(q.label)}</span>
         <span class="q-val">${valueText}</span>
         <span class="q-pt" style="${done?`color:${color}`:''}">${q.points}P</span>
       </div>
@@ -105,7 +105,8 @@ export const QUEST_PANEL_CSS = `
 .q-row{display:grid;gap:4px}
 .q-line{display:flex;align-items:center;gap:6px}
 .q-ico{font-size:11px;color:var(--muted);flex-shrink:0}
-.q-name{font-size:11px;color:var(--muted);flex:1;min-width:0;line-height:1.35;word-break:keep-all}
+.q-name{font-size:11px;color:var(--muted);flex:1;min-width:0;line-height:1.35;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .q-row.is-done .q-name{color:var(--text)}
 .q-tier{font-size:9px;font-style:normal;padding:1px 5px;border-radius:4px;flex-shrink:0;white-space:nowrap}
 .t-easy{background:rgba(102,187,106,.16);color:#66bb6a}
@@ -118,9 +119,9 @@ export const QUEST_PANEL_CSS = `
 `;
 
 /** 퀘스트 패널 HTML 생성 */
-export function questPanelHTML(records, todayRecord, buddyDates){
+export function questPanelHTML(records, todayRecord, buddyDates, waterGoal){
   const d  = dailyProgress(todayRecord);
-  const db = dailyBonusProgress(todayRecord);
+  const db = dailyBonusProgress(todayRecord, waterGoal);
   const w = weeklyProgress(records);
   const m = monthlyProgress(records, undefined, buddyDates);
 

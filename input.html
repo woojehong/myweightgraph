@@ -60,7 +60,8 @@
     .tdy-head{display:flex;align-items:baseline;justify-content:center;gap:7px;margin-bottom:9px}
     .tdy-name{font-size:16px;font-weight:800;color:var(--teal)}
     .tdy-date{font-size:11px;color:var(--muted)}
-    .tdy-weigh{display:flex;align-items:center;justify-content:center;gap:7px;margin-bottom:11px;flex-wrap:wrap}
+    /* 체중·kg·저장만 정확히 가운데. 저장됨 뱃지는 흐름에서 빼서 오른쪽에 띄움 */
+    .tdy-weigh{position:relative;display:flex;align-items:center;justify-content:center;gap:7px;margin-bottom:11px}
     .tdy-input{width:84px;height:36px;background:var(--bg);border:1.5px solid var(--teal);
       border-radius:9px;color:var(--text);font-size:18px;font-weight:800;text-align:center;padding:0}
     .tdy-input.saved{border-color:var(--green)}
@@ -68,9 +69,11 @@
     .tdy-unit{font-size:11px;color:var(--muted)}
     .tdy-btn{height:36px;padding:0 15px;background:var(--teal);border:none;border-radius:9px;
       color:#0d1117;font-size:12px;font-weight:800;cursor:pointer}
-    .tdy-flag{font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;
+    .tdy-flag{position:absolute;left:calc(50% + 108px);top:50%;transform:translateY(-50%);
+      font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;white-space:nowrap;
       background:rgba(255,255,255,.06);color:var(--muted)}
     .tdy-flag.on{background:rgba(102,187,106,.16);color:var(--green)}
+    @media(max-width:520px){.tdy-flag{position:static;transform:none;margin-left:4px}}
     /* 아침·점심·저녁 + (간격) + 운동 — 가운데정렬 */
     .tdy-row{display:flex;align-items:flex-end;justify-content:center;gap:12px}
     .tdy-meal{display:flex;flex-direction:column;align-items:center;gap:5px}
@@ -113,6 +116,18 @@
     .tdy-card .dc-life-row{justify-content:center;flex-wrap:nowrap}
     .tdy-card .dc-life-label{width:auto}
     .tdy-card .water-cups{flex-wrap:wrap;justify-content:center}
+    /* 물 목표 설정 (기본 접힘) */
+    .water-gear{background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;
+      padding:2px 4px;line-height:1}
+    .water-gear:hover{color:var(--teal)}
+    .water-cfg{display:flex;align-items:center;justify-content:center;gap:6px;
+      margin-top:7px;font-size:11px;color:var(--muted)}
+    .water-cfg[hidden]{display:none}
+    .water-cfg input{width:52px;height:26px;background:var(--bg);border:1px solid var(--border);
+      border-radius:6px;color:var(--text);font-size:12px;text-align:center;padding:0}
+    .water-cfg input:focus{outline:none;border-color:var(--teal)}
+    .water-cfg button{height:26px;padding:0 10px;background:var(--teal);border:none;border-radius:6px;
+      color:#0d1117;font-size:11px;font-weight:800;cursor:pointer}
     .water-cups { display:flex; gap:3px; }
     .water-cup { width:20px; height:24px; border:none; background:transparent; cursor:pointer;
                  font-size:15px; padding:0; opacity:.22; transition:opacity .12s, transform .1s; }
@@ -145,12 +160,18 @@
 
     /* 데스크탑: 컴팩트 레이아웃 (라이프 섹션은 아래 줄로 래핑) */
     @media(min-width:768px) {
+      /* 퀘스트 3칸이 한 줄에 여유롭게 들어가도록 폭 확장 */
+      .page { max-width: 1180px !important; }
       /* 카드를 내용 크기에 맞게 + 가운데 정렬 */
       .day-card:not(.tdy-card) { display:inline-flex; flex-direction:row; align-items:center; flex-wrap:wrap;
                   gap:14px 18px; padding:14px 24px; margin-bottom:10px; width:auto !important;
                   max-width:min(860px, 100%); }
-      /* 오늘 카드는 세로 스택 + 전체 폭 유지 */
-      .tdy-card { display:block; width:100%; max-width:100%; margin-bottom:10px; }
+      /* 오늘 카드 = 지난기록·퀘스트와 동일한 전체 폭 */
+      .tdy-card { display:block !important; width:100% !important; max-width:100% !important;
+                  margin:0 0 10px 0 !important; }
+      /* 오늘 카드의 물 — 데스크탑에서도 가운데정렬 유지 */
+      .tdy-card .dc-life { align-items:center !important; }
+      .tdy-card .dc-life-row { justify-content:center !important; }
       .dc-life { flex-basis:100%; margin-top:0; padding-top:10px;
                  flex-direction:row; flex-wrap:wrap; gap:8px 20px; }
       .dc-life-row { flex-wrap:nowrap; }
@@ -254,7 +275,7 @@ import { esc } from './js/util.js';
 import { clearAuth, saveAuth, isAuthed } from './js/auth.js';
 import { profileVisualV2, titleInfoV2 } from './js/showroom-v2.js';
 import { questPanelHTML, installQuestToggle, QUEST_PANEL_CSS } from './js/quest-panel.js';
-import { buddyCompletedDates } from './js/quests.js';
+import { buddyCompletedDates, waterGoalOf } from './js/quests.js';
 import { getUsers } from './js/db.js';
 
 // 퀘스트 패널 스타일 주입
@@ -274,6 +295,14 @@ async function reward(dateStr,event,value=null){
     updateRewardSummary(r); return r;
   }catch(e){console.warn('Daily reward failed:',e);return null;}
 }
+// 퀘스트 패널만 다시 그린다
+function refreshQuestPanel(){
+  const panel=document.getElementById('questPanel');
+  if(!panel) return;
+  const todayRec=allRecords.find(r=>r.date===activityDay());
+  panel.innerHTML=questPanelHTML(allRecords, todayRec, _buddyDates, waterGoalOf(user));
+}
+
 // 친구와 같은 날 완주 — 초기 렌더를 막지 않도록 뒤에서 한 번만 불러온다
 let _buddyDates = null, _buddyLoading = false;
 async function refreshBuddyDates(){
@@ -285,11 +314,7 @@ async function refreshBuddyDates(){
     if (!others.length) return;                       // 혼자면 친구 퀘스트 비활성
     const recs = await Promise.all(others.map(u => getWeights(u.id).catch(()=>[])));
     _buddyDates = buddyCompletedDates(recs);
-    const panel = document.getElementById('questPanel');
-    if (panel) {
-      const todayRec = allRecords.find(r => r.date === activityDay());
-      panel.innerHTML = questPanelHTML(allRecords, todayRec, _buddyDates);
-    }
+    refreshQuestPanel();
   }catch(e){ /* 친구 데이터 실패는 조용히 무시 */ }
   finally{ _buddyLoading = false; }
 }
@@ -493,18 +518,46 @@ window.setWater = async (dateStr, n) => {
   scheduleAchSync();
 };
 
+// 사용자 물 목표 (기본 6잔 · 500ml 기준)
+const myWaterGoal = () => waterGoalOf(user);
+
 function lifeSectionHTML(dateStr){
   const rec=allRecords.find(r=>r.date===dateStr)||{};
   const water=rec.water||0;
-  const cups=Array.from({length:WATER_GOAL_CUPS},(_,i)=>
+  const goal=myWaterGoal();
+  const done=water>=goal;
+  const cups=Array.from({length:goal},(_,i)=>
     `<button class="water-cup ${i<water?'full':''}" onclick="setWater('${dateStr}',${i+1})" aria-label="물 ${i+1}잔">🥛</button>`).join('');
   return `
     <div class="dc-life-row">
       <span class="dc-life-label">💧 물</span>
       <div class="water-cups">${cups}</div>
-      <span class="water-count ${water>=WATER_GOAL_CUPS?'done':''}">${water}/${WATER_GOAL_CUPS}</span>
+      <span class="water-count ${done?'done':''}">${done?'✓ 달성':`${water}/${goal}`}</span>
+      <button class="water-gear" onclick="toggleWaterCfg()" aria-label="물 목표 설정" title="목표 잔 수 설정">▾</button>
+    </div>
+    <div class="water-cfg" id="waterCfg" hidden>
+      <span>목표</span>
+      <input type="number" id="waterGoalInp" min="1" max="20" value="${goal}">
+      <span>잔 (500ml 기준)</span>
+      <button onclick="saveWaterGoal()">저장</button>
     </div>`;
 }
+window.toggleWaterCfg = () => {
+  const el=document.getElementById('waterCfg'); if(!el) return;
+  const open=el.hasAttribute('hidden');
+  if(open) el.removeAttribute('hidden'); else el.setAttribute('hidden','');
+  const g=document.querySelector('.water-gear'); if(g) g.textContent = open ? '▴' : '▾';
+};
+window.saveWaterGoal = async () => {
+  const v=Math.max(1,Math.min(20,parseInt(document.getElementById('waterGoalInp').value)||6));
+  try{
+    await updateUser(uid,{ waterGoal:v });
+    user.waterGoal=v;
+    renderLife(activityDay());
+    refreshQuestPanel();
+    showToast(`물 목표 ${v}잔으로 변경됨`,'ok');
+  }catch(e){ showToast('저장 실패: '+e.message,'err'); }
+};
 function renderLife(dateStr){
   const el=document.getElementById(`life-${dateStr}`);
   if(el) el.innerHTML=lifeSectionHTML(dateStr);
@@ -631,8 +684,8 @@ async function render() {
         <span class="pr-meals">${dot('morning')}${dot('lunch')}${dot('dinner')}</span>
         <button class="pr-ex ${ex===true?'yes':ex===false?'no':''}" onclick="cycleExercise('${dateStr}')"
           aria-label="운동 변경">${ex===true?'✓':ex===false?'✕':'–'}</button>
-        <span class="pr-water"><i style="width:${Math.min(100,water/WATER_GOAL_CUPS*100)}%"></i></span>
-        <span class="pr-wnum">${water}/${WATER_GOAL_CUPS}</span>
+        <span class="pr-water"><i style="width:${Math.min(100,water/myWaterGoal()*100)}%"></i></span>
+        <span class="pr-wnum">${water}/${myWaterGoal()}</span>
       </div>`;
   }
 
@@ -642,7 +695,7 @@ async function render() {
   document.getElementById('content').innerHTML =
     cards
     + `<div class="past-title">지난 기록</div><div class="past-list">${pastRows}</div>`
-    + `<div id="questPanel">${questPanelHTML(allRecords, todayRec, _buddyDates)}</div>`;
+    + `<div id="questPanel">${questPanelHTML(allRecords, todayRec, _buddyDates, waterGoalOf(user))}</div>`;
   refreshBuddyDates();
 
   // 다른 곳(자동 연동 등)에서 쌓인 미반영 업적을 페이지 진입 시 1회 정산

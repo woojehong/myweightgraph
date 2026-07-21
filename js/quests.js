@@ -13,7 +13,11 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { activityDay, isDailyComplete } from './daily-rewards.js';
 
-export const WATER_GOAL   = 10;
+export const WATER_GOAL_DEFAULT = 6;   // 500ml 잔 기준 기본 목표
+export const WATER_GOAL   = WATER_GOAL_DEFAULT;
+/** 사용자가 설정한 목표(users.waterGoal) — 없으면 기본값 */
+export const waterGoalOf = user =>
+  Math.max(1, Math.min(20, Number(user?.waterGoal) || WATER_GOAL_DEFAULT));
 export const WEEKLY_CAP   = 200;
 export const MONTHLY_CAP  = 1000;
 
@@ -41,10 +45,11 @@ export const DAILY_QUESTS = Object.freeze([
   { id:'d_exercise',label:'운동 체크',  points:4,  goal:1 },
   { id:'d_complete',label:'하루 완주',  points:14, goal:1 },
 ]);
-/** 완주와 무관한 선택 보너스 */
-export const DAILY_BONUS = Object.freeze([
-  { id:'d_water', label:`물 ${WATER_GOAL}잔`, points:6, goal:WATER_GOAL, optional:true },
+/** 완주와 무관한 선택 보너스 — 목표 달성 유무로만 판정(부분점수 없음) */
+export const dailyBonusDefs = goal => Object.freeze([
+  { id:'d_water', label:`수분 섭취 목표 (${goal}잔)`, points:6, goal:1, optional:true },
 ]);
+export const DAILY_BONUS = dailyBonusDefs(WATER_GOAL_DEFAULT);
 
 export function dailyProgress(record){
   const r = record || {};
@@ -56,10 +61,10 @@ export function dailyProgress(record){
     d_complete: isDailyComplete(r) ? 1 : 0,
   });
 }
-/** 선택 보너스(물) — 완주와 무관 */
-export function dailyBonusProgress(record){
+/** 선택 보너스(물) — 완주와 무관. 목표 달성 유무만 본다. */
+export function dailyBonusProgress(record, goal = WATER_GOAL_DEFAULT){
   const r = record || {};
-  return buildList(DAILY_BONUS, { d_water: clamp(r.water||0, 0, WATER_GOAL) });
+  return buildList(dailyBonusDefs(goal), { d_water: (r.water||0) >= goal ? 1 : 0 });
 }
 
 // ── 주간 퀘스트 (총 배점 > 상한 200P) ───────────────────────────────────────
@@ -77,12 +82,8 @@ export const WEEKLY_QUESTS = Object.freeze([
   { id:'w_green14',   label:'초록 식단 14끼',    points:65,  goal:14, tier:'normal' },
   { id:'w_allgreen2', label:'올그린 데이 2일',   points:80,  goal:2,  tier:'hard'   },
   { id:'w_nored3',    label:'빨강 없는 날 3일',  points:45,  goal:3,  tier:'normal' },
-  { id:'w_water3',    label:'물 목표 3일',       points:25,  goal:3,  tier:'easy'   },
-  { id:'w_water6',    label:'물 목표 6일',       points:55,  goal:6,  tier:'normal' },
   { id:'w_streak4',   label:'4일 연속 완주',     points:55,  goal:4,  tier:'normal' },
-  { id:'w_loss',      label:'주간 평균 감량',    points:50,  goal:1,  tier:'normal' },
-  { id:'w_gain',      label:'주간 평균 증량',    points:50,  goal:1,  tier:'normal' },
-  { id:'w_keep',      label:'주간 체중 유지(±0.3kg)', points:50, goal:1, tier:'normal' },
+  { id:'w_loss',      label:'주간 감량 0.3kg',   points:50,  goal:1,  tier:'normal' },
 ]);
 
 export function weeklyProgress(records, refDate = activityDay()){
@@ -102,12 +103,8 @@ export function weeklyProgress(records, refDate = activityDay()){
     w_green14:   inWeek.reduce((s,r)=>s+greenMeals(r),0),
     w_allgreen2: inWeek.filter(allGreenDay).length,
     w_nored3:    inWeek.filter(noRedDay).length,
-    w_water3:    inWeek.filter(waterDone).length,
-    w_water6:    inWeek.filter(waterDone).length,
     w_streak4:   longestStreak(inWeek, start, 7),
     w_loss:      delta!=null && delta <= -0.3 ? 1 : 0,
-    w_gain:      delta!=null && delta >=  0.3 ? 1 : 0,
-    w_keep:      delta!=null && Math.abs(delta) < 0.3 ? 1 : 0,
   });
 }
 
@@ -125,18 +122,16 @@ export const MONTHLY_QUESTS = Object.freeze([
   { id:'m_streak7',   label:'7일 연속 완주',       points:110, goal:7,  tier:'easy'   },
   { id:'m_streak10',  label:'10일 연속 완주',      points:170, goal:10, tier:'normal' },
   { id:'m_streak15',  label:'15일 연속 완주',      points:260, goal:15, tier:'hard'   },
-  { id:'m_buddy5',    label:'친구와 같은 날 완주 5회',  points:100, goal:5,  tier:'easy'   },
-  { id:'m_buddy10',   label:'친구와 같은 날 완주 10회', points:180, goal:10, tier:'normal' },
+  { id:'m_buddy5',    label:'친구와 동반 완주 5회',  points:100, goal:5,  tier:'easy'   },
+  { id:'m_buddy10',   label:'친구와 동반 완주 10회', points:180, goal:10, tier:'normal' },
   { id:'m_exercise10',label:'운동 10회 이상',      points:120, goal:10, tier:'easy'   },
   { id:'m_exercise16',label:'운동 16회 이상',      points:210, goal:16, tier:'hard'   },
   { id:'m_allgreen5', label:'올그린 데이 5일',     points:150, goal:5,  tier:'normal' },
   { id:'m_allgreen10',label:'올그린 데이 10일',    points:260, goal:10, tier:'hard'   },
-  { id:'m_weekday',   label:'모든 요일 1회씩 완주',points:140, goal:7,  tier:'normal' },
+  { id:'m_weekday',   label:'7요일 모두 완주',    points:140, goal:7,  tier:'normal' },
   { id:'m_noskip',    label:'2일 연속 결석 없기',  points:160, goal:1,  tier:'normal' },
-  { id:'m_water15',   label:'물 목표 15일',        points:130, goal:15, tier:'normal' },
   { id:'m_loss',      label:'월간 1kg 감량',       points:180, goal:1,  tier:'normal' },
-  { id:'m_gain',      label:'월간 1kg 증량',       points:180, goal:1,  tier:'normal' },
-  { id:'m_keep',      label:'월간 체중 유지(±0.5kg)', points:180, goal:1, tier:'normal' },
+  { id:'m_loss2',     label:'월간 2kg 감량',       points:280, goal:1,  tier:'hard'   },
 ]);
 
 export function monthlyProgress(records, refDate = activityDay(), buddyDates = null){
@@ -164,10 +159,8 @@ export function monthlyProgress(records, refDate = activityDay(), buddyDates = n
     m_allgreen10:inMonth.filter(allGreenDay).length,
     m_weekday:weekdayCover,
     m_noskip:noTwoDayGap(inMonth, mStart, days) ? 1 : 0,
-    m_water15:inMonth.filter(waterDone).length,
-    m_loss: delta!=null && delta <= -1 ? 1 : 0,
-    m_gain: delta!=null && delta >=  1 ? 1 : 0,
-    m_keep: delta!=null && Math.abs(delta) < 0.5 ? 1 : 0,
+    m_loss:  delta!=null && delta <= -1 ? 1 : 0,
+    m_loss2: delta!=null && delta <= -2 ? 1 : 0,
   });
 }
 
@@ -220,10 +213,9 @@ function buildList(defs, cur){
   return defs.map(q => {
     const value = clamp(cur[q.id] ?? 0, 0, q.goal);
     const done  = value >= q.goal;
-    // 물은 진행도 비례 부분점수(최대 배점까지), 그 외는 완료 시에만 지급
-    const partial = q.id==='d_water' ? Math.floor(q.points * (q.goal? value/q.goal : 0)) : 0;
+    // 부분점수 없음 — 목표를 채워야만 지급
     return { ...q, value, done, ratio: q.goal ? value/q.goal : 0,
-             earned: done ? q.points : partial };
+             earned: done ? q.points : 0 };
   });
 }
 
