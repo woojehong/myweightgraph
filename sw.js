@@ -1,10 +1,11 @@
-const CACHE = 'weight-v64-fx-72';
+const CACHE = 'weight-v66-quests';
 const ASSETS = [
   './index.html', './dashboard.html', './input.html', './import.html',
   './achievements.html', './compare.html', './dressroom.html', './shop.html', './guide.html', './visual-lab.html',
   './css/style.css',
   './js/firebase-config.js', './js/db.js', './js/auth.js',
   './js/chart-render.js', './js/achievements.js', './js/achievements-engine.js',
+  './js/quests.js', './js/quest-panel.js', './js/showroom-fx.js',
   './js/util.js', './js/daily-rewards.js', './js/showroom-v2.js',
   './js/showroom-catalog-v2.js', './js/showroom-catalog-v4.generated.js', './js/titles-catalog-v2.js', './js/achievement-item-rewards-v2.js',
   './manifest.json', './favicon.png',

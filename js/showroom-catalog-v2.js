@@ -80,10 +80,39 @@ const v4Items=[
   ...LINE_STYLE_ITEMS, ...AMBIENT_EFFECT_ITEMS,
 ].filter((item,i,arr)=>arr.findIndex(x=>x.id===item.id)===i);
 // v4 승격 조건: 12개 이상 & 4등급 균등(4의 배수)
-const completeV4Category=category=>{const entries=v4Items.filter(item=>item.category===category);return entries.length>=12&&entries.length%4===0&&entries.every(item=>item.testOnly===true&&item.purchasable===false&&item.persistable===false&&item.price===null&&(isCodeNative(category)?item.asset===null&&item.renderSpec:item.asset?.startsWith(`./assets/showroom-v4/${category}/`)))};
+const completeV4Category=category=>{const entries=v4Items.filter(item=>item.category===category);return entries.length>=12&&entries.length%4===0&&entries.every(item=>(isCodeNative(category)?item.asset===null&&item.renderSpec:item.asset?.startsWith(`./assets/showroom-v4/${category}/`)))};
 export const SHOWROOM_V4_ACTIVE_CATEGORIES=Object.freeze(SHOWROOM_CATEGORIES.filter(completeV4Category));
 export const SHOWROOM_CATALOG_VERSION=SHOWROOM_V4_ACTIVE_CATEGORIES.length?`v4-mixed:${SHOWROOM_V4_ACTIVE_CATEGORIES.join(',')}`:'v3-fallback';
-export const SHOWROOM_CATALOG_V2=Object.freeze(SHOWROOM_CATEGORIES.flatMap(category=>completeV4Category(category)?v4Items.filter(item=>item.category===category):SHOWROOM_CATALOG_V3_FALLBACK.filter(item=>item.category===category)));
+// ── 가격 정책 ────────────────────────────────────────────────────────────
+// 가격 = 등급 기본가 × 카테고리 비중(화면 지배력). 10원 단위 반올림.
+// 하루 최대 획득 44점 / 3,000점 ≈ 70일 기준으로 잡았다.
+//   주역(1.5): 그래프스킨·공간효과   기본(1.0): 그래프선·카드테마·프로필초상
+//   악센트(0.6): 포인트마커·이모티콘테두리·동반자   트로피: 업적 전용(판매 안 함)
+export const CATEGORY_PRICE_WEIGHT = Object.freeze({
+  graph_skin:1.5, ambient_effect:1.5,
+  line_style:1.0, card_theme:1.0, profile_emoji:1.0,
+  point_marker:0.6, emoji_border:0.6, companion:0.6,
+  trophy:null,
+});
+export const RARITY_BASE_PRICE = Object.freeze({
+  common:80, uncommon:120, rare:260, epic:550, legendary:1100,
+});
+export function showroomPriceOf(category, rarity){
+  const w = CATEGORY_PRICE_WEIGHT[category];
+  if (w == null) return null;                       // 트로피 = 비매품
+  const base = RARITY_BASE_PRICE[rarity] ?? 120;
+  return Math.round(base * w / 10) * 10;
+}
+// 테스트 잠금 해제 + 가격 부여 (생성 파일을 수정하지 않고 조립 시점에 적용)
+const retail = entry => {
+  if (entry.category === 'trophy')
+    return Object.freeze({ ...entry, price:null, purchasable:false, testOnly:false,
+                           persistable:true, acquisition:'achievement_only' });
+  return Object.freeze({ ...entry, price: showroomPriceOf(entry.category, entry.rarity),
+                         purchasable:true, testOnly:false, persistable:true });
+};
+
+export const SHOWROOM_CATALOG_V2=Object.freeze(SHOWROOM_CATEGORIES.flatMap(category=>completeV4Category(category)?v4Items.filter(item=>item.category===category):SHOWROOM_CATALOG_V3_FALLBACK.filter(item=>item.category===category)).map(retail));
 
 // Exact V2 ids are retained only as a compatibility index. They are not active catalog entries.
 const LEGACY_IDS_BY_CATEGORY = Object.freeze({
@@ -132,7 +161,12 @@ export function assertShowroomCatalogV2(catalog=SHOWROOM_CATALOG_V2){
     if(entries.map(entry=>entry.rarity).join(',')!==expected.join(','))throw new Error(`${category}: invalid rarity order`);
     for(const entry of entries){
       for(const key of ['id','category','name','rarity','price','visual','implKey','asset','testOnly','purchasable'])if(entry[key]===undefined||entry[key]==='')throw new Error(`${entry.id}: missing ${key}`);
-      if(entry.testOnly!==true||entry.purchasable!==false)throw new Error(`${entry.id}: showroom assets must remain test-only`);
+      // 판매 정책: 트로피는 업적 전용(비매품), 그 외는 가격이 붙은 판매품이어야 한다.
+      if(category==='trophy'){
+        if(entry.purchasable!==false||entry.price!==null)throw new Error(`${entry.id}: trophies must stay achievement-only`);
+      }else if(entry.purchasable!==true||!Number.isFinite(entry.price)||entry.price<=0){
+        throw new Error(`${entry.id}: purchasable item needs a positive price`);
+      }
       if(ids.has(entry.id))throw new Error(`duplicate catalog id: ${entry.id}`);ids.add(entry.id);
       if(entry.asset!==null){if(assets.has(entry.asset))throw new Error(`duplicate catalog asset: ${entry.asset}`);assets.add(entry.asset)}
       const expectedRoot=expectedPerCategory===12?'./assets/showroom-v4':'./assets/showroom-v3';

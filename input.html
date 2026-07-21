@@ -194,6 +194,12 @@ import { BORDER_NAMES } from './js/borders-data.js';
 import { esc } from './js/util.js';
 import { clearAuth, saveAuth, isAuthed } from './js/auth.js';
 import { profileVisualV2, titleInfoV2 } from './js/showroom-v2.js';
+import { questPanelHTML, installQuestToggle, QUEST_PANEL_CSS } from './js/quest-panel.js';
+import { buddyCompletedDates } from './js/quests.js';
+import { getUsers } from './js/db.js';
+
+// 퀘스트 패널 스타일 주입
+(() => { const s = document.createElement('style'); s.textContent = QUEST_PANEL_CSS; document.head.appendChild(s); })();
 const uid = new URLSearchParams(location.search).get('user') || localStorage.getItem('uid');
 if (!uid) location.href='index.html';
 window.doLogout = () => { clearAuth(); localStorage.removeItem('uid'); location.href='index.html'; };
@@ -209,6 +215,26 @@ async function reward(dateStr,event,value=null){
     updateRewardSummary(r); return r;
   }catch(e){console.warn('Daily reward failed:',e);return null;}
 }
+// 친구와 같은 날 완주 — 초기 렌더를 막지 않도록 뒤에서 한 번만 불러온다
+let _buddyDates = null, _buddyLoading = false;
+async function refreshBuddyDates(){
+  if (_buddyDates || _buddyLoading) return;
+  _buddyLoading = true;
+  try{
+    const users = await getUsers();
+    const others = users.filter(u => u.id !== uid);
+    if (!others.length) return;                       // 혼자면 친구 퀘스트 비활성
+    const recs = await Promise.all(others.map(u => getWeights(u.id).catch(()=>[])));
+    _buddyDates = buddyCompletedDates(recs);
+    const panel = document.getElementById('questPanel');
+    if (panel) {
+      const todayRec = allRecords.find(r => r.date === activityDay());
+      panel.innerHTML = questPanelHTML(allRecords, todayRec, _buddyDates);
+    }
+  }catch(e){ /* 친구 데이터 실패는 조용히 무시 */ }
+  finally{ _buddyLoading = false; }
+}
+
 function updateRewardSummary(r){
   if(!r)return;
   const p=document.getElementById('todayPoints'),c=document.getElementById('todayComplete');
@@ -490,11 +516,11 @@ async function render() {
       </div>`;
   }
 
-  document.getElementById('content').innerHTML=`
-    <div class="card" style="display:flex;justify-content:space-between;gap:10px;margin-bottom:12px">
-      <b id="todayPoints">오늘 0P 획득</b>
-      <span id="todayComplete" class="text-muted">완주: 체중·세 끼·운동</span>
-    </div>`+cards;
+  installQuestToggle();
+  const todayRec = allRecords.find(r => r.date === activityDay());
+  document.getElementById('content').innerHTML =
+    `<div id="questPanel">${questPanelHTML(allRecords, todayRec, _buddyDates)}</div>` + cards;
+  refreshBuddyDates();
 
   // 다른 곳(자동 연동 등)에서 쌓인 미반영 업적을 페이지 진입 시 1회 정산
   const attendance = await reward(activityDay(),'attendance');
