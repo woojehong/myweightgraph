@@ -83,6 +83,7 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
     showCurMarker     = true,
     gridCell          = false,
     labelMode         = 'day',   // 마커·툴팁 라벨 표기 단위
+    showWeeklyAvgLine = false,   // 일간 뷰 위에 주간 평균 점선 겹쳐 보기 (기본 off)
     padRight          = 0,       // 우측 추가 여백 (아바타 표시 영역 등)
     chartDecorations  = null,    // 우리 그래프/쇼룸에서만 전달하는 꾸미기 옵션
     mainPlotAspectRatio = null,  // 메인 플롯 비율 (서브그래프 높이는 별도 유지)
@@ -594,6 +595,22 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
     tension:Number.isFinite(Number(chartDecorations?.lineTension))?Math.max(0,Math.min(.5,Number(chartDecorations.lineTension))):.15, spanGaps: false, order: 1 });
   if (showPrediction && predData.length > 1)
     datasets.push({ label: '예상 체중', data: predData, borderColor: PURPLE, backgroundColor: 'transparent', borderWidth: 1.5, borderDash: [4,6], pointRadius: 3, pointHoverRadius: 6, pointBackgroundColor: PURPLE, tension: .2, order: 3 });
+
+  // 주간 평균 점선 — 일간 뷰 위에 주 단위 평균 추이를 겹쳐 표시 (labelMode 'day'에서만 의미 있음)
+  if (showWeeklyAvgLine && labelMode === 'day') {
+    const weeklyAvgData = [...byWeek.keys()].sort((a, b) => a - b).map(wk => {
+      const wp = byWeek.get(wk);
+      return { x: wk + 3 * 86400000,  // 주 중앙(수요일)에 배치
+               y: +(wp.reduce((s, p) => s + p.w, 0) / wp.length).toFixed(2) };
+    });
+    if (weeklyAvgData.length > 1)
+      datasets.push({ label: '주간 평균', data: weeklyAvgData,
+        borderColor: 'rgba(160,200,255,.9)', backgroundColor: 'transparent',
+        borderWidth: 1.8, borderDash: [5,5],
+        pointRadius: 2.8, pointHoverRadius: 5,
+        pointBackgroundColor: 'rgba(160,200,255,.9)', pointBorderColor: BG, pointBorderWidth: 1.2,
+        tension: .25, spanGaps: true, order: 2 });
+  }
 
   const sharedX = {
     type: 'time', min: startTs, max: endTs,

@@ -190,7 +190,7 @@ const viewRecords = () => aggregateRecords(records, viewMode);
 const viewOpts = () => viewMode === 'day'
   ? { ...S, labelMode:'day' }
   : { ...S, labelMode:viewMode, show7dayMA:false, showPrediction:false,
-      showWeeklyBar:false, showDietGraph:false, showExerciseGraph:false };
+      showWeeklyBar:false, showWeeklyAvgLine:false, showDietGraph:false, showExerciseGraph:false };
 
 function granRowHtml() {
   const b = (m, label) =>
@@ -303,6 +303,7 @@ async function render() {
 
       <span class="opt-label">그래프</span>
       <label class="opt-item"><input type="checkbox" id="t7ma"  ${S.show7dayMA!==false?'checked':''}> 7일평균</label>
+      <label class="opt-item"><input type="checkbox" id="tWkAvg" ${S.showWeeklyAvgLine?'checked':''}> 주간선</label>
       <label class="opt-item"><input type="checkbox" id="tpred" ${S.showPrediction?'checked':''}> 예상그래프</label>
       <div class="opt-sep"></div>
 
@@ -563,6 +564,7 @@ function bindToggles() {
     });
   };
   bind('t7ma','show7dayMA');
+  bind('tWkAvg','showWeeklyAvgLine');
   bind('tbar','showWeeklyBar');
   bind('tpred','showPrediction');
 
