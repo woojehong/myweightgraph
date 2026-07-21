@@ -79,7 +79,8 @@ const v4Items=[
   ...(Array.isArray(SHOWROOM_V4_RUNTIME?.items)?SHOWROOM_V4_RUNTIME.items:[]),
   ...LINE_STYLE_ITEMS, ...AMBIENT_EFFECT_ITEMS,
 ].filter((item,i,arr)=>arr.findIndex(x=>x.id===item.id)===i);
-const completeV4Category=category=>{const entries=v4Items.filter(item=>item.category===category);return entries.length===12&&entries.every(item=>item.testOnly===true&&item.purchasable===false&&item.persistable===false&&item.price===null&&(isCodeNative(category)?item.asset===null&&item.renderSpec:item.asset?.startsWith(`./assets/showroom-v4/${category}/`)))};
+// v4 승격 조건: 12개 이상 & 4등급 균등(4의 배수)
+const completeV4Category=category=>{const entries=v4Items.filter(item=>item.category===category);return entries.length>=12&&entries.length%4===0&&entries.every(item=>item.testOnly===true&&item.purchasable===false&&item.persistable===false&&item.price===null&&(isCodeNative(category)?item.asset===null&&item.renderSpec:item.asset?.startsWith(`./assets/showroom-v4/${category}/`)))};
 export const SHOWROOM_V4_ACTIVE_CATEGORIES=Object.freeze(SHOWROOM_CATEGORIES.filter(completeV4Category));
 export const SHOWROOM_CATALOG_VERSION=SHOWROOM_V4_ACTIVE_CATEGORIES.length?`v4-mixed:${SHOWROOM_V4_ACTIVE_CATEGORIES.join(',')}`:'v3-fallback';
 export const SHOWROOM_CATALOG_V2=Object.freeze(SHOWROOM_CATEGORIES.flatMap(category=>completeV4Category(category)?v4Items.filter(item=>item.category===category):SHOWROOM_CATALOG_V3_FALLBACK.filter(item=>item.category===category)));
@@ -104,7 +105,9 @@ const aliasPairs=[];
 for(const category of SHOWROOM_CATEGORIES){
   const legacy=LEGACY_IDS_BY_CATEGORY[category];
   legacy.forEach((id,index)=>{
-    const rarityOffsets=activeByCategory[category].length===12?[0,3,6,9]:[0,1,2,3];
+    const _n=activeByCategory[category].length;
+    const _per=_n>=12&&_n%4===0?_n/4:1;
+    const rarityOffsets=[0,_per,_per*2,_per*3];
     const targetIndex=category==='companion' ? Math.min(activeByCategory[category].length-1,Math.floor(index/2))
       : index<15 ? rarityOffsets[0] : index<21 ? rarityOffsets[1]
       : index<26 ? rarityOffsets[2] : rarityOffsets[3];
@@ -118,10 +121,13 @@ export function assertShowroomCatalogV2(catalog=SHOWROOM_CATALOG_V2){
   if(![32,40,48,56,60,64,68,72,76,80,84,88,92,96,100,104,108].includes(catalog.length))throw new Error(`showroom catalog: invalid mixed total ${catalog.length}`);
   const ids=new Set(),assets=new Set();
   for(const category of SHOWROOM_CATEGORIES){
-    const entries=catalog.filter(entry=>entry.category===category),expectedPerCategory=entries.length===12?12:(category==='line_style'?0:4);
+    const entries=catalog.filter(entry=>entry.category===category);
+    const isV4Tier=entries.length>=12&&entries.length%4===0;
+    const expectedPerCategory=isV4Tier?entries.length:(isCodeNative(category)?0:4);
     if(entries.length!==expectedPerCategory)throw new Error(`${category}: expected ${expectedPerCategory} items, got ${entries.length}`);
-    const expected=expectedPerCategory===0?[]:expectedPerCategory===12
-      ? ['uncommon','uncommon','uncommon','rare','rare','rare','epic','epic','epic','legendary','legendary','legendary']
+    const perRarity=isV4Tier?entries.length/4:1;
+    const expected=expectedPerCategory===0?[]:isV4Tier
+      ? ['uncommon','rare','epic','legendary'].flatMap(r=>Array(perRarity).fill(r))
       : category==='companion'?['common','common','common','common']:['uncommon','rare','epic','legendary'];
     if(entries.map(entry=>entry.rarity).join(',')!==expected.join(','))throw new Error(`${category}: invalid rarity order`);
     for(const entry of entries){

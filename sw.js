@@ -1,4 +1,4 @@
-const CACHE = 'weight-v62-fx-distinct';
+const CACHE = 'weight-v63-fx-48';
 const ASSETS = [
   './index.html', './dashboard.html', './input.html', './import.html',
   './achievements.html', './compare.html', './dressroom.html', './shop.html', './guide.html', './visual-lab.html',

@@ -249,6 +249,120 @@ const LINE_LAYER = {
     }
     ctx.restore();
   },
+  // ⑬ 클립 채움: 선 굵기 안쪽에만 다른 것이 흐른다 (물/별/성운)
+  clipFill(ctx, pts, acc, L, T, base) {
+    const total = acc[acc.length - 1] || 1;
+    ctx.save();
+    ctx.lineJoin = ctx.lineCap = 'round';
+    ctx.lineWidth = base.width * (L.mult ?? 3.2);
+    tracePath(ctx, pts);
+    ctx.strokeStyle = '#000';
+    ctx.stroke();                      // 경로를 굵게 그린 뒤
+    ctx.globalCompositeOperation = 'source-atop';  // 그 안쪽에만 채운다
+    if (L.mode === 'stars') {
+      for (let i = 0; i < (L.count ?? 26); i++) {
+        const ph = ((T / ((L.period || 6100) * (.6 + rnd(i, 3)))) + rnd(i, 1)) % 1;
+        const p = atDistance(pts, acc, ph * total);
+        ctx.fillStyle = withAlpha(L.color || '#fff', (L.alpha ?? .95) * Math.sin(ph * Math.PI));
+        ctx.beginPath(); ctx.arc(p.x, p.y + (rnd(i, 2) - .5) * base.width * 2, L.size ?? 1.2, 0, TAU); ctx.fill();
+      }
+    } else {                            // 물결 채움
+      const lvl = .5 + .5 * Math.sin(T / (L.period || 3700) * TAU);
+      for (const p of pts) {
+        const g = ctx.createLinearGradient(0, p.y - base.width * 2, 0, p.y + base.width * 2);
+        g.addColorStop(0, withAlpha(L.color || '#4fc3f7', 0));
+        g.addColorStop(clamp(lvl, .05, .95), withAlpha(L.color || '#4fc3f7', L.alpha ?? .9));
+        g.addColorStop(1, withAlpha(L.color2 || '#00e5aa', L.alpha ?? .9));
+        ctx.fillStyle = g;
+        ctx.fillRect(p.x - 3, p.y - base.width * 2.5, 6, base.width * 5);
+      }
+    }
+    ctx.restore();
+  },
+  // ⑭ 가산 블룸: 겹칠수록 밝아지는 다중 패스
+  bloom(ctx, pts, _acc, L, T, base) {
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.lineJoin = ctx.lineCap = 'round';
+    const passes = L.passes ?? 3;
+    const pulse = .65 + .35 * Math.sin(T / (L.period || 3100) * TAU);
+    for (let k = passes; k >= 1; k--) {
+      ctx.strokeStyle = withAlpha(L.color || base.color, (L.alpha ?? .22) * pulse / k);
+      ctx.lineWidth = base.width * (L.mult ?? 1.4) * k * 1.5;
+      tracePath(ctx, pts); ctx.stroke();
+    }
+    ctx.restore();
+  },
+  // ⑮ 파형 왜곡: 선 자체가 일렁인다
+  wobble(ctx, pts, _acc, L, T, base) {
+    const amp = L.amp ?? 4, ph = T / (L.period || 2600) * TAU;
+    ctx.save(); ctx.lineJoin = ctx.lineCap = 'round';
+    ctx.strokeStyle = withAlpha(L.color || base.color, L.alpha ?? .8);
+    ctx.lineWidth = base.width * (L.mult ?? 1);
+    ctx.beginPath();
+    pts.forEach((p, i) => {
+      const n = normalAt(pts, i);
+      const o = Math.sin(i * (L.freq ?? .5) + ph) * amp;
+      const x = p.x + n.nx * o, y = p.y + n.ny * o;
+      i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+    });
+    ctx.stroke(); ctx.restore();
+  },
+  // ⑯ 사슬/비늘: 경로를 따라 도형이 반복된다
+  chain(ctx, pts, acc, L, T, base) {
+    const total = acc[acc.length - 1] || 1;
+    const gap = L.gap ?? 16, n = Math.floor(total / gap);
+    const drift = (T / (L.period || 5300)) % 1;
+    ctx.save();
+    for (let i = 0; i < n; i++) {
+      const d = ((i + drift) * gap) % total;
+      const p = atDistance(pts, acc, d);
+      const tw = .6 + .4 * Math.sin(i * .7 + T / 900);
+      ctx.strokeStyle = withAlpha(L.color || base.color, (L.alpha ?? .8) * tw);
+      ctx.lineWidth = L.width ?? 1.4;
+      ctx.beginPath();
+      if (L.shape === 'scale') ctx.arc(p.x, p.y, (L.size ?? 5) * tw, Math.PI * .15, Math.PI * .85);
+      else ctx.arc(p.x, p.y, (L.size ?? 4) * tw, 0, TAU);
+      ctx.stroke();
+    }
+    ctx.restore();
+  },
+  // ⑰ 다중 대시 레이스: 서로 다른 속도의 대시가 경주
+  race(ctx, pts, _acc, L, T, base) {
+    const lanes = L.lanes || [{ o: -4, s: 1 }, { o: 0, s: 1.7 }, { o: 4, s: 2.6 }];
+    ctx.save(); ctx.lineCap = 'round';
+    lanes.forEach((ln, k) => {
+      ctx.setLineDash(L.dash || [7, 15]);
+      ctx.lineDashOffset = -(T / (L.period || 2200)) * 60 * ln.s;
+      ctx.strokeStyle = withAlpha(L.colors?.[k] || L.color || base.color, L.alpha ?? .85);
+      ctx.lineWidth = base.width * (L.mult ?? .45);
+      ctx.beginPath();
+      pts.forEach((p, i) => { const nn = normalAt(pts, i);
+        const x = p.x + nn.nx * ln.o, y = p.y + nn.ny * ln.o;
+        i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
+      ctx.stroke();
+    });
+    ctx.restore();
+  },
+  // ⑱ 물리 입자: 중력·바람을 받는 흩날림
+  physics(ctx, pts, acc, L, T, base) {
+    const total = acc[acc.length - 1] || 1, n = L.count || 26;
+    ctx.save();
+    if (L.additive) ctx.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < n; i++) {
+      const sp = (L.period || 3200) * (.5 + rnd(i, 3));
+      const ph = ((T / sp) + rnd(i, 1)) % 1;
+      const p = atDistance(pts, acc, rnd(i, 2) * total);
+      const t = ph * 2;
+      const vx = (rnd(i, 4) - .5) * (L.wind ?? 26);
+      const vy = -(L.lift ?? 30);
+      const x = p.x + vx * t, y = p.y + vy * t + (L.grav ?? 22) * t * t;
+      ctx.fillStyle = withAlpha(L.colors ? L.colors[i % L.colors.length] : (L.color || '#ffb457'),
+        (L.alpha ?? .9) * (1 - ph));
+      ctx.beginPath(); ctx.arc(x, y, (L.size ?? 2) * (1 - ph * .4), 0, TAU); ctx.fill();
+    }
+    ctx.restore();
+  },
   // 부드러운 발광 배경 (보조)
   aura(ctx, pts, _acc, L, T, base) {
     ctx.save(); ctx.lineJoin = ctx.lineCap = 'round';
@@ -446,6 +560,133 @@ const AMB_LAYER = {
     ctx.fillStyle = g;
     ctx.fillRect(area.left, bottom ? area.bottom - band : area.top, area.right - area.left, band);
   },
+  // 빗줄기 (사선 낙하 + 하단 튐)
+  rain(ctx, area, L, T) {
+    const n = L.count || 30, w = area.right - area.left, h = area.bottom - area.top;
+    ctx.save(); ctx.lineCap = 'round';
+    for (let i = 0; i < n; i++) {
+      const sp = (L.period || 1400) * (.6 + rnd(i, 1) * .6);
+      const ph = ((T / sp) + rnd(i, 2)) % 1;
+      const x = area.left + ((rnd(i, 3) + ph * .08) % 1) * w;
+      const y = area.top + ph * h;
+      const bf = bandFactor(x, y, area); if (bf <= 0) continue;
+      ctx.strokeStyle = withAlpha(L.color || '#9fd4ff', (L.alpha ?? .55) * bf);
+      ctx.lineWidth = L.width ?? 1.2;
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - 2, y - (L.len ?? 13)); ctx.stroke();
+    }
+    ctx.restore();
+  },
+  // 보케: 초점 나간 큰 빛망울
+  bokeh(ctx, area, L, T) {
+    const n = L.count || 8, w = area.right - area.left, h = area.bottom - area.top;
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < n; i++) {
+      const sp = (L.period || 13000) * (.6 + rnd(i, 1));
+      const ph = ((T / sp) + rnd(i, 2)) % 1;
+      const x = area.left + ((rnd(i, 3) + ph * .18) % 1) * w;
+      const y = area.top + ((rnd(i, 4) + ph * .1) % 1) * h;
+      const bf = bandFactor(x, y, area); if (bf <= 0) continue;
+      const r = (L.size ?? 16) * (.6 + rnd(i, 5));
+      const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+      const c = L.colors ? L.colors[i % L.colors.length] : (L.color || '#ffe9a8');
+      g.addColorStop(0, withAlpha(c, (L.alpha ?? .3) * bf));
+      g.addColorStop(.75, withAlpha(c, (L.alpha ?? .3) * bf * .35));
+      g.addColorStop(1, withAlpha(c, 0));
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill();
+    }
+    ctx.restore();
+  },
+  // 나선 성운: 팔이 회전하는 은하
+  spiral(ctx, area, L, T) {
+    const cx = (area.left + area.right) / 2, cy = (area.top + area.bottom) / 2;
+    const rMax = Math.hypot(area.right - cx, area.bottom - cy) * .95;
+    const arms = L.arms ?? 3, per = L.per ?? 44;
+    const rot = (T / (L.period || 26000)) * TAU;
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    for (let a = 0; a < arms; a++) {
+      for (let i = 1; i <= per; i++) {
+        const t = i / per;
+        const ang = rot + a * TAU / arms + t * (L.twist ?? 3.2);
+        const r = rMax * (.28 + t * .72);
+        const x = cx + Math.cos(ang) * r, y = cy + Math.sin(ang) * r * .62;
+        const bf = bandFactor(x, y, area); if (bf <= 0) continue;
+        const c = L.colors ? L.colors[(a + i) % L.colors.length] : (L.color || '#c9a7ff');
+        ctx.fillStyle = withAlpha(c, (L.alpha ?? .5) * bf * (1 - t * .5));
+        ctx.beginPath(); ctx.arc(x, y, (L.size ?? 2.4) * (1 - t * .5), 0, TAU); ctx.fill();
+      }
+    }
+    ctx.restore();
+  },
+  // 폭죽: 한 점에서 방사형 폭발 후 낙하
+  burst(ctx, area, L, T) {
+    const shells = L.shells ?? 3, per = L.per ?? 22;
+    const w = area.right - area.left, h = area.bottom - area.top;
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    for (let s = 0; s < shells; s++) {
+      const ph = ((T / ((L.period || 3600) + s * 640)) + rnd(s, 9)) % 1;
+      const ox = area.left + w * (.12 + rnd(s, 1) * .76);
+      const oy = area.top + h * (.14 + rnd(s, 2) * .34);
+      const R = (L.radius ?? 46) * ph;
+      for (let i = 0; i < per; i++) {
+        const ang = (i / per) * TAU + rnd(s, 3);
+        const x = ox + Math.cos(ang) * R;
+        const y = oy + Math.sin(ang) * R + (L.grav ?? 34) * ph * ph;
+        const bf = bandFactor(x, y, area); if (bf <= 0) continue;
+        const c = L.colors ? L.colors[(i + s) % L.colors.length] : (L.color || '#ffd76b');
+        ctx.fillStyle = withAlpha(c, (L.alpha ?? .95) * (1 - ph) * bf);
+        ctx.beginPath(); ctx.arc(x, y, (L.size ?? 2.2) * (1 - ph * .5), 0, TAU); ctx.fill();
+      }
+    }
+    ctx.restore();
+  },
+  // 연기 기둥: 위로 커지며 흩어짐
+  smoke(ctx, area, L, T) {
+    const n = L.count || 14, w = area.right - area.left, h = area.bottom - area.top;
+    ctx.save();
+    for (let i = 0; i < n; i++) {
+      const sp = (L.period || 9000) * (.6 + rnd(i, 1) * .7);
+      const ph = ((T / sp) + rnd(i, 2)) % 1;
+      const baseX = area.left + w * (rnd(i, 3) < .5 ? .1 + rnd(i, 4) * .12 : .78 + rnd(i, 4) * .12);
+      const x = baseX + Math.sin(ph * 3 + i) * 12;
+      const y = area.bottom - ph * h * .9;
+      const bf = bandFactor(x, y, area); if (bf <= 0) continue;
+      const r = (L.size ?? 14) * (.4 + ph * 1.3);
+      const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+      g.addColorStop(0, withAlpha(L.color || '#8a8f9a', (L.alpha ?? .3) * bf * (1 - ph)));
+      g.addColorStop(1, withAlpha(L.color || '#8a8f9a', 0));
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill();
+    }
+    ctx.restore();
+  },
+  // 무리 비행: 함께 몰려다니는 점들
+  swarm(ctx, area, L, T) {
+    const n = L.count || 22, w = area.right - area.left, h = area.bottom - area.top;
+    const lead = T / (L.period || 8000) * TAU;
+    ctx.save();
+    for (let i = 0; i < n; i++) {
+      const lag = i * .12;
+      const ang = lead - lag;
+      const x = area.left + w * (.5 + Math.cos(ang) * .43 + Math.sin(ang * 2.3 + i) * .04);
+      const y = area.top + h * (.5 + Math.sin(ang) * .40 + Math.cos(ang * 1.7 + i) * .05);
+      const bf = bandFactor(x, y, area); if (bf <= 0) continue;
+      ctx.fillStyle = withAlpha(L.color || '#cfe3ff', (L.alpha ?? .7) * bf);
+      ctx.beginPath(); ctx.arc(x, y, L.size ?? 1.8, 0, TAU); ctx.fill();
+    }
+    ctx.restore();
+  },
+  // 섬광: 화면 가장자리가 번쩍
+  flash(ctx, area, L, T) {
+    const ph = (T / (L.period || 5200)) % 1;
+    const hit = ph < .06 ? 1 - ph / .06 : (ph > .14 && ph < .19 ? 1 - (ph - .14) / .05 : 0);
+    if (hit <= 0) return;
+    const g = ctx.createRadialGradient(
+      (area.left + area.right) / 2, area.top, 10,
+      (area.left + area.right) / 2, area.top, Math.hypot(area.right - area.left, area.bottom - area.top) * .7);
+    g.addColorStop(0, withAlpha(L.color || '#dff0ff', (L.alpha ?? .45) * hit));
+    g.addColorStop(1, withAlpha(L.color || '#dff0ff', 0));
+    ctx.fillStyle = g;
+    ctx.fillRect(area.left, area.top, area.right - area.left, area.bottom - area.top);
+  },
   // 느리게 지나가는 거대 실루엣
   silhouette(ctx, area, L, T) {
     const ph = (T / (L.period || 15000)) % 1;
@@ -502,6 +743,50 @@ const LINE_FX = {
                          {k:'tape',mult:1.3,alpha:.5,dash:[26,12],period:11000,color:'#ffe9a8'},
                          {k:'pulse',count:3,size:3.4,blur:16,period:2900,alpha:.95},
                          {k:'embers',color:'#fff6cf',count:20,period:6700,rise:24,size:1.8,alpha:.85}] },
+
+  // ── 확장 12종 (신규 기법: 클립채움 / 가산블룸 / 파형왜곡 / 물리입자) ──
+  // 고급 — 가볍고 단순
+  ls_thread:   { layers:[{k:'wobble',amp:2.2,freq:.7,period:3100,alpha:.85,mult:.9}] },
+  ls_ringchain:{ layers:[{k:'chain',gap:18,size:4,alpha:.75,period:5300,width:1.3}] },
+  ls_beat:     { layers:[{k:'race',lanes:[{o:0,s:1}],dash:[3,13],period:2600,alpha:.9,mult:.8}] },
+  // 희귀 — 2~3레이어
+  ls_scale:    { layers:[{k:'chain',shape:'scale',gap:11,size:6,alpha:.8,period:6100,width:1.4,color:'#8fe3b0'},
+                         {k:'aura',mult:2.2,alpha:.22,period:4300,color:'#57c98a'}] },
+  ls_race:     { layers:[{k:'race',colors:['#ff8a8a','#ffd76b','#7fd4ff'],dash:[6,16],period:2200,alpha:.9,mult:.45},
+                         {k:'aura',mult:2,alpha:.18,period:5300}] },
+  ls_ripplewave:{layers:[{k:'wobble',amp:5,freq:.42,period:2600,alpha:.85,mult:1},
+                         {k:'wobble',amp:3,freq:.7,period:3700,alpha:.5,mult:.6,color:'#9fe8ff'},
+                         {k:'aura',mult:2.4,alpha:.2,period:4700,color:'#7fd4ff'}] },
+  // 영웅 — 클립 채움·물리 (무거워짐)
+  ls_aqua:     { layers:[{k:'aura',mult:3,alpha:.24,blur:10,period:4300,color:'#4fc3f7'},
+                         {k:'clipFill',mult:3.2,period:3700,color:'#4fc3f7',color2:'#00e5aa',alpha:.9},
+                         {k:'wobble',amp:2.4,freq:.6,period:2900,alpha:.5,mult:.6,color:'#bfe9ff'}] },
+  ls_starfield:{ layers:[{k:'aura',mult:3,alpha:.22,blur:10,period:5300,color:'#9fb8ff'},
+                         {k:'clipFill',mode:'stars',mult:3.4,count:30,period:6100,color:'#ffffff',size:1.3,alpha:.95},
+                         {k:'pulse',count:2,size:2.6,blur:12,period:4700,alpha:.8,color:'#cfd8ff'}] },
+  ls_windborne:{ layers:[{k:'aura',mult:2.6,alpha:.2,period:4100,color:'#b0e8c0'},
+                         {k:'physics',count:28,period:3200,wind:34,lift:26,grav:18,size:2,alpha:.9,color:'#c8f0a8'},
+                         {k:'wobble',amp:3,freq:.5,period:3700,alpha:.6,mult:.7}] },
+  // 전설 — 가산블룸 + 클립채움 + 물리 (가장 무거움)
+  ls_prism_bloom:{layers:[{k:'bloom',passes:4,mult:1.5,alpha:.26,period:3100,color:'#c9a7ff'},
+                         {k:'segments',colors:['#ff6b9d','#ffd76b','#8affa8','#7fd4ff','#c9a7ff'],period:5300,alpha:.95,mult:1.5,blur:12},
+                         {k:'race',colors:['#ffffff','#ffd9f5'],dash:[5,17],period:2600,alpha:.75,mult:.4},
+                         {k:'pulse',count:4,size:3,blur:16,period:3700,alpha:.95,color:'#ffffff'},
+                         {k:'physics',count:22,period:4300,wind:20,lift:22,grav:14,size:1.7,alpha:.8,additive:1,
+                          colors:['#ff6b9d','#ffd76b','#7fd4ff','#c9a7ff']}] },
+  ls_dragon:   { layers:[{k:'bloom',passes:3,mult:1.4,alpha:.24,period:3700,color:'#ff7b3a'},
+                         {k:'chain',shape:'scale',gap:9,size:7,alpha:.85,period:5900,width:1.5,color:'#ffcf6b'},
+                         {k:'sweep',color:'#fff0c0',len:.15,period:4300,alpha:.95,mult:1.8,blur:16},
+                         {k:'physics',count:26,period:2800,wind:30,lift:34,grav:20,size:2.1,alpha:.95,additive:1,
+                          colors:['#ff4d2a','#ff9d3a','#ffd08a']},
+                         {k:'spikes',len:9,every:2,alpha:.6,period:5300,color:'#ffe1a8',width:1.4}] },
+  ls_cosmos:   { layers:[{k:'bloom',passes:4,mult:1.6,alpha:.24,period:4700,color:'#8a7bff'},
+                         {k:'clipFill',mode:'stars',mult:3.6,count:34,period:7300,color:'#ffffff',size:1.4,alpha:.95},
+                         {k:'segments',colors:['#3a2b8f','#7b5cff','#c9a7ff','#5fd0ff'],period:8300,alpha:.6,mult:1.2},
+                         {k:'sweep',color:'#e8dcff',len:.12,period:5900,alpha:.9,mult:1.6,blur:18},
+                         {k:'physics',count:24,period:5300,wind:16,lift:18,grav:10,size:1.6,alpha:.85,additive:1,
+                          colors:['#c9a7ff','#7fd4ff','#ffffff']},
+                         {k:'chain',gap:24,size:3,alpha:.5,period:9700,width:1,color:'#b0a0ff'}] },
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -547,6 +832,47 @@ const AMB_FX = {
                           {k:'meteors',count:3,color:'#ffffff',alpha:.55,period:4700,len:26,width:1.6},
                           {k:'edgeGlow',color:'#ffe9a8',alpha:.28,period:5900,from:'bottom'},
                           {k:'ripples',count:2,color:'#fff2c0',alpha:.22,period:8300,width:1.6}] },
+
+  // ── 확장 12종 (신규 기법: 보케 / 나선 / 폭죽 / 연기 / 무리 / 섬광) ──
+  // 고급
+  ae_snowlight: { layers:[{k:'confetti',count:14,color:'#eefaff',alpha:.5,size:2.6,ratio:1,period:8300}] },
+  ae_petal:     { layers:[{k:'confetti',count:12,color:'#ffc2dd',alpha:.6,size:6,ratio:.4,period:9700}] },
+  ae_bokeh:     { layers:[{k:'bokeh',count:8,colors:['#ffe9a8','#ffd0e8','#bfe9ff'],alpha:.28,size:18,period:13000}] },
+  // 희귀
+  ae_rain:      { layers:[{k:'rain',count:34,color:'#9fd4ff',alpha:.55,period:1400,len:14,width:1.2},
+                          {k:'edgeGlow',color:'#6fa8d8',alpha:.22,period:6700,from:'bottom'}] },
+  ae_leaffall:  { layers:[{k:'confetti',count:14,colors:['#e8a04a','#d98f4a','#c96a3a','#e8c07a'],alpha:.6,size:7,ratio:.45,period:9000},
+                          {k:'motes',count:8,color:'#e8c07a',alpha:.3,size:1.4,period:12000}] },
+  ae_bubble:    { layers:[{k:'columns',count:20,color:'#bfe9ff',alpha:.5,size:3,period:7300},
+                          {k:'bokeh',count:5,color:'#bfe9ff',alpha:.18,size:14,period:11000}] },
+  // 영웅
+  ae_thunder:   { layers:[{k:'flash',color:'#dff0ff',alpha:.4,period:5200},
+                          {k:'rain',count:26,color:'#a8c8e8',alpha:.5,period:1200,len:16,width:1.2},
+                          {k:'meteors',count:2,color:'#ffffff',alpha:.5,period:4300,len:24,width:1.8},
+                          {k:'edgeGlow',color:'#8fb4d8',alpha:.24,period:5900}] },
+  ae_smokestack:{ layers:[{k:'smoke',count:16,color:'#8a8f9a',alpha:.32,size:15,period:9000},
+                          {k:'motes',count:10,color:'#c0c6d0',alpha:.3,size:1.5,period:11000},
+                          {k:'edgeGlow',color:'#6f7580',alpha:.2,period:7300,from:'bottom'}] },
+  ae_swarm:     { layers:[{k:'swarm',count:26,color:'#cfe3ff',alpha:.7,size:1.9,period:8000},
+                          {k:'swarm',count:16,color:'#9fb8ff',alpha:.45,size:1.5,period:10300},
+                          {k:'motes',count:8,color:'#e0e8ff',alpha:.28,size:1.3,period:12700}] },
+  // 전설 — 가장 무겁고 화려
+  ae_galaxy:    { layers:[{k:'spiral',arms:3,per:46,colors:['#c9a7ff','#7fd4ff','#ffd9f5'],alpha:.5,size:2.5,period:26000,twist:3.2},
+                          {k:'bokeh',count:7,colors:['#c9a7ff','#7fd4ff'],alpha:.24,size:20,period:15000},
+                          {k:'motes',count:18,color:'#ffffff',alpha:.55,size:1.5,period:10700},
+                          {k:'edgeGlow',color:'#8a7bff',alpha:.24,period:8300},
+                          {k:'silhouette',color:'#c0a0ff',alpha:.09,period:19000,y:.18}] },
+  ae_volcano:   { layers:[{k:'burst',shells:2,per:18,radius:40,colors:['#ff6a2a','#ffb457'],alpha:.85,period:4300,size:2.2,grav:40},
+                          {k:'smoke',count:14,color:'#6a5a55',alpha:.34,size:16,period:8300},
+                          {k:'columns',count:18,color:'#ff9d3a',alpha:.55,size:2.4,period:5300},
+                          {k:'edgeGlow',color:'#ff5a1a',alpha:.3,period:5900,from:'bottom'},
+                          {k:'meteors',count:3,color:'#ffcf9a',alpha:.6,period:3700,len:30,width:2}] },
+  ae_finale:    { layers:[{k:'burst',shells:4,per:24,radius:52,colors:['#ffd76b','#ff8ac4','#7fd4ff','#8affa8','#ffffff'],alpha:.95,period:3600,size:2.4,grav:34},
+                          {k:'confetti',count:26,colors:['#ffd76b','#7fd4ff','#ff8ac4','#8affa8'],alpha:.8,size:5,ratio:.45,period:6100},
+                          {k:'cones',count:2,color:'#fff3c4',alpha:.16,period:6700},
+                          {k:'flash',color:'#fff6d0',alpha:.3,period:7300},
+                          {k:'bokeh',count:6,colors:['#ffe9a8','#ffd0e8'],alpha:.24,size:16,period:12000},
+                          {k:'edgeGlow',color:'#ffe9a8',alpha:.26,period:5900,from:'bottom'}] },
 };
 
 // ── 애니메이션 드라이버 ─────────────────────────────────────────────────────
@@ -633,31 +959,63 @@ const mk = (category, id, name, rarity, visual, renderSpec) => Object.freeze({
 });
 
 export const LINE_STYLE_ITEMS = Object.freeze([
+  // 고급 6
   mk('line_style','ls_ink','먹선','uncommon','붓처럼 두께가 살아 움직이는 획',{fx:'ls_ink',width:2.2,tension:.15}),
   mk('line_style','ls_tape','라인테이프','uncommon','광택 없는 굵고 각진 띠',{fx:'ls_tape',width:2.4,tension:.05}),
   mk('line_style','ls_candle','촛불선','uncommon','끝에서 실제로 흔들리는 불꽃',{fx:'ls_candle',width:2.2,tension:.2}),
+  mk('line_style','ls_thread','떨림 실선','uncommon','가늘게 진동하는 실 같은 선',{fx:'ls_thread',width:2,tension:.2}),
+  mk('line_style','ls_ringchain','고리 사슬','uncommon','작은 고리가 선을 따라 이어짐',{fx:'ls_ringchain',width:2.2,tension:.18}),
+  mk('line_style','ls_beat','비트 파선','uncommon','짧은 대시가 규칙적으로 내달림',{fx:'ls_beat',width:2.3,tension:.12}),
+  // 희귀 6
   mk('line_style','ls_vein','흐르는 광맥','rare','밝은 광점이 선을 빠르게 주파',{fx:'ls_vein',width:2.4,tension:.2}),
   mk('line_style','ls_psi','사이오닉 선','rare','양옆 평행선과 결정 가시',{fx:'ls_psi',width:2.3,tension:.18}),
   mk('line_style','ls_netthread','골망 실','rare','두 가닥이 꼬이며 직조',{fx:'ls_netthread',width:2.2,tension:.22}),
+  mk('line_style','ls_scale','비늘 선','rare','반달 비늘이 선을 덮고 반짝임',{fx:'ls_scale',width:2.3,tension:.2}),
+  mk('line_style','ls_race','삼색 레이스','rare','세 대시가 다른 속도로 경주',{fx:'ls_race',width:2.3,tension:.18}),
+  mk('line_style','ls_ripplewave','물결 파동','rare','선 자체가 물결처럼 일렁임',{fx:'ls_ripplewave',width:2.3,tension:.2}),
+  // 영웅 6
   mk('line_style','ls_heatline','화공 열선','epic','열대가 훑고 불티가 위로 솟음',{fx:'ls_heatline',width:2.6,tension:.18}),
   mk('line_style','ls_current','심장로 전류','epic','각진 번개가 선 위를 내달림',{fx:'ls_current',width:2.4,tension:.15}),
   mk('line_style','ls_afterimage','기억의 잔상','epic','어긋난 복제선 3겹의 잔상',{fx:'ls_afterimage',width:2.4,tension:.2}),
+  mk('line_style','ls_aqua','유수 관로','epic','선 안쪽에 물이 차오르며 출렁임',{fx:'ls_aqua',width:2.6,tension:.2}),
+  mk('line_style','ls_starfield','별의 강','epic','선 내부를 별이 흘러 지나감',{fx:'ls_starfield',width:2.6,tension:.2}),
+  mk('line_style','ls_windborne','풍매','epic','바람 물리로 입자가 흩날림',{fx:'ls_windborne',width:2.4,tension:.2}),
+  // 전설 6
   mk('line_style','ls_frost','서리 결정선','legendary','선 전체에서 결정 가시가 자람',{fx:'ls_frost',width:2.6,tension:.18}),
   mk('line_style','ls_gem_trail','여섯 보석 궤적','legendary','구간마다 색이 바뀌는 무지개 궤적',{fx:'ls_gem_trail',width:2.6,tension:.2}),
   mk('line_style','ls_spotlight','우승 스포트라이트','legendary','조명 띠가 선을 훑는 시상식',{fx:'ls_spotlight',width:2.8,tension:.2}),
+  mk('line_style','ls_prism_bloom','프리즘 블룸','legendary','빛이 누적되며 폭발하는 무지개',{fx:'ls_prism_bloom',width:2.8,tension:.2}),
+  mk('line_style','ls_dragon','용린 화염','legendary','비늘과 화염 물리가 함께 타오름',{fx:'ls_dragon',width:2.8,tension:.2}),
+  mk('line_style','ls_cosmos','우주의 강','legendary','별·성운·궤도 입자가 한꺼번에',{fx:'ls_cosmos',width:2.8,tension:.2}),
 ]);
 
 export const AMBIENT_EFFECT_ITEMS = Object.freeze([
+  // 고급 6
   mk('ambient_effect','ae_dust','경기장 먼지','uncommon','흙먼지가 느리게 부유',{fx:'ae_dust'}),
   mk('ambient_effect','ae_ink_mote','먹 티끌','uncommon','먹 조각이 회전하며 낙하',{fx:'ae_ink_mote'}),
   mk('ambient_effect','ae_firefly','마법 반딧불','uncommon','밝은 반딧불이 떠다님',{fx:'ae_firefly'}),
+  mk('ambient_effect','ae_snowlight','가랑눈','uncommon','작은 눈송이가 조용히 내림',{fx:'ae_snowlight'}),
+  mk('ambient_effect','ae_petal','꽃잎 흩날림','uncommon','분홍 꽃잎이 회전하며 떨어짐',{fx:'ae_petal'}),
+  mk('ambient_effect','ae_bokeh','빛망울','uncommon','초점 나간 빛망울이 떠다님',{fx:'ae_bokeh'}),
+  // 희귀 6
   mk('ambient_effect','ae_spore','포자 유동','rare','포자가 기둥처럼 솟아오름',{fx:'ae_spore'}),
   mk('ambient_effect','ae_feather','부엉이 깃털','rare','큰 깃털이 회전하며 떨어짐',{fx:'ae_feather'}),
   mk('ambient_effect','ae_grass','잔디 바람','rare','하단 잔디가 바람에 눕는다',{fx:'ae_grass'}),
+  mk('ambient_effect','ae_rain','빗줄기','rare','사선 비가 촘촘히 내림',{fx:'ae_rain'}),
+  mk('ambient_effect','ae_leaffall','낙엽','rare','가을 잎이 회전하며 떨어짐',{fx:'ae_leaffall'}),
+  mk('ambient_effect','ae_bubble','기포','rare','물방울이 흔들리며 상승',{fx:'ae_bubble'}),
+  // 영웅 6
   mk('ambient_effect','ae_roar','함성 파동','epic','원형 파동이 밖으로 확산',{fx:'ae_roar'}),
   mk('ambient_effect','ae_firearrow','불화살비','epic','꼬리를 단 불화살이 쏟아짐',{fx:'ae_firearrow'}),
   mk('ambient_effect','ae_holo','홀로 격자','epic','격자와 스캔라인이 훑고 지나감',{fx:'ae_holo'}),
+  mk('ambient_effect','ae_thunder','뇌우','epic','섬광이 번쩍이고 비가 몰아침',{fx:'ae_thunder'}),
+  mk('ambient_effect','ae_smokestack','연무','epic','연기 기둥이 피어올라 흩어짐',{fx:'ae_smokestack'}),
+  mk('ambient_effect','ae_swarm','군무','epic','무리가 함께 몰려다님',{fx:'ae_swarm'}),
+  // 전설 6
   mk('ambient_effect','ae_blizzard','서리폭풍','legendary','눈보라와 바람줄기가 몰아침',{fx:'ae_blizzard'}),
   mk('ambient_effect','ae_gem_nebula','보석 성운','legendary','거대한 색 덩어리가 유영',{fx:'ae_gem_nebula'}),
   mk('ambient_effect','ae_ceremony','우승 세리머니','legendary','색종이와 스포트라이트가 쏟아짐',{fx:'ae_ceremony'}),
+  mk('ambient_effect','ae_galaxy','나선 은하','legendary','은하 팔이 천천히 회전',{fx:'ae_galaxy'}),
+  mk('ambient_effect','ae_volcano','화산','legendary','분출과 연기, 불티가 뒤섞임',{fx:'ae_volcano'}),
+  mk('ambient_effect','ae_finale','대미의 불꽃','legendary','폭죽이 연달아 터지는 피날레',{fx:'ae_finale'}),
 ]);
