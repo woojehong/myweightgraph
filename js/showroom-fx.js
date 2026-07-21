@@ -1268,7 +1268,6 @@ export const LINE_STYLE_ITEMS = Object.freeze([
   mk('line_style','ls_beat','비트 파선','uncommon','짧은 대시가 규칙적으로 내달림',{fx:'ls_beat',width:2.3,tension:.12}),
   mk('line_style','ls_frostbite','서리 맺힘','uncommon','선 위에 작은 서리 결정이 돋음',{fx:'ls_frostbite',width:2.2,tension:.18}),
   mk('line_style','ls_soulthread','혼선(魂線)','uncommon','청록 혼불빛이 일렁이는 실',{fx:'ls_soulthread',width:2.2,tension:.2}),
-  mk('line_style','ls_petal_light','꽃잎 실','uncommon','선에서 꽃잎이 하나둘 떨어짐',{fx:'ls_petal_light',width:2.2,tension:.2}),
   // 희귀 9
   mk('line_style','ls_vein','흐르는 광맥','rare','밝은 광점이 선을 빠르게 주파',{fx:'ls_vein',width:2.4,tension:.2}),
   mk('line_style','ls_psi','사이오닉 선','rare','양옆 평행선과 결정 가시',{fx:'ls_psi',width:2.3,tension:.18}),
@@ -1278,7 +1277,6 @@ export const LINE_STYLE_ITEMS = Object.freeze([
   mk('line_style','ls_ripplewave','물결 파동','rare','선 자체가 물결처럼 일렁임',{fx:'ls_ripplewave',width:2.3,tension:.2}),
   mk('line_style','ls_icecrown_rune','얼음왕관 룬각인','rare','룬이 점등되며 서리가 돋음',{fx:'ls_icecrown_rune',width:2.4,tension:.18}),
   mk('line_style','ls_sanzu','삼도천','rare','선 안으로 혼불 강물이 흐름',{fx:'ls_sanzu',width:2.4,tension:.2}),
-  mk('line_style','ls_senbon_light','천본앵 산화','rare','꽃잎이 흩어지고 칼날이 번뜩임',{fx:'ls_senbon_light',width:2.3,tension:.2}),
   // 영웅 9
   mk('line_style','ls_heatline','화공 열선','epic','열대가 훑고 불티가 위로 솟음',{fx:'ls_heatline',width:2.6,tension:.18}),
   mk('line_style','ls_current','심장로 전류','epic','각진 번개가 선 위를 내달림',{fx:'ls_current',width:2.4,tension:.15}),
@@ -1288,7 +1286,6 @@ export const LINE_STYLE_ITEMS = Object.freeze([
   mk('line_style','ls_windborne','풍매','epic','바람 물리로 입자가 흩날림',{fx:'ls_windborne',width:2.4,tension:.2}),
   mk('line_style','ls_frostmourne','서릿날','epic','룬검의 냉기가 위로 피어오름',{fx:'ls_frostmourne',width:2.6,tension:.18}),
   mk('line_style','ls_hellgate','황천문','epic','핏빛 강물과 재가 솟구침',{fx:'ls_hellgate',width:2.6,tension:.2}),
-  mk('line_style','ls_senbonzakura','천본앵','epic','꽃잎 칼날이 흩날리며 번뜩임',{fx:'ls_senbonzakura',width:2.6,tension:.2}),
   // 전설 9
   mk('line_style','ls_frost','서리 결정선','legendary','선 전체에서 결정 가시가 자람',{fx:'ls_frost',width:2.6,tension:.18}),
   mk('line_style','ls_gem_trail','여섯 보석 궤적','legendary','구간마다 색이 바뀌는 무지개 궤적',{fx:'ls_gem_trail',width:2.6,tension:.2}),
@@ -1298,7 +1295,6 @@ export const LINE_STYLE_ITEMS = Object.freeze([
   mk('line_style','ls_cosmos','우주의 강','legendary','별·성운·궤도 입자가 한꺼번에',{fx:'ls_cosmos',width:2.8,tension:.2}),
   mk('line_style','ls_icecrown_throne','얼음왕관 옥좌','legendary','룬·결정·냉기 폭풍이 총동원',{fx:'ls_icecrown_throne',width:2.8,tension:.18}),
   mk('line_style','ls_yomotsu','황천비도','legendary','혼불과 핏빛 룬이 뒤섞인 저승길',{fx:'ls_yomotsu',width:2.8,tension:.2}),
-  mk('line_style','ls_senbon_kageyoshi','천본앵 경신','legendary','수천 꽃잎 칼날이 몰아치는 절경',{fx:'ls_senbon_kageyoshi',width:2.8,tension:.2}),
 ]);
 
 export const AMBIENT_EFFECT_ITEMS = Object.freeze([

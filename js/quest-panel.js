@@ -51,11 +51,13 @@ function section({key, title, note, color, list, cap, bonus}){
   return `
     <div class="q-sec" data-key="${key}">
       <button class="q-head" onclick="toggleQuestSection('${key}')" aria-expanded="false">
-        <span class="q-caret">▸</span>
-        <span class="q-title" style="color:${color}">${title}</span>
-        <span class="q-mini"><i style="width:${pct(earned/total)}%;background:${color}"></i></span>
+        <span class="q-hl">
+          <span class="q-title" style="color:${color}">${title}</span>
+          <span class="q-caret">▸</span>
+        </span>
         <span class="q-sum" style="color:${color}">${earned}<em>/${total}P</em></span>
-        <span class="q-cnt">${doneN}/${list.length}</span>
+        <span class="q-mini"><i style="width:${pct(earned/total)}%;background:${color}"></i></span>
+        <span class="q-cnt">달성 ${doneN}/${list.length}</span>
       </button>
       <div class="q-body" hidden>
         <div class="q-capinfo">
@@ -73,17 +75,19 @@ function section({key, title, note, color, list, cap, bonus}){
 }
 
 export const QUEST_PANEL_CSS = `
-.q-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:8px;margin-bottom:12px}
-.q-sec{background:var(--surface2);border-radius:9px;padding:8px 10px;margin-bottom:6px}
-.q-sec:last-child{margin-bottom:0}
-.q-head{display:flex;align-items:center;gap:8px;width:100%;background:none;border:none;padding:0;cursor:pointer;text-align:left}
-.q-caret{color:var(--muted);font-size:11px;width:9px;flex-shrink:0}
-.q-title{font-size:13px;font-weight:800;width:32px;flex-shrink:0}
-.q-mini{flex:1;height:7px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden;min-width:40px}
-.q-mini i{display:block;height:100%;border-radius:4px}
-.q-sum{font-size:12px;font-weight:800;white-space:nowrap;flex-shrink:0}
+.q-wrap{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:14px 0 12px;align-items:start}
+@media(max-width:767px){.q-wrap{grid-template-columns:1fr}}
+.q-sec{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:9px 10px;min-width:0}
+.q-sec.open{grid-column:1/-1}
+.q-head{display:grid;gap:5px;width:100%;background:none;border:none;padding:0;cursor:pointer;text-align:left}
+.q-hl{display:flex;align-items:center;justify-content:space-between}
+.q-caret{color:var(--muted);font-size:10px}
+.q-title{font-size:12px;font-weight:800}
+.q-sum{font-size:15px;font-weight:800;white-space:nowrap}
 .q-sum em{font-size:10px;font-weight:600;color:var(--muted);font-style:normal}
-.q-cnt{font-size:10px;color:var(--muted);width:34px;text-align:right;flex-shrink:0}
+.q-mini{display:block;height:6px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden}
+.q-mini i{display:block;height:100%;border-radius:4px}
+.q-cnt{font-size:10px;color:var(--muted)}
 .q-capinfo{display:flex;gap:10px;flex-wrap:wrap;font-size:10px;color:var(--muted);margin-bottom:7px}
 .q-capinfo b{font-weight:800}
 .q-body{display:grid;gap:5px;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)}
@@ -129,6 +133,7 @@ export function installQuestToggle(){
     const caret = sec.querySelector('.q-caret');
     const open = body.hasAttribute('hidden');
     if (open) body.removeAttribute('hidden'); else body.setAttribute('hidden','');
+    sec.classList.toggle('open', open);
     head.setAttribute('aria-expanded', open ? 'true' : 'false');
     caret.textContent = open ? '▾' : '▸';
   };
