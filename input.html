@@ -55,6 +55,35 @@
     .dc-life-row { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
     .dc-life-label { font-size:11px; color:var(--muted); width:52px; flex-shrink:0; white-space:nowrap; }
 
+    /* ── C안: 지난 기록 압축 행 ─────────────────────────────── */
+    .past-title{font-size:11px;color:var(--muted);margin:14px 0 6px 4px;font-weight:700}
+    .past-list{display:grid;gap:5px}
+    .past-row{display:flex;align-items:center;gap:8px;background:var(--surface);
+      border:1px solid var(--border);border-radius:9px;padding:7px 9px}
+    .past-row.done{border-color:rgba(102,187,106,.45);background:rgba(102,187,106,.05)}
+    .pr-date{font-size:11px;color:var(--muted);width:52px;flex-shrink:0}
+    .pr-date em{font-style:normal;opacity:.7}
+    .pr-w{width:58px;flex-shrink:0;height:28px;background:var(--bg);border:1px solid var(--border);
+      border-radius:7px;color:var(--text);font-size:13px;text-align:center;padding:0}
+    .pr-w:focus{border-color:var(--teal);outline:none}
+    .pr-meals{display:flex;gap:4px;flex-shrink:0}
+    .pr-dot{width:17px;height:17px;border-radius:50%;border:none;cursor:pointer;padding:0;
+      background:rgba(255,255,255,.10);transition:background .15s}
+    .pr-dot.none{background:rgba(255,255,255,.10)}
+    .pr-dot.green{background:#66bb6a}
+    .pr-dot.yellow{background:#ffa726}
+    .pr-dot.red{background:#ef5350}
+    .pr-dot:active{transform:scale(1.2)}
+    .pr-ex{width:26px;height:26px;flex-shrink:0;border-radius:7px;border:1px solid var(--border);
+      background:var(--bg);color:var(--muted);font-size:12px;cursor:pointer;padding:0}
+    .pr-ex.yes{border-color:var(--green);color:var(--green);background:rgba(102,187,106,.12)}
+    .pr-ex.no{border-color:var(--red);color:var(--red);background:rgba(239,83,80,.12)}
+    .pr-water{flex:1;min-width:26px;height:7px;background:rgba(255,255,255,.08);
+      border-radius:4px;overflow:hidden}
+    .pr-water i{display:block;height:100%;background:#4fc3f7;border-radius:4px}
+    .pr-wnum{font-size:10px;color:var(--muted);width:26px;text-align:right;flex-shrink:0}
+    @media(max-width:400px){.pr-water,.pr-wnum{display:none}}
+
     .water-cups { display:flex; gap:3px; }
     .water-cup { width:20px; height:24px; border:none; background:transparent; cursor:pointer;
                  font-size:15px; padding:0; opacity:.22; transition:opacity .12s, transform .1s; }
@@ -359,6 +388,46 @@ window.setMeal = async (dateStr, mealTime, value) => {
   scheduleAchSync();
 };
 
+// ── 지난 기록 압축행: 탭할 때마다 순환 ────────────────────────────────
+// 식단: 없음 → 초록 → 노랑 → 빨강 → 없음 (초록이 한 번에 오도록)
+const MEAL_CYCLE = [null, 'green', 'yellow', 'red'];
+window.cycleMeal = async (dateStr, mealTime) => {
+  const rec = allRecords.find(r=>r.date===dateStr);
+  const cur = rec?.meal?.[mealTime] ?? null;
+  const next = MEAL_CYCLE[(MEAL_CYCLE.indexOf(cur) + 1) % MEAL_CYCLE.length];
+  const newMeal = { ...(rec?.meal||{}), [mealTime]: next };
+  await setDietExercise(uid, dateStr, { meal: newMeal });
+  if (rec) rec.meal = newMeal; else allRecords.push({ date:dateStr, meal:newMeal });
+  const btn = document.querySelector(`#pastrow-${dateStr} .pr-dot[onclick*="${mealTime}"]`);
+  if (btn) btn.className = `pr-dot ${next||'none'}`;
+  refreshPastRow(dateStr);
+  if (next) await reward(dateStr, mealTime);
+  scheduleAchSync();
+};
+// 운동: 없음 → ✓ → ✕ → 없음
+window.cycleExercise = async (dateStr) => {
+  const rec = allRecords.find(r=>r.date===dateStr);
+  const cur = rec?.exercise;
+  const next = cur === true ? false : cur === false ? null : true;
+  await setDietExercise(uid, dateStr, { exercise: next });
+  if (rec) rec.exercise = next; else allRecords.push({ date:dateStr, exercise:next });
+  const btn = document.querySelector(`#pastrow-${dateStr} .pr-ex`);
+  if (btn) { btn.className = `pr-ex ${next===true?'yes':next===false?'no':''}`;
+             btn.textContent = next===true?'✓':next===false?'✕':'–'; }
+  refreshPastRow(dateStr);
+  if (next === true) await reward(dateStr, 'exercise');
+  scheduleAchSync();
+};
+function refreshPastRow(dateStr){
+  const row = document.getElementById(`pastrow-${dateStr}`);
+  if (!row) return;
+  const r = allRecords.find(x=>x.date===dateStr) || {};
+  const m = r.meal || {};
+  const done = r.weight!=null && m.morning!=null && m.lunch!=null && m.dinner!=null
+               && (r.exercise===true || r.exercise===false);
+  row.classList.toggle('done', done);
+}
+
 // ── 운동 저장 ─────────────────────────────────────────────────────────
 window.setExercise = async (dateStr, value) => {
   const rec = allRecords.find(r=>r.date===dateStr);
@@ -457,7 +526,8 @@ async function render() {
   const today = new Date(activityDay() + 'T12:00:00');
   const labels=['오늘','어제','2일 전','3일 전','4일 전','5일 전'];
   let cards='';
-  for(let i=0;i<=5;i++){
+  // C안: 오늘만 큰 카드, 어제 이후는 압축 행 (아래 pastRows)
+  for(let i=0;i<=0;i++){
     const d=new Date(today); d.setDate(d.getDate()-i);
     const dateStr=toDateStr(d);
     const rec=allRecords.find(r=>r.date===dateStr);
@@ -516,10 +586,42 @@ async function render() {
       </div>`;
   }
 
+  // ── 지난 기록: 압축 행 (C안) ──────────────────────────────────────
+  let pastRows = '';
+  for (let i = 1; i <= 5; i++) {
+    const d = new Date(today); d.setDate(d.getDate() - i);
+    const dateStr = toDateStr(d);
+    const rec  = allRecords.find(r => r.date === dateStr);
+    const val  = rec?.weight;
+    const meal = rec?.meal || {};
+    const ex   = rec?.exercise;
+    const water = rec?.water || 0;
+    const done = val != null && meal.morning != null && meal.lunch != null
+                 && meal.dinner != null && (ex === true || ex === false);
+    const dot = m => `<button class="pr-dot ${meal[m]||'none'}" title="${['아침','점심','저녁'][['morning','lunch','dinner'].indexOf(m)]}"
+      onclick="cycleMeal('${dateStr}','${m}')" aria-label="${m} 식단 변경"></button>`;
+    pastRows += `
+      <div class="past-row${done?' done':''}" id="pastrow-${dateStr}">
+        <span class="pr-date">${fmtDate(d).slice(5)} <em>${DAY_KO[d.getDay()]}</em></span>
+        <input type="number" step="0.1" class="pr-w" id="inp-${dateStr}" placeholder="--.-"
+          value="${val!=null?val.toFixed(1):''}"
+          oninput="onDayInput('${dateStr}')"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();submitDay('${dateStr}')}"
+          onblur="submitDay('${dateStr}')">
+        <span class="pr-meals">${dot('morning')}${dot('lunch')}${dot('dinner')}</span>
+        <button class="pr-ex ${ex===true?'yes':ex===false?'no':''}" onclick="cycleExercise('${dateStr}')"
+          aria-label="운동 변경">${ex===true?'✓':ex===false?'✕':'–'}</button>
+        <span class="pr-water"><i style="width:${Math.min(100,water/WATER_GOAL_CUPS*100)}%"></i></span>
+        <span class="pr-wnum">${water}/${WATER_GOAL_CUPS}</span>
+      </div>`;
+  }
+
   installQuestToggle();
   const todayRec = allRecords.find(r => r.date === activityDay());
   document.getElementById('content').innerHTML =
-    `<div id="questPanel">${questPanelHTML(allRecords, todayRec, _buddyDates)}</div>` + cards;
+    `<div id="questPanel">${questPanelHTML(allRecords, todayRec, _buddyDates)}</div>`
+    + cards
+    + `<div class="past-title">지난 기록</div><div class="past-list">${pastRows}</div>`;
   refreshBuddyDates();
 
   // 다른 곳(자동 연동 등)에서 쌓인 미반영 업적을 페이지 진입 시 1회 정산

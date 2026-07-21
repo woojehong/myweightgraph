@@ -15,7 +15,7 @@ import { activityDay, isDailyComplete } from './daily-rewards.js';
 
 export const WATER_GOAL   = 8;
 export const WEEKLY_CAP   = 200;
-export const MONTHLY_CAP  = 600;
+export const MONTHLY_CAP  = 1000;
 
 const ds = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 const parseDs = s => new Date(s + 'T12:00:00');
@@ -31,14 +31,19 @@ const noRedDay    = r => mealsLogged(r)===3 && !['morning','lunch','dinner'].som
 const exerciseDone= r => r?.exercise===true;
 const waterDone   = r => (r?.water||0) >= WATER_GOAL;
 
-// ── 일간 50P (상한 없음 — 다 하면 50) ───────────────────────────────────────
+// ── 일간 ────────────────────────────────────────────────────────────────────
+// 완주 퀘스트 44P (필수) + 보너스 6P (물, 선택) = 최대 50P
+// 물은 완주 조건이 아니므로 목록 자체를 분리한다.
 export const DAILY_QUESTS = Object.freeze([
-  { id:'d_attend',  label:'출석',       points:10, goal:1, optional:false },
-  { id:'d_weight',  label:'체중 기록',  points:10, goal:1, optional:false },
-  { id:'d_meals',   label:'세 끼 기록', points:6,  goal:3, optional:false },
-  { id:'d_exercise',label:'운동 체크',  points:4,  goal:1, optional:false },
-  { id:'d_complete',label:'하루 완주',  points:14, goal:1, optional:false },
-  { id:'d_water',   label:'물 8잔',     points:6,  goal:WATER_GOAL, optional:true },
+  { id:'d_attend',  label:'출석',       points:10, goal:1 },
+  { id:'d_weight',  label:'체중 기록',  points:10, goal:1 },
+  { id:'d_meals',   label:'세 끼 기록', points:6,  goal:3 },
+  { id:'d_exercise',label:'운동 체크',  points:4,  goal:1 },
+  { id:'d_complete',label:'하루 완주',  points:14, goal:1 },
+]);
+/** 완주와 무관한 선택 보너스 */
+export const DAILY_BONUS = Object.freeze([
+  { id:'d_water', label:'물 8잔', points:6, goal:WATER_GOAL, optional:true },
 ]);
 
 export function dailyProgress(record){
@@ -49,8 +54,12 @@ export function dailyProgress(record){
     d_meals:    mealsLogged(r),
     d_exercise: (r.exercise===true||r.exercise===false) ? 1 : 0,
     d_complete: isDailyComplete(r) ? 1 : 0,
-    d_water:    clamp(r.water||0, 0, WATER_GOAL),
   });
+}
+/** 선택 보너스(물) — 완주와 무관 */
+export function dailyBonusProgress(record){
+  const r = record || {};
+  return buildList(DAILY_BONUS, { d_water: clamp(r.water||0, 0, WATER_GOAL) });
 }
 
 // ── 주간 퀘스트 (총 배점 > 상한 200P) ───────────────────────────────────────

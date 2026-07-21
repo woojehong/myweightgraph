@@ -1,4 +1,4 @@
-const CACHE = 'weight-v66-quests';
+const CACHE = 'weight-v67-quest-ui';
 const ASSETS = [
   './index.html', './dashboard.html', './input.html', './import.html',
   './achievements.html', './compare.html', './dressroom.html', './shop.html', './guide.html', './visual-lab.html',
