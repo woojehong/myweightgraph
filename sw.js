@@ -1,4 +1,4 @@
-const CACHE = 'weight-v60-weekly-avg-line';
+const CACHE = 'weight-v61-showroom-fx';
 const ASSETS = [
   './index.html', './dashboard.html', './input.html', './import.html',
   './achievements.html', './compare.html', './dressroom.html', './shop.html', './guide.html', './visual-lab.html',

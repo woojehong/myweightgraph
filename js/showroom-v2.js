@@ -126,7 +126,8 @@ export function lineContrastAdviceV2(foreground,background='#070b12'){
 }
 export function getChartDecorationsV2(raw){
   const loadout=normalizeLoadoutV2(raw),skin=getCatalogItemV2(loadout.graph_skin),marker=getCatalogItemV2(loadout.point_marker),line=getCatalogItemV2(loadout.line_style);
-  if(!skin&&!marker&&!line)return {};
+  const ambient=getCatalogItemV2(loadout.ambient_effect);
+  if(!skin&&!marker&&!line&&!ambient)return {};
   const colors=graphColors[skin?.id];
   const lineSpec=line?.renderSpec||{},lineColor=validHex(raw?.lineColor)?raw.lineColor:(lineSpec.color||colors?.[0]);
   const requestedWidth=Number(raw?.lineWidth),lineWidth=Number.isFinite(requestedWidth)?Math.max(1,Math.min(6,requestedWidth)):lineSpec.width;
@@ -138,6 +139,8 @@ export function getChartDecorationsV2(raw){
     lineGlowBlur:lineSpec.glowBlur,lineTension:lineSpec.tension,
     lineContrast:lineColor?lineContrastAdviceV2(lineColor,backgroundColor):null,
     markerPreset:marker?.id||null, markerAsset:marker?.asset||null,
+    // 코드 네이티브 이펙트 id (showroom-fx.js가 해석)
+    lineFx:lineSpec.fx||null, ambientFx:ambient?.renderSpec?.fx||null,
   };
 }
 

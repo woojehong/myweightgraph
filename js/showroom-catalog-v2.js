@@ -1,4 +1,5 @@
 import { SHOWROOM_V4_RUNTIME } from './showroom-catalog-v4.generated.js';
+import { LINE_STYLE_ITEMS, AMBIENT_EFFECT_ITEMS } from './showroom-fx.js';
 
 // Maweg showroom catalog: V4 fully replaces V3 only after a validated 108-item runtime module exists.
 const item = (category, id, name, rarity, price, asset, visual) => Object.freeze({
@@ -70,8 +71,15 @@ const SHOWROOM_CATALOG_V3_FALLBACK = Object.freeze(SHOWROOM_CATEGORIES.flatMap(c
     category,id,name,rarity,price,`./assets/showroom-v3/${category}/${id}.${ext}`,visual,
   )),
 ));
-const v4Items=Array.isArray(SHOWROOM_V4_RUNTIME?.items)?SHOWROOM_V4_RUNTIME.items:[];
-const completeV4Category=category=>{const entries=v4Items.filter(item=>item.category===category);return entries.length===12&&entries.every(item=>item.testOnly===true&&item.purchasable===false&&item.persistable===false&&item.price===null&&(category==='line_style'?item.asset===null&&item.renderSpec:item.asset?.startsWith(`./assets/showroom-v4/${category}/`)))};
+// 코드 네이티브 범주: 이미지 에셋 없이 renderSpec으로 그린다.
+export const CODE_NATIVE_CATEGORIES = Object.freeze(['line_style','ambient_effect']);
+const isCodeNative = category => CODE_NATIVE_CATEGORIES.includes(category);
+// 생성 파일(showroom-catalog-v4.generated.js)은 GPT 스크립트가 덮어쓰므로 건드리지 않고 여기서 병합한다.
+const v4Items=[
+  ...(Array.isArray(SHOWROOM_V4_RUNTIME?.items)?SHOWROOM_V4_RUNTIME.items:[]),
+  ...LINE_STYLE_ITEMS, ...AMBIENT_EFFECT_ITEMS,
+].filter((item,i,arr)=>arr.findIndex(x=>x.id===item.id)===i);
+const completeV4Category=category=>{const entries=v4Items.filter(item=>item.category===category);return entries.length===12&&entries.every(item=>item.testOnly===true&&item.purchasable===false&&item.persistable===false&&item.price===null&&(isCodeNative(category)?item.asset===null&&item.renderSpec:item.asset?.startsWith(`./assets/showroom-v4/${category}/`)))};
 export const SHOWROOM_V4_ACTIVE_CATEGORIES=Object.freeze(SHOWROOM_CATEGORIES.filter(completeV4Category));
 export const SHOWROOM_CATALOG_VERSION=SHOWROOM_V4_ACTIVE_CATEGORIES.length?`v4-mixed:${SHOWROOM_V4_ACTIVE_CATEGORIES.join(',')}`:'v3-fallback';
 export const SHOWROOM_CATALOG_V2=Object.freeze(SHOWROOM_CATEGORIES.flatMap(category=>completeV4Category(category)?v4Items.filter(item=>item.category===category):SHOWROOM_CATALOG_V3_FALLBACK.filter(item=>item.category===category)));
@@ -122,9 +130,9 @@ export function assertShowroomCatalogV2(catalog=SHOWROOM_CATALOG_V2){
       if(ids.has(entry.id))throw new Error(`duplicate catalog id: ${entry.id}`);ids.add(entry.id);
       if(entry.asset!==null){if(assets.has(entry.asset))throw new Error(`duplicate catalog asset: ${entry.asset}`);assets.add(entry.asset)}
       const expectedRoot=expectedPerCategory===12?'./assets/showroom-v4':'./assets/showroom-v3';
-      if(category==='line_style'){
-        if(entry.asset!==null||!entry.renderSpec)throw new Error(`${entry.id}: invalid code-native line style`);
-      }else if(!entry.asset.startsWith(`${expectedRoot}/${category}/`))throw new Error(`${entry.id}: invalid asset path`);
+      if(isCodeNative(category)&&entry.asset===null){
+        if(!entry.renderSpec)throw new Error(`${entry.id}: invalid code-native item`);
+      }else if(!entry.asset||!entry.asset.startsWith(`${expectedRoot}/${category}/`))throw new Error(`${entry.id}: invalid asset path`);
     }
   }
   if(catalog===SHOWROOM_CATALOG_V2){

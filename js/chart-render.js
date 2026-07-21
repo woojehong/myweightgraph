@@ -1,4 +1,5 @@
 // chart-render.js
+import { showroomFxPlugin } from './showroom-fx.js';
 
 // Parse 'YYYY-MM-DD' as LOCAL midnight (new Date('YYYY-MM-DD') is UTC and shifts buckets in non-KST timezones)
 const parseDs = ds => (typeof ds === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(ds)) ? new Date(ds + 'T00:00:00') : new Date(ds);
@@ -657,6 +658,12 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
       layout: { padding: { top: 12, right: ((isMobile || tight) ? 4 : 70) + padRight, bottom: 4 + BAR_AREA_H, left: (isMobile || tight) ? 5 : 70 } },
       plugins: {
         legend: { display: false },
+        // 쇼룸 코드 네이티브 이펙트 (그래프선 / 공간효과)
+        showroomFx: {
+          lineFx: chartDecorations?.lineFx || null,
+          ambientFx: chartDecorations?.ambientFx || null,
+          gridCell,
+        },
         tooltip: {
           mode: 'index', intersect: false,
           backgroundColor: 'rgba(10,18,32,.95)', titleColor: '#fff', bodyColor: 'rgba(255,255,255,.75)', padding: 9,
@@ -685,7 +692,7 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
       },
       interaction: { mode: 'index', intersect: false }
     },
-    plugins: [canvasBgPlugin, lineStyleEffectPlugin, mainPlotDomBoundsPlugin, annotPlugin, weeklyBarPlugin, weeklyBarTooltipPlugin, subGraphPlugin, subGraphTooltipPlugin]
+    plugins: [canvasBgPlugin, lineStyleEffectPlugin, showroomFxPlugin, mainPlotDomBoundsPlugin, annotPlugin, weeklyBarPlugin, weeklyBarTooltipPlugin, subGraphPlugin, subGraphTooltipPlugin]
   });
   canvasMain._startTs = startTs;
   canvasMain._endTs   = endTs;
