@@ -13,7 +13,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { activityDay, isDailyComplete } from './daily-rewards.js';
 
-export const WATER_GOAL   = 8;
+export const WATER_GOAL   = 10;
 export const WEEKLY_CAP   = 200;
 export const MONTHLY_CAP  = 1000;
 
@@ -43,7 +43,7 @@ export const DAILY_QUESTS = Object.freeze([
 ]);
 /** 완주와 무관한 선택 보너스 */
 export const DAILY_BONUS = Object.freeze([
-  { id:'d_water', label:'물 8잔', points:6, goal:WATER_GOAL, optional:true },
+  { id:'d_water', label:`물 ${WATER_GOAL}잔`, points:6, goal:WATER_GOAL, optional:true },
 ]);
 
 export function dailyProgress(record){
@@ -220,8 +220,10 @@ function buildList(defs, cur){
   return defs.map(q => {
     const value = clamp(cur[q.id] ?? 0, 0, q.goal);
     const done  = value >= q.goal;
+    // 물은 진행도 비례 부분점수(최대 배점까지), 그 외는 완료 시에만 지급
+    const partial = q.id==='d_water' ? Math.floor(q.points * (q.goal? value/q.goal : 0)) : 0;
     return { ...q, value, done, ratio: q.goal ? value/q.goal : 0,
-             earned: done ? q.points : (q.id==='d_water' ? value : 0) };
+             earned: done ? q.points : partial };
   });
 }
 

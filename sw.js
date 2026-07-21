@@ -1,4 +1,4 @@
-const CACHE = 'weight-v70-input-layout';
+const CACHE = 'weight-v71-today-center';
 const ASSETS = [
   './index.html', './dashboard.html', './input.html', './import.html',
   './achievements.html', './compare.html', './dressroom.html', './shop.html', './guide.html', './visual-lab.html',

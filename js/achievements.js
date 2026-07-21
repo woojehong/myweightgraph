@@ -2,7 +2,7 @@
 
 export const RECORD_START_DATE = '2026-06-01'; // 기록 누적 기준일 (체중/식단/운동 횟수)
 export const LOSS_START_DATE   = '2026-01-01'; // 감량/갱신 기준일
-export const WATER_GOAL_CUPS   = 8;            // 하루 물 목표 (잔)
+export const WATER_GOAL_CUPS   = 10;           // 하루 물 목표 (잔)
 
 export const ACHIEVEMENT_CATEGORIES = [
   { id:'record',    label:'체중',  icon:'⚖️' },

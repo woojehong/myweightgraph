@@ -55,21 +55,29 @@
     .dc-life-row { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
     .dc-life-label { font-size:11px; color:var(--muted); width:52px; flex-shrink:0; white-space:nowrap; }
 
-    /* ── 오늘 입력 카드 (컴팩트) ─────────────────────────────── */
-    .tdy-card{padding:11px 12px !important}
-    .tdy-top{display:flex;align-items:center;gap:7px;margin-bottom:9px;flex-wrap:wrap}
-    .tdy-name{font-size:15px;font-weight:800;color:var(--teal);flex-shrink:0}
-    .tdy-date{font-size:11px;color:var(--muted);flex-shrink:0}
-    .tdy-input{margin-left:auto;width:78px;height:34px;background:var(--bg);border:1px solid var(--teal);
-      border-radius:8px;color:var(--text);font-size:17px;font-weight:700;text-align:center;padding:0;flex-shrink:0}
+    /* ── 오늘 입력 카드 — 전부 가운데정렬 스택 ────────────────── */
+    .tdy-card{padding:12px 10px !important;text-align:center}
+    .tdy-head{display:flex;align-items:baseline;justify-content:center;gap:7px;margin-bottom:9px}
+    .tdy-name{font-size:16px;font-weight:800;color:var(--teal)}
+    .tdy-date{font-size:11px;color:var(--muted)}
+    .tdy-weigh{display:flex;align-items:center;justify-content:center;gap:7px;margin-bottom:11px;flex-wrap:wrap}
+    .tdy-input{width:84px;height:36px;background:var(--bg);border:1.5px solid var(--teal);
+      border-radius:9px;color:var(--text);font-size:18px;font-weight:800;text-align:center;padding:0}
+    .tdy-input.saved{border-color:var(--green)}
     .tdy-input:focus{outline:none;border-color:var(--teal)}
-    .tdy-unit{font-size:11px;color:var(--muted);flex-shrink:0}
-    .tdy-btn{height:34px;padding:0 14px;background:var(--teal);border:none;border-radius:8px;
-      color:#0d1117;font-size:12px;font-weight:800;cursor:pointer;flex-shrink:0}
-    .tdy-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-    .tdy-meal,.tdy-ex{display:flex;align-items:center;gap:5px}
-    .tdy-mlabel{font-size:10px;color:var(--muted);flex-shrink:0}
-    @media(max-width:380px){.tdy-row{gap:7px}.tdy-mlabel{font-size:9px}}
+    .tdy-unit{font-size:11px;color:var(--muted)}
+    .tdy-btn{height:36px;padding:0 15px;background:var(--teal);border:none;border-radius:9px;
+      color:#0d1117;font-size:12px;font-weight:800;cursor:pointer}
+    .tdy-flag{font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;
+      background:rgba(255,255,255,.06);color:var(--muted)}
+    .tdy-flag.on{background:rgba(102,187,106,.16);color:var(--green)}
+    /* 아침·점심·저녁 + (간격) + 운동 — 가운데정렬 */
+    .tdy-row{display:flex;align-items:flex-end;justify-content:center;gap:12px}
+    .tdy-meal{display:flex;flex-direction:column;align-items:center;gap:5px}
+    .tdy-mlabel{font-size:10px;color:var(--muted)}
+    .tdy-gap{width:10px}
+    .tdy-row .tl-group{display:flex;gap:5px}
+    @media(max-width:380px){.tdy-row{gap:9px}.tdy-gap{width:5px}}
 
     /* ── C안: 지난 기록 — 모바일 1열, 데스크탑 3칸씩 ────────── */
     .past-title{font-size:11px;color:var(--muted);margin:14px 0 6px 4px;font-weight:700}
@@ -101,6 +109,10 @@
     .pr-wnum{font-size:10px;color:var(--muted);width:26px;text-align:right;flex-shrink:0}
     @media(max-width:400px){.pr-water,.pr-wnum{display:none}}
 
+    /* 오늘 카드 안의 물 — 가운데정렬 */
+    .tdy-card .dc-life-row{justify-content:center;flex-wrap:nowrap}
+    .tdy-card .dc-life-label{width:auto}
+    .tdy-card .water-cups{flex-wrap:wrap;justify-content:center}
     .water-cups { display:flex; gap:3px; }
     .water-cup { width:20px; height:24px; border:none; background:transparent; cursor:pointer;
                  font-size:15px; padding:0; opacity:.22; transition:opacity .12s, transform .1s; }
@@ -552,40 +564,43 @@ async function render() {
     const hasSaved=val!=null;
     const allDone = hasSaved && meal.morning!=null && meal.lunch!=null
       && meal.dinner!=null && (exercise===true||exercise===false);
+    // 식단: 초 → 노 → 빨 순서
     const mealBlock = ['morning','lunch','dinner'].map((m,mi)=>`
       <div class="tdy-meal">
         <span class="tdy-mlabel">${['아침','점심','저녁'][mi]}</span>
         <div class="tl-group">
-          <button class="tl-btn red-tl ${meal[m]==='red'?'on':''}"    onclick="setMeal('${dateStr}','${m}','red')"></button>
-          <button class="tl-btn yellow-tl ${meal[m]==='yellow'?'on':''}" onclick="setMeal('${dateStr}','${m}','yellow')"></button>
           <button class="tl-btn green-tl ${meal[m]==='green'?'on':''}"  onclick="setMeal('${dateStr}','${m}','green')"></button>
+          <button class="tl-btn yellow-tl ${meal[m]==='yellow'?'on':''}" onclick="setMeal('${dateStr}','${m}','yellow')"></button>
+          <button class="tl-btn red-tl ${meal[m]==='red'?'on':''}"    onclick="setMeal('${dateStr}','${m}','red')"></button>
         </div>
       </div>`).join('');
 
     cards=`
       <div class="day-card tdy-card${allDone?' all-done':''}" id="daycard-${dateStr}">
-        <div class="tdy-top">
+        <div class="tdy-head">
           <span class="tdy-name">오늘</span>
           <span class="tdy-date">${fmtDate(d)} (${DAY_KO[d.getDay()]})</span>
-          <input type="number" step="0.1" class="tdy-input" id="inp-${dateStr}"
+        </div>
+        <div class="tdy-weigh">
+          <input type="number" step="0.1" class="tdy-input${hasSaved?' saved':''}" id="inp-${dateStr}"
             placeholder="--.-" value="${hasSaved?val.toFixed(1):''}"
-            style="border-color:${hasSaved?'var(--green)':'var(--teal)'}"
             oninput="onDayInput('${dateStr}')"
             onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();submitDay('${dateStr}')}">
           <span class="tdy-unit">kg</span>
           <button class="tdy-btn" onclick="submitDay('${dateStr}')">저장</button>
+          <span class="tdy-flag${hasSaved?' on':''}" id="dcst-${dateStr}">${hasSaved?'✓ 저장됨':'미입력'}</span>
         </div>
         <div class="tdy-row">
           ${mealBlock}
-          <div class="tdy-ex">
+          <div class="tdy-gap"></div>
+          <div class="tdy-meal">
             <span class="tdy-mlabel">운동</span>
-            <div class="dc-ex-row">
-              <button class="ex-btn ${exercise===true?'on-check':''}"  onclick="setExercise('${dateStr}',true)">✓</button>
-              <button class="ex-btn ${exercise===false?'on-cross':''}" onclick="setExercise('${dateStr}',false)">✗</button>
+            <div class="tl-group">
+              <button class="tl-btn green-tl ${exercise===true?'on':''}"  onclick="setExercise('${dateStr}',true)"></button>
+              <button class="tl-btn red-tl ${exercise===false?'on':''}" onclick="setExercise('${dateStr}',false)"></button>
             </div>
           </div>
         </div>
-        <div class="dc-status" id="dcst-${dateStr}" style="color:${hasSaved?'var(--green)':'var(--muted)'}">${hasSaved?'✓ 저장됨':''}</div>
         <div class="dc-life" id="life-${dateStr}">${lifeSectionHTML(dateStr)}</div>
       </div>`;
   }

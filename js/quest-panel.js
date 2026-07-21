@@ -75,8 +75,9 @@ function section({key, title, note, color, list, cap, bonus}){
 }
 
 export const QUEST_PANEL_CSS = `
-.q-wrap{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:14px 0 12px;align-items:start}
-@media(max-width:767px){.q-wrap{grid-template-columns:1fr}}
+/* 지난 기록(.past-list)과 동일한 3열 그리드 — 가로폭 통일 */
+.q-wrap{display:grid;grid-template-columns:1fr;gap:5px;margin:14px 0 12px;align-items:start}
+@media(min-width:768px){.q-wrap{grid-template-columns:repeat(3,1fr);gap:8px}}
 .q-sec{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:9px 10px;min-width:0}
 .q-sec.open{grid-column:1/-1}
 .q-head{display:grid;gap:5px;width:100%;background:none;border:none;padding:0;cursor:pointer;text-align:left}
