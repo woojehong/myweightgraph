@@ -33,7 +33,6 @@ const mealsLogged = r => ['morning','lunch','dinner'].filter(m => r?.meal?.[m]!=
 const allGreenDay = r => greenMeals(r)===3;
 const noRedDay    = r => mealsLogged(r)===3 && !['morning','lunch','dinner'].some(m=>r?.meal?.[m]==='red');
 const exerciseDone= r => r?.exercise===true;
-const waterDone   = r => (r?.water||0) >= WATER_GOAL;
 
 // ── 일간 ────────────────────────────────────────────────────────────────────
 // 완주 퀘스트 44P (필수) + 보너스 6P (물, 선택) = 최대 50P
@@ -70,20 +69,20 @@ export function dailyBonusProgress(record, goal = WATER_GOAL_DEFAULT){
 // ── 주간 퀘스트 (총 배점 > 상한 200P) ───────────────────────────────────────
 // tier: easy(쉬움) / normal / hard(어려움) — 어려울수록 배점이 크다
 export const WEEKLY_QUESTS = Object.freeze([
-  { id:'w_complete3', label:'3일 완주',          points:30,  goal:3,  tier:'easy'   },
-  { id:'w_complete5', label:'5일 완주',          points:60,  goal:5,  tier:'normal' },
-  { id:'w_complete7', label:'7일 전부 완주',     points:100, goal:7,  tier:'hard'   },
-  { id:'w_weight5',   label:'체중 5일 기록',     points:30,  goal:5,  tier:'easy'   },
-  { id:'w_weight7',   label:'체중 7일 기록',     points:60,  goal:7,  tier:'hard'   },
-  { id:'w_exercise2', label:'운동 2회 이상',     points:25,  goal:2,  tier:'easy'   },
-  { id:'w_exercise4', label:'운동 4회 이상',     points:55,  goal:4,  tier:'normal' },
-  { id:'w_exercise6', label:'운동 6회 이상',     points:90,  goal:6,  tier:'hard'   },
-  { id:'w_green7',    label:'초록 식단 7끼',     points:30,  goal:7,  tier:'easy'   },
-  { id:'w_green14',   label:'초록 식단 14끼',    points:65,  goal:14, tier:'normal' },
-  { id:'w_allgreen2', label:'올그린 데이 2일',   points:80,  goal:2,  tier:'hard'   },
-  { id:'w_nored3',    label:'빨강 없는 날 3일',  points:45,  goal:3,  tier:'normal' },
-  { id:'w_streak4',   label:'4일 연속 완주',     points:55,  goal:4,  tier:'normal' },
-  { id:'w_loss',      label:'주간 감량 0.3kg',   points:50,  goal:1,  tier:'normal' },
+  { id:'w_complete3', label:'3일 완주',          points:12,  goal:3,  tier:'easy'   },
+  { id:'w_complete5', label:'5일 완주',          points:28,  goal:5,  tier:'normal' },
+  { id:'w_complete7', label:'7일 전부 완주',     points:55,  goal:7,  tier:'hard'   },
+  { id:'w_weight5',   label:'체중 5일 기록',     points:12,  goal:5,  tier:'easy'   },
+  { id:'w_weight7',   label:'체중 7일 기록',     points:30,  goal:7,  tier:'hard'   },
+  { id:'w_exercise2', label:'운동 2회 이상',     points:10,  goal:2,  tier:'easy'   },
+  { id:'w_exercise4', label:'운동 4회 이상',     points:26,  goal:4,  tier:'normal' },
+  { id:'w_exercise6', label:'운동 6회 이상',     points:48,  goal:6,  tier:'hard'   },
+  { id:'w_green7',    label:'초록 식단 7끼',     points:12,  goal:7,  tier:'easy'   },
+  { id:'w_green14',   label:'초록 식단 14끼',    points:30,  goal:14, tier:'normal' },
+  { id:'w_allgreen2', label:'올그린 데이 2일',   points:42,  goal:2,  tier:'hard'   },
+  { id:'w_nored3',    label:'빨강 없는 날 3일',  points:20,  goal:3,  tier:'normal' },
+  { id:'w_streak4',   label:'4일 연속 완주',     points:24,  goal:4,  tier:'normal' },
+  { id:'w_loss',      label:'주간 감량 0.3kg',   points:24,  goal:1,  tier:'normal' },
 ]);
 
 export function weeklyProgress(records, refDate = activityDay()){
@@ -115,23 +114,22 @@ export function isWeekCleared(records, weekStartStr){
 
 // ── 월간 퀘스트 (총 배점 > 상한 600P) ───────────────────────────────────────
 export const MONTHLY_QUESTS = Object.freeze([
-  { id:'m_weeks2',    label:'주간 상한 2주 달성',  points:150, goal:2,  tier:'normal' },
-  { id:'m_weeks3',    label:'주간 상한 3주 달성',  points:250, goal:3,  tier:'hard'   },
-  { id:'m_complete15',label:'15일 완주',           points:120, goal:15, tier:'easy'   },
-  { id:'m_complete22',label:'22일 완주',           points:200, goal:22, tier:'hard'   },
-  { id:'m_streak7',   label:'7일 연속 완주',       points:110, goal:7,  tier:'easy'   },
-  { id:'m_streak10',  label:'10일 연속 완주',      points:170, goal:10, tier:'normal' },
-  { id:'m_streak15',  label:'15일 연속 완주',      points:260, goal:15, tier:'hard'   },
-  { id:'m_buddy5',    label:'친구와 동반 완주 5회',  points:100, goal:5,  tier:'easy'   },
-  { id:'m_buddy10',   label:'친구와 동반 완주 10회', points:180, goal:10, tier:'normal' },
-  { id:'m_exercise10',label:'운동 10회 이상',      points:120, goal:10, tier:'easy'   },
-  { id:'m_exercise16',label:'운동 16회 이상',      points:210, goal:16, tier:'hard'   },
-  { id:'m_allgreen5', label:'올그린 데이 5일',     points:150, goal:5,  tier:'normal' },
-  { id:'m_allgreen10',label:'올그린 데이 10일',    points:260, goal:10, tier:'hard'   },
-  { id:'m_weekday',   label:'7요일 모두 완주',    points:140, goal:7,  tier:'normal' },
-  { id:'m_noskip',    label:'2일 연속 결석 없기',  points:160, goal:1,  tier:'normal' },
-  { id:'m_loss',      label:'월간 1kg 감량',       points:180, goal:1,  tier:'normal' },
-  { id:'m_loss2',     label:'월간 2kg 감량',       points:280, goal:1,  tier:'hard'   },
+  { id:'m_weeks2',    label:'주간 상한 2주 달성',  points:70,  goal:2,  tier:'normal' },
+  { id:'m_weeks3',    label:'주간 상한 3주 달성',  points:130, goal:3,  tier:'hard'   },
+  { id:'m_complete15',label:'15일 완주',           points:55,  goal:15, tier:'easy'   },
+  { id:'m_complete22',label:'22일 완주',           points:105, goal:22, tier:'hard'   },
+  { id:'m_streak7',   label:'7일 연속 완주',       points:48,  goal:7,  tier:'easy'   },
+  { id:'m_streak10',  label:'10일 연속 완주',      points:80,  goal:10, tier:'normal' },
+  { id:'m_streak15',  label:'15일 연속 완주',      points:140, goal:15, tier:'hard'   },
+  { id:'m_buddy5',    label:'친구와 동반 완주 5회',  points:45,  goal:5,  tier:'easy'   },
+  { id:'m_buddy10',   label:'친구와 동반 완주 10회', points:85,  goal:10, tier:'normal' },
+  { id:'m_exercise10',label:'운동 10회 이상',      points:52,  goal:10, tier:'easy'   },
+  { id:'m_exercise16',label:'운동 16회 이상',      points:110, goal:16, tier:'hard'   },
+  { id:'m_allgreen5', label:'올그린 데이 5일',     points:72,  goal:5,  tier:'normal' },
+  { id:'m_allgreen10',label:'올그린 데이 10일',    points:135, goal:10, tier:'hard'   },
+  { id:'m_weekday',   label:'7요일 모두 완주',    points:62,  goal:7,  tier:'normal' },
+  { id:'m_loss',      label:'월간 1kg 감량',       points:85,  goal:1,  tier:'normal' },
+  { id:'m_loss2',     label:'월간 2kg 감량',       points:145, goal:1,  tier:'hard'   },
 ]);
 
 export function monthlyProgress(records, refDate = activityDay(), buddyDates = null){
@@ -158,7 +156,6 @@ export function monthlyProgress(records, refDate = activityDay(), buddyDates = n
     m_allgreen5:inMonth.filter(allGreenDay).length,
     m_allgreen10:inMonth.filter(allGreenDay).length,
     m_weekday:weekdayCover,
-    m_noskip:noTwoDayGap(inMonth, mStart, days) ? 1 : 0,
     m_loss:  delta!=null && delta <= -1 ? 1 : 0,
     m_loss2: delta!=null && delta <= -2 ? 1 : 0,
   });
@@ -193,20 +190,6 @@ function longestStreak(list, startStr, days){
     if (isDailyComplete(map.get(key))) { run++; best=Math.max(best,run); } else run=0;
   }
   return best;
-}
-/** 오늘까지 기준으로 2일 연속 결석이 한 번도 없었는가 */
-function noTwoDayGap(list, startStr, days){
-  const map = new Map(list.map(r=>[r.date,r]));
-  const d = parseDs(startStr);
-  const today = activityDay();
-  let gap = 0;
-  for(let i=0;i<days;i++){
-    const key = ds(new Date(d.getFullYear(), d.getMonth(), d.getDate()+i));
-    if (key > today) break;
-    if (isDailyComplete(map.get(key))) gap = 0;
-    else { gap++; if (gap >= 2) return false; }
-  }
-  return true;
 }
 
 function buildList(defs, cur){

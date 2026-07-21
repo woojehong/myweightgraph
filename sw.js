@@ -1,4 +1,4 @@
-const CACHE = 'weight-v74-water-goal';
+const CACHE = 'weight-v75-quest-rebalance';
 const ASSETS = [
   './index.html', './dashboard.html', './input.html', './import.html',
   './achievements.html', './compare.html', './dressroom.html', './shop.html', './guide.html', './visual-lab.html',

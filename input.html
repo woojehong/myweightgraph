@@ -113,13 +113,11 @@
     @media(max-width:400px){.pr-water,.pr-wnum{display:none}}
 
     /* 오늘 카드 안의 물 — 가운데정렬 */
-    .tdy-card .dc-life-row{justify-content:center;flex-wrap:nowrap}
-    .tdy-card .dc-life-label{width:auto}
-    .tdy-card .water-cups{flex-wrap:wrap;justify-content:center}
     /* 물 목표 설정 (기본 접힘) */
-    .water-gear{background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;
-      padding:2px 4px;line-height:1}
-    .water-gear:hover{color:var(--teal)}
+    .water-gear{background:var(--surface2);border:1px solid var(--border);color:var(--muted);
+      font-size:10px;cursor:pointer;padding:3px 8px;border-radius:14px;line-height:1.4;white-space:nowrap}
+    .water-gear:hover{color:var(--teal);border-color:var(--teal)}
+    .water-gear.on{color:var(--teal);border-color:var(--teal);background:rgba(0,229,170,.1)}
     .water-cfg{display:flex;align-items:center;justify-content:center;gap:6px;
       margin-top:7px;font-size:11px;color:var(--muted)}
     .water-cfg[hidden]{display:none}
@@ -129,6 +127,11 @@
     .water-cfg button{height:26px;padding:0 10px;background:var(--teal);border:none;border-radius:6px;
       color:#0d1117;font-size:11px;font-weight:800;cursor:pointer}
     .water-cups { display:flex; gap:3px; }
+    /* 오늘 카드의 물 — 가운데정렬 (.water-cups 뒤에 와야 이김) */
+    .tdy-card .dc-life{align-items:center}
+    .tdy-card .dc-life-row{justify-content:center;flex-wrap:wrap}
+    .tdy-card .dc-life-label{width:auto}
+    .tdy-card .water-cups{flex-wrap:wrap;justify-content:center}
     .water-cup { width:20px; height:24px; border:none; background:transparent; cursor:pointer;
                  font-size:15px; padding:0; opacity:.22; transition:opacity .12s, transform .1s; }
     .water-cup.full { opacity:1; }
@@ -533,7 +536,7 @@ function lifeSectionHTML(dateStr){
       <span class="dc-life-label">💧 물</span>
       <div class="water-cups">${cups}</div>
       <span class="water-count ${done?'done':''}">${done?'✓ 달성':`${water}/${goal}`}</span>
-      <button class="water-gear" onclick="toggleWaterCfg()" aria-label="물 목표 설정" title="목표 잔 수 설정">▾</button>
+      <button class="water-gear" onclick="toggleWaterCfg()" aria-label="물 목표 설정">⚙ 목표 설정</button>
     </div>
     <div class="water-cfg" id="waterCfg" hidden>
       <span>목표</span>
@@ -546,7 +549,7 @@ window.toggleWaterCfg = () => {
   const el=document.getElementById('waterCfg'); if(!el) return;
   const open=el.hasAttribute('hidden');
   if(open) el.removeAttribute('hidden'); else el.setAttribute('hidden','');
-  const g=document.querySelector('.water-gear'); if(g) g.textContent = open ? '▴' : '▾';
+  const g=document.querySelector('.water-gear'); if(g) g.classList.toggle('on', open);
 };
 window.saveWaterGoal = async () => {
   const v=Math.max(1,Math.min(20,parseInt(document.getElementById('waterGoalInp').value)||6));
