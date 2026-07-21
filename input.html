@@ -128,9 +128,10 @@
       color:#0d1117;font-size:11px;font-weight:800;cursor:pointer}
     .water-cups { display:flex; gap:3px; }
     /* 오늘 카드의 물 — 가운데정렬 (.water-cups 뒤에 와야 이김) */
-    .tdy-card .dc-life{align-items:center}
-    .tdy-card .dc-life-row{justify-content:center;flex-wrap:wrap}
-    .tdy-card .dc-life-label{width:auto}
+    /* 오늘 카드 물 — 전용 클래스(외부 .dc-life 규칙과 완전 분리) */
+    .wtr-wrap{margin-top:12px;padding-top:12px;border-top:1px dashed var(--border)}
+    .wtr-row{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap}
+    .wtr-label{font-size:11px;color:var(--muted);white-space:nowrap}
     .tdy-card .water-cups{flex-wrap:wrap;justify-content:center}
     .water-cup { width:20px; height:24px; border:none; background:transparent; cursor:pointer;
                  font-size:15px; padding:0; opacity:.22; transition:opacity .12s, transform .1s; }
@@ -172,9 +173,6 @@
       /* 오늘 카드 = 지난기록·퀘스트와 동일한 전체 폭 */
       .tdy-card { display:block !important; width:100% !important; max-width:100% !important;
                   margin:0 0 10px 0 !important; }
-      /* 오늘 카드의 물 — 데스크탑에서도 가운데정렬 유지 */
-      .tdy-card .dc-life { align-items:center !important; }
-      .tdy-card .dc-life-row { justify-content:center !important; }
       .dc-life { flex-basis:100%; margin-top:0; padding-top:10px;
                  flex-direction:row; flex-wrap:wrap; gap:8px 20px; }
       .dc-life-row { flex-wrap:nowrap; }
@@ -517,6 +515,7 @@ window.setWater = async (dateStr, n) => {
   await setDietExercise(uid, dateStr, { water:newVal });
   rec.water=newVal;
   renderLife(dateStr);
+  refreshQuestPanel();          // 수분 목표 달성 여부 즉시 반영
   await reward(dateStr,'water',newVal);
   scheduleAchSync();
 };
@@ -532,8 +531,8 @@ function lifeSectionHTML(dateStr){
   const cups=Array.from({length:goal},(_,i)=>
     `<button class="water-cup ${i<water?'full':''}" onclick="setWater('${dateStr}',${i+1})" aria-label="물 ${i+1}잔">🥛</button>`).join('');
   return `
-    <div class="dc-life-row">
-      <span class="dc-life-label">💧 물</span>
+    <div class="wtr-row">
+      <span class="wtr-label">💧 물</span>
       <div class="water-cups">${cups}</div>
       <span class="water-count ${done?'done':''}">${done?'✓ 달성':`${water}/${goal}`}</span>
       <button class="water-gear" onclick="toggleWaterCfg()" aria-label="물 목표 설정">⚙ 목표 설정</button>
@@ -658,7 +657,7 @@ async function render() {
             </div>
           </div>
         </div>
-        <div class="dc-life" id="life-${dateStr}">${lifeSectionHTML(dateStr)}</div>
+        <div class="wtr-wrap" id="life-${dateStr}">${lifeSectionHTML(dateStr)}</div>
       </div>`;
   }
 
