@@ -76,7 +76,7 @@
 <script type="module">
 import { getUser, batchMergeWeights, parseWeight, toDateStr } from './js/db.js';
 import { isAuthed } from './js/auth.js';
-import { profileVisualForUserV2 } from './js/showroom-v2.js?v=83';
+import { profileVisualForUserV2 } from './js/showroom-v2.js?v=84';
 
 const uid = new URLSearchParams(location.search).get('user') || localStorage.getItem('uid');
 if (!uid) location.href = 'index.html';

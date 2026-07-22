@@ -5,8 +5,9 @@
   isolation:isolate;
   min-height:68px;
   box-sizing:border-box;
-  padding:10px 16px!important;
+  padding:14px 16px 6px!important;
   margin-bottom:8px;
+  align-items:center;
 }
 
 .cmp-profile>.v4-card-theme-frame,
@@ -26,27 +27,47 @@
 .cmp-profile[data-card-theme]>:not(.v4-card-theme-frame),
 .sr-profile-head[data-card-theme]>:not(.v4-card-theme-frame){position:relative;z-index:1}
 
+.cmp-profile[data-card-theme] .cmp-avatar,
+.cmp-profile[data-card-theme] .cmp-info,
+.sr-profile-head[data-card-theme]>.v2-profile,
+.sr-profile-head[data-card-theme] .sr-profile-copy{transform:translateY(1px)}
+
 .cmp-profile[data-card-theme] .cmp-markers,
 .sr-profile-head[data-card-theme] .sr-profile-markers{
   display:flex;
   align-items:center;
-  gap:8px;
+  gap:0;
   margin-left:auto;
   flex-shrink:0;
+  min-height:40px;
+  padding:3px 7px;
+  border:1px solid var(--ct-panel-edge,rgba(148,163,184,.5));
+  border-radius:7px;
+  background:var(--ct-panel-bg,linear-gradient(180deg,rgba(15,23,42,.9),rgba(2,6,23,.82)));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.09),0 3px 8px rgba(0,0,0,.46);
 }
 
 .cmp-profile[data-card-theme] .mk,
 .sr-profile-head[data-card-theme] .mk{
   position:relative;
   isolation:isolate;
-  min-width:72px;
+  min-width:68px;
   box-sizing:border-box;
-  padding:6px 9px 7px;
+  padding:3px 10px;
   border:0;
   border-radius:0;
   background:transparent!important;
-  overflow:visible;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  line-height:1.08;
+  white-space:nowrap;
 }
+
+.cmp-profile[data-card-theme] .mk:not(:last-child),
+.sr-profile-head[data-card-theme] .mk:not(:last-child){border-right:1px solid var(--ct-panel-divider,rgba(255,255,255,.16))}
 
 .v4-card-badge-frame{
   position:absolute;
@@ -54,7 +75,7 @@
   inset:-5px -7px -8px;
   width:calc(100% + 14px);
   height:calc(100% + 13px);
-  display:block;
+  display:none;
   object-fit:fill;
   pointer-events:none;
   filter:drop-shadow(0 3px 4px rgba(0,0,0,.7));
@@ -91,6 +112,10 @@
 [data-card-theme="ct4_legendary_nether_sanctum"]{--ct-font:"Palatino Linotype",serif;--ct-name:#d5ffcf;--ct-shadow:0 1px 2px #07170a,0 0 5px #35df7477}
 [data-card-theme="ct4_legendary_dragonfire_cataclysm"]{--ct-font:"Arial Black",sans-serif;--ct-name:#fff1c2;--ct-shadow:0 1px 2px #2b0a00,0 0 5px #ff8a0077}
 
+[data-card-theme="ct4_legendary_frozen_crown"]{--ct-panel-edge:rgba(137,213,255,.72);--ct-panel-divider:rgba(157,220,255,.25);--ct-panel-bg:linear-gradient(180deg,rgba(11,34,56,.94),rgba(3,13,27,.91))}
+[data-card-theme="ct4_legendary_nether_sanctum"]{--ct-panel-edge:rgba(117,255,158,.58);--ct-panel-divider:rgba(129,255,169,.2);--ct-panel-bg:linear-gradient(180deg,rgba(14,48,31,.92),rgba(5,20,17,.9))}
+[data-card-theme="ct4_legendary_dragonfire_cataclysm"]{--ct-panel-edge:rgba(255,169,59,.64);--ct-panel-divider:rgba(255,188,82,.22);--ct-panel-bg:linear-gradient(180deg,rgba(63,27,8,.93),rgba(25,8,4,.91))}
+
 [data-card-theme] .cmp-name,
 [data-card-theme] .sr-name,
 .v4-card-preview-name[data-card-theme]{
@@ -126,9 +151,9 @@
 .v4-card-preview-badges img{display:block;width:31%;height:100%;object-fit:fill;filter:drop-shadow(0 2px 2px #000b)}
 
 @media(max-width:767px){
-  .cmp-profile[data-card-theme],.sr-profile-head[data-card-theme]{min-height:58px;padding:9px 11px!important}
-  .cmp-profile[data-card-theme] .cmp-markers,.sr-profile-head[data-card-theme] .sr-profile-markers{gap:4px}
-  .cmp-profile[data-card-theme] .mk,.sr-profile-head[data-card-theme] .mk{min-width:55px;padding:6px 7px 7px}
+  .cmp-profile[data-card-theme],.sr-profile-head[data-card-theme]{min-height:58px;padding:12px 11px 5px!important}
+  .cmp-profile[data-card-theme] .cmp-markers,.sr-profile-head[data-card-theme] .sr-profile-markers{padding:2px 4px}
+  .cmp-profile[data-card-theme] .mk,.sr-profile-head[data-card-theme] .mk{min-width:53px;padding:3px 5px}
 }
 
 @media(prefers-reduced-motion:reduce){

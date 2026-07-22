@@ -94,8 +94,8 @@ assert.equal(normalized.title,null);
 assert.deepEqual(normalized.trophy,['tr_summit_compass','tr_sea_chalice','tr_giant_horn','tr_cosmic_goblet']);
 assert.deepEqual(SHOWROOM_DEFAULTS,{graph_skin:null,line_style:null,card_theme:null,point_marker:null,companion:null,ambient_effect:null,trophy:[],profile_emoji:null,emoji_border:null});
 assert.deepEqual(COMPANION_LAYOUT_DEFAULTS,{scale:1,opacity:1,x:90,y:15});
-assert.deepEqual(COMPANION_LAYOUT_LIMITS,{scale:{min:.5,max:2},opacity:{min:.2,max:1},x:{min:5,max:95},y:{min:5,max:95}});
-assert.deepEqual(normalizeCompanionLayoutV2({scale:99,opacity:-1,x:'bad',y:101}),{scale:2,opacity:.2,x:90,y:95});
+assert.deepEqual(COMPANION_LAYOUT_LIMITS,{scale:{min:.5,max:5},opacity:{min:.2,max:1},x:{min:5,max:95},y:{min:5,max:95}});
+assert.deepEqual(normalizeCompanionLayoutV2({scale:99,opacity:-1,x:'bad',y:101}),{scale:5,opacity:.2,x:90,y:95});
 assert.deepEqual(normalizeLoadoutV2({}).companionLayout,COMPANION_LAYOUT_DEFAULTS,'old loadouts must receive non-destructive companion defaults');
 assert.equal(contrastRatioV2('#ffffff','#000000'),21);
 assert.equal(lineContrastAdviceV2('#111827','#070b12').passes,false);
@@ -242,7 +242,7 @@ assert.equal((visualLab.match(/drawMarker\(ctx,marker,/g)||[]).length,1,'visual 
 assert.equal((visualLab.match(/drawMarker\(ctx,/g)||[]).length-1,1,'visual lab must render exactly one point marker');
 
 const sw=await readFile(new URL('../sw.js',import.meta.url),'utf8');
-assert.ok(sw.includes("weight-v83-smiling-profile-default"));assert.equal(sw.includes('c.addAll(ASSETS).catch'),false);
+assert.ok(sw.includes("weight-v84-card-header-companion-scale"));assert.equal(sw.includes('c.addAll(ASSETS).catch'),false);
 for(const entry of SHOWROOM_CATALOG_V2.filter(entry=>entry.asset))assert.ok(sw.includes(`'${entry.asset}'`),`sw:${entry.asset}`);
 
 const showroom=await readFile(new URL('../dressroom.html',import.meta.url),'utf8');

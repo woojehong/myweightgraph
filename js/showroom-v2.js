@@ -28,7 +28,7 @@ export const V2_CATEGORIES=Object.freeze([...SHOWROOM_CATEGORIES,'title']);
 
 export const COMPANION_LAYOUT_DEFAULTS=Object.freeze({scale:1,opacity:1,x:90,y:15});
 export const COMPANION_LAYOUT_LIMITS=Object.freeze({
-  scale:Object.freeze({min:.5,max:2}),
+  scale:Object.freeze({min:.5,max:5}),
   opacity:Object.freeze({min:.2,max:1}),
   x:Object.freeze({min:5,max:95}),
   y:Object.freeze({min:5,max:95}),
