@@ -2,6 +2,7 @@ import { SHOWROOM_V4_RUNTIME } from './showroom-catalog-v4.generated.js';
 import { GRAPH_SKIN_ITEMS } from './showroom-graph-skins.js';
 import { CARD_THEME_ITEMS } from './showroom-card-themes.js';
 import { LINE_STYLE_ITEMS, AMBIENT_EFFECT_ITEMS } from './showroom-fx.js';
+import { COMPANION_ITEMS_V5 } from './showroom-companions-v5.js';
 
 // Maweg showroom catalog: V4 fully replaces V3 only after a validated 108-item runtime module exists.
 const item = (category, id, name, rarity, price, asset, visual) => Object.freeze({
@@ -124,11 +125,19 @@ export const GRANDFATHERED_RELEASED_ITEM_IDS = Object.freeze([
 ]);
 const grandfatheredReleasedIds = new Set(GRANDFATHERED_RELEASED_ITEM_IDS);
 
-export const SHOWROOM_CATALOG_V2=Object.freeze(SHOWROOM_CATEGORIES.flatMap(category=>{
+const SHOWROOM_CATALOG_BASE=SHOWROOM_CATEGORIES.flatMap(category=>{
   const staged=completeV4Category(category);
   const entries=staged?v4Items.filter(item=>item.category===category):SHOWROOM_CATALOG_V3_FALLBACK.filter(item=>item.category===category);
   return staged?entries.map(entry=>grandfatheredReleasedIds.has(entry.id)?retail(entry):entry):entries.map(retail);
-}));
+});
+const SHOWROOM_V5_ADDITIONS=Object.freeze([
+  ...COMPANION_ITEMS_V5,
+]);
+const showroomV5Ids=new Set(SHOWROOM_V5_ADDITIONS.map(entry=>entry.id));
+export const SHOWROOM_CATALOG_V2=Object.freeze([
+  ...SHOWROOM_CATALOG_BASE,
+  ...SHOWROOM_V5_ADDITIONS,
+]);
 
 // Exact V2 ids are retained only as a compatibility index. They are not active catalog entries.
 const LEGACY_IDS_BY_CATEGORY = Object.freeze({
@@ -179,14 +188,20 @@ export function assertShowroomCatalogV2(catalog=SHOWROOM_CATALOG_V2){
   const ids=new Set(),assets=new Set();
   for(const category of SHOWROOM_CATEGORIES){
     const entries=catalog.filter(entry=>entry.category===category);
-    const isV4Tier=entries.length>=12&&entries.length%4===0;
-    const expectedPerCategory=isV4Tier?entries.length:(isCodeNative(category)?0:4);
-    if(entries.length!==expectedPerCategory)throw new Error(`${category}: expected ${expectedPerCategory} items, got ${entries.length}`);
-    const perRarity=isV4Tier?entries.length/4:1;
+    const additions=entries.filter(entry=>showroomV5Ids.has(entry.id));
+    const baseEntries=entries.filter(entry=>!showroomV5Ids.has(entry.id));
+    const expectedAdditions=catalog===SHOWROOM_CATALOG_V2
+      ? SHOWROOM_V5_ADDITIONS.filter(entry=>entry.category===category)
+      : additions;
+    if(additions.length!==expectedAdditions.length)throw new Error(`${category}: missing V5 additions`);
+    const isV4Tier=baseEntries.length>=12&&baseEntries.length%4===0;
+    const expectedPerCategory=isV4Tier?baseEntries.length:(isCodeNative(category)?0:4);
+    if(baseEntries.length!==expectedPerCategory)throw new Error(`${category}: expected ${expectedPerCategory} base items, got ${baseEntries.length}`);
+    const perRarity=isV4Tier?baseEntries.length/4:1;
     const expected=expectedPerCategory===0?[]:isV4Tier
       ? ['uncommon','rare','epic','legendary'].flatMap(r=>Array(perRarity).fill(r))
       : category==='companion'?['common','common','common','common']:['uncommon','rare','epic','legendary'];
-    if(entries.map(entry=>entry.rarity).join(',')!==expected.join(','))throw new Error(`${category}: invalid rarity order`);
+    if(baseEntries.map(entry=>entry.rarity).join(',')!==expected.join(','))throw new Error(`${category}: invalid base rarity order`);
     for(const entry of entries){
       for(const key of ['id','category','name','rarity','price','visual','implKey','asset','testOnly','purchasable'])if(entry[key]===undefined||entry[key]==='')throw new Error(`${entry.id}: missing ${key}`);
       // 판매 정책: 트로피는 업적 전용(비매품), 그 외는 가격이 붙은 판매품이어야 한다.
@@ -199,7 +214,7 @@ export function assertShowroomCatalogV2(catalog=SHOWROOM_CATALOG_V2){
       }
       if(ids.has(entry.id))throw new Error(`duplicate catalog id: ${entry.id}`);ids.add(entry.id);
       if(entry.asset!==null){if(assets.has(entry.asset))throw new Error(`duplicate catalog asset: ${entry.asset}`);assets.add(entry.asset)}
-      const expectedRoot=isV4Tier?'./assets/showroom-v4':'./assets/showroom-v3';
+      const expectedRoot=showroomV5Ids.has(entry.id)?'./assets/showroom-v5':isV4Tier?'./assets/showroom-v4':'./assets/showroom-v3';
       if(isCodeNative(category)&&entry.asset===null){
         if(!entry.renderSpec)throw new Error(`${entry.id}: invalid code-native item`);
       }else if(!entry.asset||!entry.asset.startsWith(`${expectedRoot}/${category}/`))throw new Error(`${entry.id}: invalid asset path`);

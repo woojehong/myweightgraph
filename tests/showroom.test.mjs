@@ -21,21 +21,22 @@ import {
 
 assert.equal(assertShowroomCatalogV2(),true);
 assert.deepEqual(SHOWROOM_V4_ACTIVE_CATEGORIES,['graph_skin','line_style','card_theme','ambient_effect']);
-assert.equal(SHOWROOM_CATALOG_V2.length,112);
+assert.equal(SHOWROOM_CATALOG_V2.length,152);
 assert.equal(TITLES_CATALOG_V2.length,30);
-assert.equal(ALL_CATALOG_V2.length,142);
+assert.equal(ALL_CATALOG_V2.length,182);
 assert.deepEqual(SHOWROOM_CATEGORIES,['graph_skin','line_style','card_theme','point_marker','companion','ambient_effect','trophy','profile_emoji','emoji_border']);
 assert.deepEqual(V2_CATEGORIES,[...SHOWROOM_CATEGORIES,'title']);
-assert.equal(new Set(ALL_CATALOG_V2.map(entry=>entry.id)).size,142);
-assert.equal(new Set(SHOWROOM_CATALOG_V2.filter(entry=>entry.asset).map(entry=>entry.asset)).size,44);
+assert.equal(new Set(ALL_CATALOG_V2.map(entry=>entry.id)).size,182);
+assert.equal(new Set(SHOWROOM_CATALOG_V2.filter(entry=>entry.asset).map(entry=>entry.asset)).size,84);
 
 for(const category of SHOWROOM_CATEGORIES){
   const entries=SHOWROOM_CATALOG_V2.filter(entry=>entry.category===category);
-  const expectedCount={graph_skin:12,line_style:32,card_theme:12,ambient_effect:36}[category]??4;
+  const expectedCount={graph_skin:12,line_style:32,card_theme:12,companion:44,ambient_effect:36}[category]??4;
   assert.equal(entries.length,expectedCount,category);
-  const per=expectedCount>=12?expectedCount/4:1;
-  assert.deepEqual(entries.map(entry=>entry.rarity),expectedCount>=12?['uncommon','rare','epic','legendary'].flatMap(r=>Array(per).fill(r)):category==='companion'
-    ? ['common','common','common','common']
+  const per=category==='companion'?1:expectedCount>=12?expectedCount/4:1;
+  assert.deepEqual(entries.map(entry=>entry.rarity),category==='companion'
+    ? [...Array(4).fill('common'),...Array(10).fill('uncommon'),...Array(10).fill('rare'),...Array(10).fill('epic'),...Array(10).fill('legendary')]
+    : expectedCount>=12?['uncommon','rare','epic','legendary'].flatMap(r=>Array(per).fill(r))
     : ['uncommon','rare','epic','legendary']);
 }
 for(const entry of SHOWROOM_CATALOG_V2){
@@ -224,7 +225,7 @@ assert.equal((visualLab.match(/drawMarker\(ctx,marker,/g)||[]).length,1,'visual 
 assert.equal((visualLab.match(/drawMarker\(ctx,/g)||[]).length-1,1,'visual lab must render exactly one point marker');
 
 const sw=await readFile(new URL('../sw.js',import.meta.url),'utf8');
-assert.ok(sw.includes("weight-v78-card-theme-coupling"));assert.equal(sw.includes('c.addAll(ASSETS).catch'),false);
+assert.ok(sw.includes("weight-v80-showroom-v5"));assert.equal(sw.includes('c.addAll(ASSETS).catch'),false);
 for(const entry of SHOWROOM_CATALOG_V2.filter(entry=>entry.asset))assert.ok(sw.includes(`'${entry.asset}'`),`sw:${entry.asset}`);
 
 const showroom=await readFile(new URL('../dressroom.html',import.meta.url),'utf8');
