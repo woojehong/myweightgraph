@@ -114,7 +114,7 @@ import { onAuthChange, adminSignOut, ADMIN_UID,
          saveAdminOverride, adminSetCatalogOwnershipV2 } from './js/db.js';
 import { ACHIEVEMENTS, ACHIEVEMENT_CATEGORIES, DEFAULT_TIERS } from './js/achievements.js';
 import { computeAchievementState, syncAchievements } from './js/achievements-engine.js';
-import { ALL_CATALOG_V2, V2_CATEGORIES, CATEGORY_META, RARITY_META, ownedItemIdsV2, profileVisualV2, titleInfoV2 } from './js/showroom-v2.js';
+import { ALL_CATALOG_V2, V2_CATEGORIES, CATEGORY_META, RARITY_META, ownedItemIdsV2, profileVisualForUserV2, titleInfoV2 } from './js/showroom-v2.js?v=82';
 
 let allUsers=[], selectedUid=null, settings={};
 
@@ -200,7 +200,7 @@ function renderUserList() {
         <button class="ord-btn" ${idx===0?'disabled':''} onclick="event.stopPropagation();moveUser('${u.id}',-1)">▲</button>
         <button class="ord-btn" ${idx===last?'disabled':''} onclick="event.stopPropagation();moveUser('${u.id}',1)">▼</button>
       </div>
-      <div class="av">${u.emoji||'⚖️'}</div>
+      <div class="av">${profileVisualForUserV2(u,38)}</div>
       <div style="flex:1;min-width:0">
         <div style="font-weight:700;font-size:13px">${u.name}</div>
         <div style="font-size:11px;color:var(--muted)">${[u.goal?`목표 ${u.goal}kg`:'',u.height?`${u.height}cm`:'',u.birthYear?`${u.birthYear}년생`:''].filter(Boolean).join(' · ')}</div>
@@ -336,7 +336,7 @@ function renderDetail(user, records, systemEarned=new Set()) {
     <div class="card">
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:14px">
         <div>
-          <div style="font-size:17px;font-weight:800;display:flex;align-items:center;gap:8px">${profileVisualV2(user.showroomLoadoutV2,38)} ${user.name}</div>
+          <div style="font-size:17px;font-weight:800;display:flex;align-items:center;gap:8px">${profileVisualForUserV2(user,38)} ${user.name}</div>
           <div style="font-size:12px;color:var(--muted);margin-top:2px">
             ${[user.height?`${user.height}cm`:'',user.birthYear?`${user.birthYear}년생`:'',`목표 ${user.goal||80}kg`].filter(Boolean).join(' · ')}
             ${titleInfoV2(user.showroomLoadoutV2)?`· 🏷️ <span style="color:${titleInfoV2(user.showroomLoadoutV2).color}">${titleInfoV2(user.showroomLoadoutV2).name}</span>`:''}

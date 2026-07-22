@@ -34,9 +34,8 @@
       background: repeating-linear-gradient(-55deg, transparent, transparent 40px, rgba(255,255,255,.015) 40px, rgba(255,255,255,.015) 41px);
     }
     .profile-inner { position: relative; z-index: 1; }
-    .profile-avatar-stage{height:260px;display:flex;align-items:flex-end;justify-content:center;margin:-12px auto 4px;cursor:pointer;position:relative}
-    .profile-avatar-stage .avatar-v2{height:255px;width:220px}
-    .profile-avatar-stage::after{content:'클릭하여 모션 재생';position:absolute;bottom:5px;font-size:9px;color:var(--muted);letter-spacing:.04em}
+    .profile-emoji-stage{height:190px;display:grid;place-items:center;margin:-12px auto 4px;position:relative}
+    .profile-emoji-stage .v2-profile{filter:drop-shadow(0 12px 24px rgba(0,0,0,.38))}
     .profile-dressroom-link{display:inline-flex;align-items:center;justify-content:center;margin:2px 0 14px;padding:7px 14px;border:1px solid rgba(0,229,170,.35);border-radius:18px;color:var(--teal);font-size:11px;text-decoration:none;background:rgba(0,229,170,.06)}
     .profile-title-badge {
       display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: .1em;
@@ -239,8 +238,7 @@ import { ACHIEVEMENTS, ACHIEVEMENT_CATEGORIES,
          calculateProgress, calculateMetaProgress } from './js/achievements.js';
 import { syncAchievements, queueAchievementPopups } from './js/achievements-engine.js';
 import { ACHIEVEMENT_ITEM_REWARDS_V2 } from './js/achievement-item-rewards-v2.js';
-import { getCatalogItemV2, RARITY_META, profileVisualV2, titleInfoV2 } from './js/showroom-v2.js';
-import { renderAvatarV2, playAvatarV2 } from './js/avatar-v2.js';
+import { getCatalogItemV2, RARITY_META, profileVisualForUserV2, titleInfoV2 } from './js/showroom-v2.js?v=82';
 import { esc } from './js/util.js';
 const VISIBLE_ACHIEVEMENTS = ACHIEVEMENTS.filter(a =>
   a.cat !== 'steps' && !a.id.startsWith('mood_') && !a.id.startsWith('journal_'));
@@ -274,7 +272,7 @@ function buildNav() {
 
 function setChipData(u, tierColor) {
   const tc = tierColor || '#00e5aa';
-  document.getElementById('chipEmoji').innerHTML = profileVisualV2(u?.showroomLoadoutV2,30);
+  document.getElementById('chipEmoji').innerHTML = profileVisualForUserV2(u,30);
   document.getElementById('chipName').textContent  = u.name;
   document.getElementById('chipName').style.color  = tc;
   const chipTitleEl = document.getElementById('chipTitle');
@@ -365,7 +363,7 @@ async function render() {
       <div class="profile-glow" style="--tc-glow:${tier.color}30"></div>
       <div class="profile-lines"></div>
       <div class="profile-inner">
-        <button class="profile-avatar-stage" id="profileAvatarStage" type="button" aria-label="아바타 모션 재생">${renderAvatarV2(user.avatarV2,{size:220,label:`${user.name} 아바타`})}</button>
+        <div class="profile-emoji-stage" aria-label="${esc(user.name)} 프로필">${profileVisualForUserV2(user,160)}</div>
         ${user.selectedTitle ? `<div class="profile-title-badge">${esc(user.selectedTitle)}</div><br>` : ''}
         <div class="profile-name">${esc(user.name)}</div>
         <div class="profile-tier">
@@ -445,9 +443,6 @@ async function render() {
     if (scoreEl) countUp(scoreEl, totalScore, 900);
     const fill = document.getElementById('tierProgFill');
     if (fill) setTimeout(() => { fill.style.width = tierProg + '%'; }, 80);
-  });
-  document.getElementById('profileAvatarStage')?.addEventListener('click', e => {
-    playAvatarV2(e.currentTarget.querySelector('.avatar-v2'));
   });
 
   buildCatList(validEarned);

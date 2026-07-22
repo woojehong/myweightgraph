@@ -12,11 +12,12 @@ import { ACHIEVEMENT_ITEM_REWARDS_V2, normalizeAchievementTrophyRewardsV2, rewar
 import { fitMainPlotBounds } from '../js/chart-render.js';
 import {
   ALL_CATALOG_V2, V2_CATEGORIES, normalizeLoadoutV2, getCatalogItemV2,
+  COMPANION_LAYOUT_DEFAULTS, COMPANION_LAYOUT_LIMITS, normalizeCompanionLayoutV2,
   ownedItemIdsV2, unownedSelectionV2, persistableLoadoutV2, validateCatalogPurchaseV2,
   renderEmojiBorderV2, getChartDecorationsV2,
   contrastRatioV2, lineContrastAdviceV2,
   renderCompanionV2, renderTrophyV2, renderMarkerV2, renderProfileEmojiV2,
-  renderAmbientV2, renderCatalogPreviewV2, applyCardV2,
+  renderAmbientV2, renderCatalogPreviewV2, profileVisualForUserV2, applyCardV2,
 } from '../js/showroom-v2.js';
 
 assert.equal(assertShowroomCatalogV2(),true);
@@ -38,6 +39,14 @@ for(const category of SHOWROOM_CATEGORIES){
     ? [...Array(4).fill('common'),...Array(10).fill('uncommon'),...Array(10).fill('rare'),...Array(10).fill('epic'),...Array(10).fill('legendary')]
     : expectedCount>=12?['uncommon','rare','epic','legendary'].flatMap(r=>Array(per).fill(r))
     : ['uncommon','rare','epic','legendary']);
+}
+for(const [category,prefix] of [['profile_emoji','pe_'],['emoji_border','eb_']]){
+  const entries=SHOWROOM_CATALOG_V2.filter(entry=>entry.category===category);
+  assert.equal(entries.length,4,`${category}: active catalog must reflect the four real assets`);
+  const migratedLegacy=Object.entries(LEGACY_SHOWROOM_ID_ALIASES).filter(([legacy,target])=>legacy.startsWith(prefix)&&legacy!==target);
+  assert.equal(migratedLegacy.length,30,`${category}: legacy ids are aliases, not additional assets`);
+  assert.equal(new Set(migratedLegacy.map(([,target])=>target)).size,4,`${category}: legacy aliases must resolve onto the four active assets`);
+  for(const entry of entries)assert.ok((await stat(new URL(`../${entry.asset.replace(/^\.\//,'')}`,import.meta.url))).isFile(),`${entry.id}: missing catalog asset`);
 }
 for(const entry of SHOWROOM_CATALOG_V2){
   const staged=['line_style','ambient_effect'].includes(entry.category)&&!GRANDFATHERED_RELEASED_ITEM_IDS.includes(entry.id);
@@ -84,6 +93,10 @@ assert.equal(normalized.point_marker,'pm_phoenix_seal');
 assert.equal(normalized.title,null);
 assert.deepEqual(normalized.trophy,['tr_summit_compass','tr_sea_chalice','tr_giant_horn','tr_cosmic_goblet']);
 assert.deepEqual(SHOWROOM_DEFAULTS,{graph_skin:null,line_style:null,card_theme:null,point_marker:null,companion:null,ambient_effect:null,trophy:[],profile_emoji:null,emoji_border:null});
+assert.deepEqual(COMPANION_LAYOUT_DEFAULTS,{scale:1,opacity:1,x:90,y:15});
+assert.deepEqual(COMPANION_LAYOUT_LIMITS,{scale:{min:.5,max:2},opacity:{min:.2,max:1},x:{min:5,max:95},y:{min:5,max:95}});
+assert.deepEqual(normalizeCompanionLayoutV2({scale:99,opacity:-1,x:'bad',y:101}),{scale:2,opacity:.2,x:90,y:95});
+assert.deepEqual(normalizeLoadoutV2({}).companionLayout,COMPANION_LAYOUT_DEFAULTS,'old loadouts must receive non-destructive companion defaults');
 assert.equal(contrastRatioV2('#ffffff','#000000'),21);
 assert.equal(lineContrastAdviceV2('#111827','#070b12').passes,false);
 assert.equal(lineContrastAdviceV2('#ffffff','#070b12').passes,true);
@@ -104,7 +117,11 @@ const transactionBefore=structuredClone(transactionSnapshot);
 assert.deepEqual(validateCatalogPurchaseV2(['gs_v4_uncommon_01']).map(entry=>[entry.id,entry.price]),[['gs_v4_uncommon_01',900]]);
 assert.throws(()=>validateCatalogPurchaseV2(['tr_summit_compass']),/트로피는 구매할 수 없으며 업적 달성 또는 관리자 지급으로만 획득/);
 assert.deepEqual(transactionSnapshot,transactionBefore,'blocked purchase must not mutate coins or ownership');
-assert.deepEqual(persistableLoadoutV2({graph_skin:'gs_v4_uncommon_01',companion:'cp_sleepy_golem',trophy:['tr_cosmic_goblet']}),{...SHOWROOM_DEFAULTS,graph_skin:'gs_v4_uncommon_01',companion:'cp_sleepy_golem',trophy:['tr_cosmic_goblet'],title:null});
+assert.deepEqual(persistableLoadoutV2({graph_skin:'gs_v4_uncommon_01',companion:'cp_sleepy_golem',trophy:['tr_cosmic_goblet'],companionLayout:{scale:1.35,opacity:.65,x:24,y:81}}),{...SHOWROOM_DEFAULTS,graph_skin:'gs_v4_uncommon_01',companion:'cp_sleepy_golem',trophy:['tr_cosmic_goblet'],title:null,companionLayout:{scale:1.35,opacity:.65,x:24,y:81}});
+assert.ok(profileVisualForUserV2({emoji:'🦁'},32).includes('⚖️'),'unselected showroom profiles must use the single default instead of legacy emoji remnants');
+assert.equal(profileVisualForUserV2({emoji:'🦁'},32).includes('🦁'),false,'legacy user emoji must not leak into common profile surfaces');
+assert.ok(profileVisualForUserV2({emoji:'🦁',showroomLoadoutV2:{profile_emoji:'pe_archive_spirit',emoji_border:'eb_forged_iron'}},32).includes('pe_archive_spirit.png'));
+assert.ok(profileVisualForUserV2({emoji:'🦁',showroomLoadoutV2:{profile_emoji:'pe_archive_spirit',emoji_border:'eb_forged_iron'}},32).includes('eb_forged_iron.png'));
 assert.deepEqual([...ownedItemIdsV2({achievementRewardItems:['tr_cosmic_goblet']})],['tr_cosmic_goblet']);
 assert.deepEqual([...ownedItemIdsV2({adminGrantedItems:['tr_giant_horn']})],['tr_giant_horn']);
 
@@ -225,11 +242,13 @@ assert.equal((visualLab.match(/drawMarker\(ctx,marker,/g)||[]).length,1,'visual 
 assert.equal((visualLab.match(/drawMarker\(ctx,/g)||[]).length-1,1,'visual lab must render exactly one point marker');
 
 const sw=await readFile(new URL('../sw.js',import.meta.url),'utf8');
-assert.ok(sw.includes("weight-v80-showroom-v5"));assert.equal(sw.includes('c.addAll(ASSETS).catch'),false);
+assert.ok(sw.includes("weight-v82-profile-companion"));assert.equal(sw.includes('c.addAll(ASSETS).catch'),false);
 for(const entry of SHOWROOM_CATALOG_V2.filter(entry=>entry.asset))assert.ok(sw.includes(`'${entry.asset}'`),`sw:${entry.asset}`);
 
 const showroom=await readFile(new URL('../dressroom.html',import.meta.url),'utf8');
-for(const token of ['purchaseCatalogItemsV2','saveShowroomLoadoutV2','현재 범주 검색','unownedSelectionV2','decorateMainPlotV2','data-main-weight-plot="true"','data-chart-subgraphs="diet exercise"','mainPlotAspectRatio:16/9','테스트 중 · 구매 불가','item.purchasable!==false&&!item.testOnly','테스트 아이템은 세션 미리보기 전용이며 저장할 수 없습니다','id="trophyOrder"','renderTrophyOrder','data-trophy-move','보유 트로피 · 전시 순서','id="lineControls"','renderLineControls','id="lineColor"','id="lineWidth"','3:1 미만 경고','추천색'])assert.ok(showroom.includes(token),token);
+for(const token of ['purchaseCatalogItemsV2','saveShowroomLoadoutV2','현재 범주 검색','unownedSelectionV2','decorateMainPlotV2','data-main-weight-plot="true"','data-chart-subgraphs="diet exercise"','mainPlotAspectRatio:16/9','테스트 중 · 구매 불가','item.purchasable!==false&&!item.testOnly','테스트 아이템은 세션 미리보기 전용이며 저장할 수 없습니다','id="trophyOrder"','renderTrophyOrder','data-trophy-move','보유 트로피 · 전시 순서','id="lineControls"','renderLineControls','id="lineColor"','id="lineWidth"','3:1 미만 경고','추천색','id="companionControls"','renderCompanionControls','data-companion-layout="${key}"','크기','투명도','위치 X','위치 Y','최종 저장’ 전에는 계정에 저장되지 않습니다'])assert.ok(showroom.includes(token),token);
+const companionControlSource=showroom.slice(showroom.indexOf('function renderCompanionControls'),showroom.indexOf('function filtered'));
+assert.equal(companionControlSource.includes('saveShowroomLoadoutV2'),false,'companion sliders must mutate only the draft before final save');
 assert.ok(showroom.includes('.sr-cats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))'));
 assert.ok(showroom.includes('@media(max-width:520px){.sr-cats{grid-template-columns:repeat(2,minmax(0,1fr))}}'));
 assert.equal(showroom.includes('id="logoutBtn"'),false,'dressroom header must not render the large logout button');
@@ -243,10 +262,14 @@ const purchaseSource=db.slice(db.indexOf('export async function purchaseCatalogI
 assert.ok(purchaseSource.indexOf('validateCatalogPurchaseV2(itemIds)')<purchaseSource.indexOf('runTransaction'),'test-only purchase must fail before Firestore transaction');
 const admin=await readFile(new URL('../admin.html',import.meta.url),'utf8');
 for(const token of ['achievementTrophyRewards','data-ach-trophy','saveAchTrophy','트로피 보상 저장됨'])assert.ok(admin.includes(token),token);
-for(const [name,html] of [['admin',admin],['dressroom',showroom]]){
+for(const page of ['index.html','input.html','dashboard.html','compare.html','achievements.html','dressroom.html','import.html','admin.html']){
+  const html=await readFile(new URL(`../${page}`,import.meta.url),'utf8');
+  assert.ok(html.includes('profileVisualForUserV2'),`${page}: common showroom profile renderer missing`);
+  assert.equal(html.includes('\uFFFD'),false,`${page}: invalid UTF-8 replacement character`);
   const moduleBody=html.match(/<script type="module">([\s\S]*?)<\/script>/)?.[1]||'';
   const withoutImports=moduleBody.replace(/import[\s\S]*?from\s*['"][^'"]+['"];\s*/g,'');
-  assert.doesNotThrow(()=>new Function(withoutImports),`${name} inline module syntax`);
+  assert.doesNotThrow(()=>new Function(withoutImports),`${page}: inline module syntax`);
 }
+assert.ok((await readFile(new URL('../index.html',import.meta.url),'utf8')).includes('profileVisualForUserV2(u,52)'),'login account card must render each account showroomLoadoutV2 through the common user renderer');
 
 console.log('showroom image catalog tests: PASS');

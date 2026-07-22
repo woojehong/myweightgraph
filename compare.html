@@ -216,7 +216,7 @@ import { isAuthed, clearAuth } from './js/auth.js';
 import { renderChart, aggregateRecords, periodLabel } from './js/chart-render.js';
 import { getTierForScore, DEFAULT_TIERS } from './js/achievements.js';
 import { esc } from './js/util.js';
-import { applyCardV2, decorateMainPlotV2, getChartDecorationsV2, profileVisualV2, titleInfoV2 } from './js/showroom-v2.js';
+import { applyCardV2, decorateMainPlotV2, getChartDecorationsV2, profileVisualForUserV2, titleInfoV2 } from './js/showroom-v2.js?v=82';
 
 const uid = new URLSearchParams(location.search).get('user') || localStorage.getItem('uid');
 if (!uid) location.href = 'index.html';
@@ -341,7 +341,7 @@ const shortDate = ds => {
 function setChip(u) {
   const tier = getTierForScore(u?.totalScore || 0, TIERS);
   const tc = tier.color || '#00e5aa';
-  document.getElementById('chipEmoji').innerHTML = profileVisualV2(u?.showroomLoadoutV2,30);
+  document.getElementById('chipEmoji').innerHTML = profileVisualForUserV2(u,30);
   document.getElementById('chipName').textContent  = u?.name || '-';
   document.getElementById('chipName').style.color  = tc;
   const wrap = document.getElementById('chipAvatarWrap');
@@ -365,7 +365,7 @@ function renderPicker() {
     return `
       <button class="pick-chip ${sel ? 'sel' : ''}" data-id="${u.id}">
         ${sel ? `<span class="pick-num">${idx + 1}</span>` : ''}
-        <div class="pick-avatar">${profileVisualV2(u.showroomLoadoutV2,40)}</div>
+        <div class="pick-avatar">${profileVisualForUserV2(u,40)}</div>
         <span class="pick-name">${esc(u.name)}</span>
       </button>`;
   }).join('');
@@ -418,7 +418,7 @@ function cellHTML(u) {
   return `
     <div class="cmp-cell">
       <div class="cmp-profile">
-        <div class="cmp-avatar">${profileVisualV2(u.showroomLoadoutV2,32)}</div>
+        <div class="cmp-avatar">${profileVisualForUserV2(u,32)}</div>
         <div class="cmp-info">
           ${title ? `<span class="cmp-title" style="color:${title.color}">${esc(title.name)}</span>` : ''}
           <span class="cmp-name" style="color:${tc}">${esc(u.name)}</span>

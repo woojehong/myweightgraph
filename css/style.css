@@ -547,7 +547,7 @@ input  { font-family: inherit; outline: none; }
 .v3-ambient-layer{z-index:2;opacity:.42;-webkit-mask-image:radial-gradient(ellipse 62% 58% at center,transparent 0 45%,rgba(0,0,0,.35) 70%,#000 100%);mask-image:radial-gradient(ellipse 62% 58% at center,transparent 0 45%,rgba(0,0,0,.35) 70%,#000 100%)}
 .v3-plot-scrim{z-index:3;background:radial-gradient(ellipse 68% 62% at center,rgba(5,9,15,.52) 0,rgba(5,9,15,.42) 58%,rgba(5,9,15,.18) 100%)}
 .v2-plot-host>canvas,.cmp-chart>canvas,.sr-chart>canvas{position:relative!important;z-index:2!important}
-.v2-companion{position:absolute;z-index:4;right:8px;top:6px;width:54px;height:54px;filter:drop-shadow(0 3px 5px #000c)}
+.v2-companion{position:absolute;z-index:4;left:calc(var(--companion-x,90) * 1%);top:calc(var(--companion-y,15) * 1%);width:54px;height:54px;opacity:var(--companion-opacity,1);transform:translate(-50%,-50%) scale(var(--companion-scale,1));transform-origin:50% 50%;filter:drop-shadow(0 3px 5px #000c)}
 .v2-trophies{position:absolute;z-index:4;left:6px;top:6px;display:flex;gap:2px;align-items:flex-start;max-width:40%}
 .v3-companion-image,.v3-trophy-image,.v3-marker-image{display:block;width:100%;height:100%;object-fit:contain}
 .v2-trophies .v3-trophy-image{width:30px;height:30px;filter:drop-shadow(0 3px 4px #000d)}

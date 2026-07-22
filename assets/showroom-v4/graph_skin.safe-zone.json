@@ -13,7 +13,7 @@
     {"id":"gs_v4_epic_01","sha256":"b555ba4953d36572b863ec1078f0109f7ce986a9988ecb9720a07652e5610f8d","edgeMean":8.30,"contrastStdDev":30.09},
     {"id":"gs_v4_epic_02","sha256":"66b8ab48376b967fda437bb9df3ae24fbcc4f145feb07fac0e2b47de26809448","edgeMean":3.29,"contrastStdDev":8.62},
     {"id":"gs_v4_epic_03","sha256":"a287f097025144c73649aaf95950cc8e912856571d20d1fbead4ebae6c7052fb","edgeMean":4.78,"contrastStdDev":13.40},
-    {"id":"gs_v4_legendary_01","sha256":"beef9ff216a7c26c04b854a7a6f6cf2be8aeeaf8a47da0e5f3ef273c5da66a53","edgeMean":4.12,"contrastStdDev":14.08},
+    {"id":"gs_v4_legendary_01","sha256":"ad989bc3d3dc25a2a363f4631399b45531d106092122a6523c4f5ad8f401582d","edgeMean":11.68,"contrastStdDev":24.87},
     {"id":"gs_v4_legendary_02","sha256":"7bcc252df7ae0f36f1ed505636ab7f834dc5caf01eeef6a1902fdf04f84cabb7","edgeMean":3.50,"contrastStdDev":7.07},
     {"id":"gs_v4_legendary_03","sha256":"596788de337ddc32b01ba4015a2a57c4b96cda32c40af83ab349c9d1b905d088","edgeMean":2.63,"contrastStdDev":8.75}
   ]

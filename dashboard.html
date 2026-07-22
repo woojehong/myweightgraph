@@ -156,7 +156,7 @@ import { renderChart, calcStats, aggregateRecords, periodLabel } from './js/char
 import { getTierForScore, DEFAULT_TIERS } from './js/achievements.js';
 import { BORDER_NAMES } from './js/borders-data.js';
 import { esc } from './js/util.js';
-import { profileVisualV2, titleInfoV2 } from './js/showroom-v2.js';
+import { profileVisualForUserV2, titleInfoV2 } from './js/showroom-v2.js?v=82';
 
 let toastTimer;
 function showToast(message, type = 'ok') {
@@ -488,7 +488,7 @@ window.chartZoomOut = () => {
 
 function setChipData(u, tierColor) {
   const tc = tierColor || '#00e5aa';
-  document.getElementById('chipEmoji').innerHTML = profileVisualV2(u?.showroomLoadoutV2,30);
+  document.getElementById('chipEmoji').innerHTML = profileVisualForUserV2(u,30);
   document.getElementById('chipName').textContent  = u.name;
   document.getElementById('chipName').style.color  = tc;
   const wrap = document.getElementById('chipAvatarWrap');

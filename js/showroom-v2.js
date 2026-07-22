@@ -26,9 +26,27 @@ export const getCatalogItemV2=id=>BY_ID.get(canonicalId(id))||null;
 export const itemsByCategoryV2=category=>ALL_CATALOG_V2.filter(entry=>entry.category===category);
 export const V2_CATEGORIES=Object.freeze([...SHOWROOM_CATEGORIES,'title']);
 
+export const COMPANION_LAYOUT_DEFAULTS=Object.freeze({scale:1,opacity:1,x:90,y:15});
+export const COMPANION_LAYOUT_LIMITS=Object.freeze({
+  scale:Object.freeze({min:.5,max:2}),
+  opacity:Object.freeze({min:.2,max:1}),
+  x:Object.freeze({min:5,max:95}),
+  y:Object.freeze({min:5,max:95}),
+});
+const clampNumber=(value,{min,max},fallback)=>{
+  const number=Number(value);
+  return Number.isFinite(number)?Math.max(min,Math.min(max,number)):fallback;
+};
+export function normalizeCompanionLayoutV2(raw){
+  const src=raw&&typeof raw==='object'?raw:{};
+  return Object.fromEntries(Object.entries(COMPANION_LAYOUT_DEFAULTS).map(([key,fallback])=>[
+    key,clampNumber(src[key],COMPANION_LAYOUT_LIMITS[key],fallback),
+  ]));
+}
+
 export function normalizeLoadoutV2(raw){
   const src=raw&&typeof raw==='object'?raw:{};
-  const out={...SHOWROOM_DEFAULTS,trophy:[],title:null};
+  const out={...SHOWROOM_DEFAULTS,trophy:[],title:null,companionLayout:normalizeCompanionLayoutV2(src.companionLayout)};
   for(const category of V2_CATEGORIES){
     const meta=CATEGORY_META[category];
     if(meta?.multi){
@@ -90,19 +108,24 @@ export const renderTrophyV2=id=>img(getCatalogItemV2(id),'v3-trophy-image');
 export const renderMarkerV2=id=>img(getCatalogItemV2(id),'v3-marker-image');
 export const renderAmbientV2=id=>img(getCatalogItemV2(id),'v3-ambient-preview');
 
-export function renderProfileEmojiV2(id,size=42){
+const escapeProfileText=value=>String(value).replace(/[&<>"']/g,char=>({
+  '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;',
+})[char]);
+export function renderProfileEmojiV2(id,size=42,fallbackEmoji='⚖️'){
   const entry=getCatalogItemV2(id);
-  if(!entry)return `<span class="v3-profile-base" style="font-size:${Math.round(size*.66)}px" aria-label="기본 프로필">⚖️</span>`;
+  const fallback=typeof fallbackEmoji==='string'&&fallbackEmoji.trim()?fallbackEmoji.trim():'⚖️';
+  if(!entry)return `<span class="v3-profile-base" style="font-size:${Math.round(size*.66)}px" aria-label="기본 프로필 이모티콘">${escapeProfileText(fallback)}</span>`;
   return `<img class="v3-profile-emoji" src="${entry.asset}" width="${size}" height="${size}" alt="${entry.name}" draggable="false" decoding="async">`;
 }
 export function renderEmojiBorderV2(id,size=52){
   const entry=getCatalogItemV2(id);
   return entry?`<img class="v3-emoji-border" src="${entry.asset}" width="${size}" height="${size}" alt="" aria-hidden="true" draggable="false" decoding="async">`:'';
 }
-export function profileVisualV2(raw,size=48){
+export function profileVisualV2(raw,size=48,fallbackEmoji='⚖️'){
   const loadout=normalizeLoadoutV2(raw);
-  return `<span class="v2-profile" style="width:${size}px;height:${size}px">${renderEmojiBorderV2(loadout.emoji_border,size+14)}${renderProfileEmojiV2(loadout.profile_emoji,size-8)}</span>`;
+  return `<span class="v2-profile" style="width:${size}px;height:${size}px">${renderEmojiBorderV2(loadout.emoji_border,size+14)}${renderProfileEmojiV2(loadout.profile_emoji,size-8,fallbackEmoji)}</span>`;
 }
+export const profileVisualForUserV2=(user,size=48,loadout=user?.showroomLoadoutV2)=>profileVisualV2(loadout,size);
 export function titleInfoV2(raw){
   const loadout=normalizeLoadoutV2(raw),entry=getCatalogItemV2(loadout.title);
   return entry?{...entry,color:TITLE_RARITY_COLORS[entry.rarity]}:null;
@@ -180,7 +203,8 @@ export function decorateMainPlotV2(plot,raw){
   if(!graph&&!ambient&&!companion&&!trophies.length)return false;
   const host=document.createElement('div');
   host.className='v3-main-plot-decor';host.setAttribute('aria-hidden','true');host.dataset.showroomMainPlot='true';host.dataset.aspectRatio='16:9';host.dataset.hasGraph=graph?'true':'false';
-  host.innerHTML=`${img(graph,'v3-graph-layer')}${img(ambient,'v3-ambient-layer')}<span class="v3-plot-scrim"></span>${companion?`<span class="v2-companion">${renderCompanionV2(companion.id)}</span>`:''}<span class="v2-trophies">${trophies.map(entry=>renderTrophyV2(entry.id)).join('')}</span>`;
+  const layout=loadout.companionLayout,companionStyle=`--companion-scale:${layout.scale};--companion-opacity:${layout.opacity};--companion-x:${layout.x};--companion-y:${layout.y}`;
+  host.innerHTML=`${img(graph,'v3-graph-layer')}${img(ambient,'v3-ambient-layer')}<span class="v3-plot-scrim"></span>${companion?`<span class="v2-companion" style="${companionStyle}">${renderCompanionV2(companion.id)}</span>`:''}<span class="v2-trophies">${trophies.map(entry=>renderTrophyV2(entry.id)).join('')}</span>`;
   plot.prepend(host);
   return true;
 }
