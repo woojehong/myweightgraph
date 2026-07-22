@@ -1,4 +1,4 @@
-const CACHE = 'weight-v82-profile-companion';
+const CACHE = 'weight-v83-smiling-profile-default';
 const ASSETS = [
   './index.html', './dashboard.html', './input.html', './import.html',
   './achievements.html', './compare.html', './dressroom.html', './shop.html', './guide.html', './visual-lab.html',

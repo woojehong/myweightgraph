@@ -118,7 +118,7 @@ assert.deepEqual(validateCatalogPurchaseV2(['gs_v4_uncommon_01']).map(entry=>[en
 assert.throws(()=>validateCatalogPurchaseV2(['tr_summit_compass']),/트로피는 구매할 수 없으며 업적 달성 또는 관리자 지급으로만 획득/);
 assert.deepEqual(transactionSnapshot,transactionBefore,'blocked purchase must not mutate coins or ownership');
 assert.deepEqual(persistableLoadoutV2({graph_skin:'gs_v4_uncommon_01',companion:'cp_sleepy_golem',trophy:['tr_cosmic_goblet'],companionLayout:{scale:1.35,opacity:.65,x:24,y:81}}),{...SHOWROOM_DEFAULTS,graph_skin:'gs_v4_uncommon_01',companion:'cp_sleepy_golem',trophy:['tr_cosmic_goblet'],title:null,companionLayout:{scale:1.35,opacity:.65,x:24,y:81}});
-assert.ok(profileVisualForUserV2({emoji:'🦁'},32).includes('⚖️'),'unselected showroom profiles must use the single default instead of legacy emoji remnants');
+assert.ok(profileVisualForUserV2({emoji:'🦁'},32).includes('🙂'),'unselected showroom profiles must use the single smiling default instead of legacy emoji remnants');
 assert.equal(profileVisualForUserV2({emoji:'🦁'},32).includes('🦁'),false,'legacy user emoji must not leak into common profile surfaces');
 assert.ok(profileVisualForUserV2({emoji:'🦁',showroomLoadoutV2:{profile_emoji:'pe_archive_spirit',emoji_border:'eb_forged_iron'}},32).includes('pe_archive_spirit.png'));
 assert.ok(profileVisualForUserV2({emoji:'🦁',showroomLoadoutV2:{profile_emoji:'pe_archive_spirit',emoji_border:'eb_forged_iron'}},32).includes('eb_forged_iron.png'));
@@ -242,7 +242,7 @@ assert.equal((visualLab.match(/drawMarker\(ctx,marker,/g)||[]).length,1,'visual 
 assert.equal((visualLab.match(/drawMarker\(ctx,/g)||[]).length-1,1,'visual lab must render exactly one point marker');
 
 const sw=await readFile(new URL('../sw.js',import.meta.url),'utf8');
-assert.ok(sw.includes("weight-v82-profile-companion"));assert.equal(sw.includes('c.addAll(ASSETS).catch'),false);
+assert.ok(sw.includes("weight-v83-smiling-profile-default"));assert.equal(sw.includes('c.addAll(ASSETS).catch'),false);
 for(const entry of SHOWROOM_CATALOG_V2.filter(entry=>entry.asset))assert.ok(sw.includes(`'${entry.asset}'`),`sw:${entry.asset}`);
 
 const showroom=await readFile(new URL('../dressroom.html',import.meta.url),'utf8');

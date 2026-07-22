@@ -111,9 +111,9 @@ export const renderAmbientV2=id=>img(getCatalogItemV2(id),'v3-ambient-preview');
 const escapeProfileText=value=>String(value).replace(/[&<>"']/g,char=>({
   '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;',
 })[char]);
-export function renderProfileEmojiV2(id,size=42,fallbackEmoji='⚖️'){
+export function renderProfileEmojiV2(id,size=42,fallbackEmoji='🙂'){
   const entry=getCatalogItemV2(id);
-  const fallback=typeof fallbackEmoji==='string'&&fallbackEmoji.trim()?fallbackEmoji.trim():'⚖️';
+  const fallback=typeof fallbackEmoji==='string'&&fallbackEmoji.trim()?fallbackEmoji.trim():'🙂';
   if(!entry)return `<span class="v3-profile-base" style="font-size:${Math.round(size*.66)}px" aria-label="기본 프로필 이모티콘">${escapeProfileText(fallback)}</span>`;
   return `<img class="v3-profile-emoji" src="${entry.asset}" width="${size}" height="${size}" alt="${entry.name}" draggable="false" decoding="async">`;
 }
@@ -121,7 +121,7 @@ export function renderEmojiBorderV2(id,size=52){
   const entry=getCatalogItemV2(id);
   return entry?`<img class="v3-emoji-border" src="${entry.asset}" width="${size}" height="${size}" alt="" aria-hidden="true" draggable="false" decoding="async">`:'';
 }
-export function profileVisualV2(raw,size=48,fallbackEmoji='⚖️'){
+export function profileVisualV2(raw,size=48,fallbackEmoji='🙂'){
   const loadout=normalizeLoadoutV2(raw);
   return `<span class="v2-profile" style="width:${size}px;height:${size}px">${renderEmojiBorderV2(loadout.emoji_border,size+14)}${renderProfileEmojiV2(loadout.profile_emoji,size-8,fallbackEmoji)}</span>`;
 }
