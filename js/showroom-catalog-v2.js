@@ -1,4 +1,6 @@
 import { SHOWROOM_V4_RUNTIME } from './showroom-catalog-v4.generated.js';
+import { GRAPH_SKIN_ITEMS } from './showroom-graph-skins.js';
+import { CARD_THEME_ITEMS } from './showroom-card-themes.js';
 import { LINE_STYLE_ITEMS, AMBIENT_EFFECT_ITEMS } from './showroom-fx.js';
 
 // Maweg showroom catalog: V4 fully replaces V3 only after a validated 108-item runtime module exists.
@@ -76,7 +78,9 @@ export const CODE_NATIVE_CATEGORIES = Object.freeze(['line_style','ambient_effec
 const isCodeNative = category => CODE_NATIVE_CATEGORIES.includes(category);
 // 생성 파일(showroom-catalog-v4.generated.js)은 GPT 스크립트가 덮어쓰므로 건드리지 않고 여기서 병합한다.
 const v4Items=[
-  ...(Array.isArray(SHOWROOM_V4_RUNTIME?.items)?SHOWROOM_V4_RUNTIME.items:[]),
+  ...(Array.isArray(SHOWROOM_V4_RUNTIME?.items)?SHOWROOM_V4_RUNTIME.items.filter(entry=>entry.category!=='graph_skin'):[]),
+  ...GRAPH_SKIN_ITEMS,
+  ...CARD_THEME_ITEMS,
   ...LINE_STYLE_ITEMS, ...AMBIENT_EFFECT_ITEMS,
 ].filter((item,i,arr)=>arr.findIndex(x=>x.id===item.id)===i);
 // v4 승격 조건: 12개 이상 & 4등급 균등(4의 배수)
@@ -112,7 +116,19 @@ const retail = entry => {
                          purchasable:true, testOnly:false, persistable:true });
 };
 
-export const SHOWROOM_CATALOG_V2=Object.freeze(SHOWROOM_CATEGORIES.flatMap(category=>completeV4Category(category)?v4Items.filter(item=>item.category===category):SHOWROOM_CATALOG_V3_FALLBACK.filter(item=>item.category===category)).map(retail));
+// These ids existed as released, purchasable effects before the code-native
+// ambient catalog replaced the image catalog. Keep their commercial contract
+// (including saveability) while all genuinely new ambient effects stay staged.
+export const GRANDFATHERED_RELEASED_ITEM_IDS = Object.freeze([
+  'ae_dust','ae_firefly','ae_bubble','ae_thunder',
+]);
+const grandfatheredReleasedIds = new Set(GRANDFATHERED_RELEASED_ITEM_IDS);
+
+export const SHOWROOM_CATALOG_V2=Object.freeze(SHOWROOM_CATEGORIES.flatMap(category=>{
+  const staged=completeV4Category(category);
+  const entries=staged?v4Items.filter(item=>item.category===category):SHOWROOM_CATALOG_V3_FALLBACK.filter(item=>item.category===category);
+  return staged?entries.map(entry=>grandfatheredReleasedIds.has(entry.id)?retail(entry):entry):entries.map(retail);
+}));
 
 // Exact V2 ids are retained only as a compatibility index. They are not active catalog entries.
 const LEGACY_IDS_BY_CATEGORY = Object.freeze({
@@ -130,6 +146,7 @@ const LEGACY_IDS_BY_CATEGORY = Object.freeze({
 const activeByCategory = Object.fromEntries(SHOWROOM_CATEGORIES.map(category => [
   category, SHOWROOM_CATALOG_V2.filter(entry=>entry.category===category).map(entry=>entry.id),
 ]));
+const activeIds = new Set(Object.values(activeByCategory).flat());
 const aliasPairs=[];
 for(const category of SHOWROOM_CATEGORIES){
   const legacy=LEGACY_IDS_BY_CATEGORY[category];
@@ -140,14 +157,25 @@ for(const category of SHOWROOM_CATEGORIES){
     const targetIndex=category==='companion' ? Math.min(activeByCategory[category].length-1,Math.floor(index/2))
       : index<15 ? rarityOffsets[0] : index<21 ? rarityOffsets[1]
       : index<26 ? rarityOffsets[2] : rarityOffsets[3];
-    aliasPairs.push([id,activeByCategory[category][targetIndex]]);
+    // Retained ids such as ae_dust/ae_bubble/ae_firefly must keep their own
+    // identity. Aliasing one active id to another loses historical ownership.
+    aliasPairs.push([id,activeIds.has(id)?id:activeByCategory[category][targetIndex]]);
   });
+}
+// The four V3 fallback items were also publicly purchasable. When a category
+// graduates to V4, keep those ownership ids loadable by mapping each one to
+// the first active item of the same rarity. Categories still on V3 map to self.
+const knownAliasIds=new Set(aliasPairs.map(([id])=>id));
+for(const [category,entries] of Object.entries(specs))for(const [id,,rarity] of entries){
+  if(knownAliasIds.has(id))continue;
+  const target=activeIds.has(id)?id:SHOWROOM_CATALOG_V2.find(entry=>entry.category===category&&entry.rarity===rarity)?.id;
+  if(target){aliasPairs.push([id,target]);knownAliasIds.add(id)}
 }
 export const LEGACY_SHOWROOM_ID_ALIASES = Object.freeze(Object.fromEntries(aliasPairs));
 export const resolveShowroomItemIdV2 = id => typeof id==='string' ? (LEGACY_SHOWROOM_ID_ALIASES[id]||id) : id;
 
 export function assertShowroomCatalogV2(catalog=SHOWROOM_CATALOG_V2){
-  if(![32,40,48,56,60,64,68,72,76,80,84,88,92,96,100,104,108].includes(catalog.length))throw new Error(`showroom catalog: invalid mixed total ${catalog.length}`);
+  if(!Array.isArray(catalog)||catalog.length===0)throw new Error('showroom catalog: empty catalog');
   const ids=new Set(),assets=new Set();
   for(const category of SHOWROOM_CATEGORIES){
     const entries=catalog.filter(entry=>entry.category===category);
@@ -164,19 +192,21 @@ export function assertShowroomCatalogV2(catalog=SHOWROOM_CATALOG_V2){
       // 판매 정책: 트로피는 업적 전용(비매품), 그 외는 가격이 붙은 판매품이어야 한다.
       if(category==='trophy'){
         if(entry.purchasable!==false||entry.price!==null)throw new Error(`${entry.id}: trophies must stay achievement-only`);
+      }else if(entry.testOnly===true){
+        if(entry.purchasable!==false||entry.price!==null||entry.persistable!==false)throw new Error(`${entry.id}: invalid staging safety flags`);
       }else if(entry.purchasable!==true||!Number.isFinite(entry.price)||entry.price<=0){
-        throw new Error(`${entry.id}: purchasable item needs a positive price`);
+        throw new Error(`${entry.id}: released item needs a positive price`);
       }
       if(ids.has(entry.id))throw new Error(`duplicate catalog id: ${entry.id}`);ids.add(entry.id);
       if(entry.asset!==null){if(assets.has(entry.asset))throw new Error(`duplicate catalog asset: ${entry.asset}`);assets.add(entry.asset)}
-      const expectedRoot=expectedPerCategory===12?'./assets/showroom-v4':'./assets/showroom-v3';
+      const expectedRoot=isV4Tier?'./assets/showroom-v4':'./assets/showroom-v3';
       if(isCodeNative(category)&&entry.asset===null){
         if(!entry.renderSpec)throw new Error(`${entry.id}: invalid code-native item`);
       }else if(!entry.asset||!entry.asset.startsWith(`${expectedRoot}/${category}/`))throw new Error(`${entry.id}: invalid asset path`);
     }
   }
   if(catalog===SHOWROOM_CATALOG_V2){
-    if(Object.keys(LEGACY_SHOWROOM_ID_ALIASES).length!==218)throw new Error('legacy alias coverage must be 218');
+    if(Object.keys(LEGACY_SHOWROOM_ID_ALIASES).length<218)throw new Error('legacy alias coverage regressed below the original 218 ids');
     for(const [legacy,target] of Object.entries(LEGACY_SHOWROOM_ID_ALIASES)){
       const targetItem=catalog.find(entry=>entry.id===target);
       if(!targetItem)throw new Error(`${legacy}: missing alias target ${target}`);

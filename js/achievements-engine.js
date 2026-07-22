@@ -15,8 +15,8 @@ import { ACHIEVEMENTS, RETIRED_ACHIEVEMENT_IDS, calculateEarnedIds,
          calculateMetaEarnedIds, calcTotalScore, DEFAULT_TIERS,
          getTierForScore } from './achievements.js';
 import { rewardItemsForAchievementsV2 } from './achievement-item-rewards-v2.js';
-import { getUser, getWeights, getEarnedAchievements, saveEarnedAchievement,
-         updateUser, getTierSettings } from './db.js';
+import { getUser, getWeights, getEarnedAchievements,
+         settleAchievementsAtomically, getTierSettings } from './db.js';
 
 const META_CATS = new Set(['grade', 'milestone']);
 export const ACH_MAP = Object.fromEntries(ACHIEVEMENTS.map(a => [a.id, a]));
@@ -30,9 +30,6 @@ function applyOverrides(set, overrides, metaOnly) {
     if (ov.override === 'not_earned') set.delete(achId);
   });
 }
-
-const sameSet = (a, b) =>
-  [...(a || [])].sort().join('') === [...(b || [])].sort().join('');
 
 // Pure computation — no I/O.
 export function computeAchievementState({ user, records, storedRaw, tierData }) {
@@ -93,30 +90,26 @@ export async function syncAchievements(uid, opts = {}) {
   const { totalScore, newlyEarned, achievementRewardItems } = state;
   const adminOverrides = user.adminOverrides || {};
 
-  await Promise.all(newlyEarned.map(id => saveEarnedAchievement(uid, id, {
-    score: ACH_MAP[id]?.score || 0,
-    invalidated: false,
-    earnedAt: adminOverrides[id]?.earnedAt || undefined,
-  })));
+  const settlement = await settleAchievementsAtomically(uid, {
+    achievements: newlyEarned.map(id => ({
+      id,
+      score: ACH_MAP[id]?.score || 0,
+      earnedAt: adminOverrides[id]?.earnedAt || undefined,
+    })),
+    totalScore,
+    achievementRewardItems,
+    // A deliberate admin `not_earned` override is the only normal path that
+    // may lower the derived score. Regular syncs keep the transaction-time
+    // score as a floor so concurrent evaluations cannot overwrite each other.
+    allowScoreDecrease: Object.values(adminOverrides)
+      .some(override => override?.override === 'not_earned'),
+  });
 
-  // Wallet settlement: every achievement grants coins equal to its score.
-  let coinsGained = newlyEarned.reduce((s, id) => s + (ACH_MAP[id]?.score || 0), 0);
-  const updates = {};
-  if (user.coins == null) {
-    // First run after the shop update: retroactive grant for all past scores.
-    updates.coins = totalScore;
-    coinsGained = 0;
-  } else if (coinsGained > 0) {
-    updates.coins = (user.coins || 0) + coinsGained;
-  }
-  if (user.totalScore !== totalScore)                     updates.totalScore = totalScore;
-  if (!sameSet(achievementRewardItems, user.achievementRewardItems)) updates.achievementRewardItems=achievementRewardItems;
-  if (Object.keys(updates).length) await updateUser(uid, updates);
-
-  const newAchievements = newlyEarned.map(id => ACH_MAP[id]).filter(Boolean);
+  const newAchievements = settlement.newlyEarnedIds
+    .map(id => ACH_MAP[id]).filter(Boolean);
   return {
-    state, newAchievements, coinsGained,
-    user: { ...user, ...updates }, records, storedRaw, tierData,
+    state, newAchievements, coinsGained: settlement.coinsGained,
+    user: settlement.user, records, storedRaw, tierData,
   };
 }
 

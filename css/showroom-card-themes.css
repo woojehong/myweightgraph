@@ -1,0 +1,136 @@
+/* V4 card themes decorate only the profile header and its three stat badges. */
+.cmp-profile[data-card-theme],
+.sr-profile-head[data-card-theme]{
+  position:relative;
+  isolation:isolate;
+  min-height:68px;
+  box-sizing:border-box;
+  padding:10px 16px!important;
+  margin-bottom:8px;
+}
+
+.cmp-profile>.v4-card-theme-frame,
+.sr-profile-head>.v4-card-theme-frame{
+  position:absolute;
+  z-index:0;
+  inset:0;
+  width:100%;
+  height:100%;
+  display:block;
+  object-fit:fill;
+  pointer-events:none;
+  user-select:none;
+  filter:drop-shadow(0 4px 7px rgba(0,0,0,.6));
+}
+
+.cmp-profile[data-card-theme]>:not(.v4-card-theme-frame),
+.sr-profile-head[data-card-theme]>:not(.v4-card-theme-frame){position:relative;z-index:1}
+
+.cmp-profile[data-card-theme] .cmp-markers,
+.sr-profile-head[data-card-theme] .sr-profile-markers{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-left:auto;
+  flex-shrink:0;
+}
+
+.cmp-profile[data-card-theme] .mk,
+.sr-profile-head[data-card-theme] .mk{
+  position:relative;
+  isolation:isolate;
+  min-width:78px;
+  box-sizing:border-box;
+  padding:8px 11px 9px;
+  border:0;
+  border-radius:0;
+  background:rgba(5,8,13,.72)!important;
+  overflow:visible;
+}
+
+.v4-card-badge-frame{
+  position:absolute;
+  z-index:-1;
+  inset:-5px -7px -8px;
+  width:calc(100% + 14px);
+  height:calc(100% + 13px);
+  display:block;
+  object-fit:fill;
+  pointer-events:none;
+  filter:drop-shadow(0 3px 4px rgba(0,0,0,.7));
+}
+
+.cmp-profile[data-card-theme] .mk b,
+.cmp-profile[data-card-theme] .mk span,
+.sr-profile-head[data-card-theme] .mk b,
+.sr-profile-head[data-card-theme] .mk span{
+  position:relative;
+  z-index:1;
+  text-shadow:0 1px 3px #000,0 0 4px #000;
+}
+
+.sr-profile-markers{display:flex;gap:5px;margin-left:auto;flex-shrink:0}
+.sr-profile-markers .mk{display:flex;flex-direction:column;align-items:center;line-height:1.15;padding:3px 7px;border-radius:7px;white-space:nowrap}
+.sr-profile-markers .mk b{font-size:10px;color:#fff}
+.sr-profile-markers .mk span{font-size:8px;color:rgba(255,255,255,.78)}
+.sr-profile-markers .mk-max{background:rgba(195,65,42,.92)}
+.sr-profile-markers .mk-min{background:rgba(34,128,50,.92)}
+.sr-profile-markers .mk-cur{background:rgba(20,98,152,.92)}
+
+/* Theme-specific nickname typography. It never targets the chart container. */
+[data-card-theme="ct4_uncommon_iron_outpost"]{--ct-font:"Trebuchet MS",sans-serif;--ct-name:#f4dda0;--ct-shadow:0 1px 0 #0a0a0a,0 2px 0 #463a22}
+[data-card-theme="ct4_uncommon_golden_tavern"]{--ct-font:Georgia,serif;--ct-name:#ffd98a;--ct-shadow:0 1px 2px #2a1300,0 0 5px #ff9f1c55}
+[data-card-theme="ct4_uncommon_desert_caravan"]{--ct-font:"Palatino Linotype",serif;--ct-name:#f2c879;--ct-shadow:0 1px 0 #331708,1px 0 0 #7b3218}
+[data-card-theme="ct4_rare_worldtree_grove"]{--ct-font:Georgia,serif;--ct-name:#d9ffad;--ct-shadow:0 0 4px #9cff7a88,0 1px 3px #001b09}
+[data-card-theme="ct4_rare_storm_kingdom"]{--ct-font:Georgia,serif;--ct-name:#eaf4ff;--ct-shadow:0 0 5px #4aa8ff99,0 1px 3px #04152b}
+[data-card-theme="ct4_rare_red_iron_fortress"]{--ct-font:"Arial Black",sans-serif;--ct-name:#ffc1a6;--ct-shadow:1px 1px 0 #53170b,-1px 0 0 #1c0906}
+[data-card-theme="ct4_epic_silvermoon_court"]{--ct-font:"Palatino Linotype",serif;--ct-name:#fff1c4;--ct-shadow:0 0 4px #ffcf70,0 0 9px #ff3f7488}
+[data-card-theme="ct4_epic_deepsea_throne"]{--ct-font:Georgia,serif;--ct-name:#c7fff7;--ct-shadow:0 0 4px #51ffe3,0 0 10px #1684c999}
+[data-card-theme="ct4_epic_astral_observatory"]{--ct-font:"Trebuchet MS",sans-serif;--ct-name:#e7e6ff;--ct-shadow:0 0 4px #7a8fff,0 0 11px #b467ff99}
+[data-card-theme="ct4_legendary_frozen_crown"]{--ct-font:Georgia,serif;--ct-name:#f3fbff;--ct-shadow:0 0 3px #fff,0 0 8px #54c9ff,0 0 14px #2767ff}
+[data-card-theme="ct4_legendary_nether_sanctum"]{--ct-font:"Palatino Linotype",serif;--ct-name:#d5ffcf;--ct-shadow:0 0 3px #adff9a,0 0 9px #35df74,0 0 15px #7c3cff}
+[data-card-theme="ct4_legendary_dragonfire_cataclysm"]{--ct-font:"Arial Black",sans-serif;--ct-name:#fff1c2;--ct-shadow:0 0 3px #fff,0 0 8px #ffb000,0 0 15px #ff3600}
+
+[data-card-theme] .cmp-name,
+[data-card-theme] .sr-name,
+.v4-card-preview-name[data-card-theme]{
+  font-family:var(--ct-font,"Segoe UI",sans-serif);
+  font-weight:900;
+  color:var(--ct-name,#fff)!important;
+  text-shadow:var(--ct-shadow,0 1px 3px #000);
+  letter-spacing:.025em;
+}
+
+[data-card-rarity="rare"] .cmp-name,[data-card-rarity="rare"] .sr-name,
+[data-card-effect="worldtree-bloom"],[data-card-effect="storm-banner"],[data-card-effect="warpaint-cut"]{animation:ct-rare-glow 3.6s ease-in-out infinite}
+[data-card-rarity="epic"] .cmp-name,[data-card-rarity="epic"] .sr-name,
+[data-card-effect="silvermoon-arcane"],[data-card-effect="deepsea-current"],[data-card-effect="astral-orbit"]{animation:ct-epic-shimmer 2.8s ease-in-out infinite}
+[data-card-rarity="legendary"] .cmp-name,[data-card-rarity="legendary"] .sr-name,
+[data-card-effect="frozen-crown"],[data-card-effect="nether-pulse"],[data-card-effect="dragonfire-flare"]{animation:ct-legendary-surge 2.1s ease-in-out infinite}
+
+@keyframes ct-rare-glow{0%,100%{filter:brightness(.94)}50%{filter:brightness(1.18)}}
+@keyframes ct-epic-shimmer{0%,100%{filter:brightness(.95) saturate(.95)}50%{filter:brightness(1.22) saturate(1.18)}}
+@keyframes ct-legendary-surge{0%,100%{filter:brightness(.98)}45%{filter:brightness(1.35)}60%{filter:brightness(1.08)}}
+
+.v4-card-theme-preview{
+  position:relative;
+  display:block;
+  width:100%;
+  height:86px;
+  margin:auto 0;
+  isolation:isolate;
+}
+.v4-card-theme-preview>.v4-card-preview-header{position:absolute;inset:0 0 30px;width:100%;height:56px;object-fit:fill;filter:drop-shadow(0 3px 4px #000a)}
+.v4-card-preview-name{position:absolute;z-index:1;left:12px;right:12px;top:17px;font-size:11px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.v4-card-preview-badges{position:absolute;z-index:2;left:7%;right:7%;bottom:0;display:flex;justify-content:center;gap:3px;height:34px}
+.v4-card-preview-badges img{display:block;width:31%;height:100%;object-fit:fill;filter:drop-shadow(0 2px 2px #000b)}
+
+@media(max-width:767px){
+  .cmp-profile[data-card-theme],.sr-profile-head[data-card-theme]{min-height:58px;padding:9px 11px!important}
+  .cmp-profile[data-card-theme] .cmp-markers,.sr-profile-head[data-card-theme] .sr-profile-markers{gap:4px}
+  .cmp-profile[data-card-theme] .mk,.sr-profile-head[data-card-theme] .mk{min-width:55px;padding:6px 7px 7px}
+}
+
+@media(prefers-reduced-motion:reduce){
+  [data-card-theme] .cmp-name,[data-card-theme] .sr-name,[data-card-effect]{animation:none!important}
+}

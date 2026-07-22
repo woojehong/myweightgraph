@@ -158,6 +158,16 @@ import { BORDER_NAMES } from './js/borders-data.js';
 import { esc } from './js/util.js';
 import { profileVisualV2, titleInfoV2 } from './js/showroom-v2.js';
 
+let toastTimer;
+function showToast(message, type = 'ok') {
+  const toast = document.getElementById('toast');
+  if (!toast) return;
+  toast.textContent = message;
+  toast.className = `toast ${type} show`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('show'), 2600);
+}
+
 const uid = new URLSearchParams(location.search).get('user') || localStorage.getItem('uid');
 const isAdminView = new URLSearchParams(location.search).get('admin_view') === '1';
 if (!uid) location.href='index.html';

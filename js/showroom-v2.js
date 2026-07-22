@@ -33,9 +33,9 @@ export function normalizeLoadoutV2(raw){
     const meta=CATEGORY_META[category];
     if(meta?.multi){
       out[category]=[...new Set(Array.isArray(src[category])?src[category]:[])]
-        .filter(id=>BY_ID.get(id)?.category===category).slice(0,meta.max);
+        .map(canonicalId).filter(id=>BY_ID.get(id)?.category===category).slice(0,meta.max);
     }else{
-      const id=src[category];
+      const id=canonicalId(src[category]);
       out[category]=BY_ID.get(id)?.category===category?id:(category==='title'?null:SHOWROOM_DEFAULTS[category]);
     }
   }
@@ -45,11 +45,10 @@ export function normalizeLoadoutV2(raw){
 export function ownedItemIdsV2(user){
   const permanent=[...Object.values(SHOWROOM_DEFAULTS).flat().filter(Boolean),...(user?.purchasedItemsV2||[])];
   const rewardOrAdmin=[...(user?.achievementRewardItems||[]),...(user?.adminGrantedItems||[])];
-  const owned=new Set(permanent.map(canonicalId).filter(id=>{const entry=BY_ID.get(id);return entry&&!entry.testOnly}));
-  rewardOrAdmin.map(canonicalId).forEach(id=>{
-    const entry=BY_ID.get(id);
-    if(entry&&(!entry.testOnly||entry.category==='trophy'))owned.add(id);
-  });
+  // Ownership is historical data and must not disappear when an active item
+  // temporarily carries staging flags. Purchase/persistence remain separately
+  // blocked by validateCatalogPurchaseV2 and persistableLoadoutV2.
+  const owned=new Set([...permanent,...rewardOrAdmin].map(canonicalId).filter(id=>BY_ID.has(id)));
   return owned;
 }
 export const ownsItemV2=(user,id)=>id==null||ownedItemIdsV2(user).has(canonicalId(id));
@@ -148,12 +147,27 @@ export function applyCardV2(card,raw){
   if(!card)return false;
   const loadout=normalizeLoadoutV2(raw),theme=getCatalogItemV2(loadout.card_theme);
   const profile=card.matches?.('.cmp-profile,.sr-profile-head')?card:card.querySelector?.(':scope > .cmp-profile, :scope > .sr-profile-head');
-  profile?.querySelector(':scope > .v3-card-theme-frame')?.remove();
-  profile?.removeAttribute('data-card-preset');
+  profile?.querySelectorAll?.(':scope > .v3-card-theme-frame, :scope > .v4-card-theme-frame')?.forEach(node=>node.remove());
+  profile?.querySelectorAll?.('.mk > .v4-card-badge-frame')?.forEach(node=>node.remove());
+  for(const attribute of ['data-card-preset','data-card-theme','data-card-rarity','data-card-effect'])profile?.removeAttribute(attribute);
   if(!theme||!profile)return false;
   const frame=document.createElement('img');
-  frame.className='v3-card-theme-frame';frame.src=theme.asset;frame.alt='';frame.setAttribute('aria-hidden','true');
-  profile.prepend(frame);profile.dataset.cardPreset=theme.id;
+  frame.className=theme.cardAssets?.header?'v4-card-theme-frame':'v3-card-theme-frame';
+  frame.src=theme.cardAssets?.header||theme.asset;frame.alt='';frame.setAttribute('aria-hidden','true');
+  profile.prepend(frame);
+  profile.dataset.cardPreset=theme.id;
+  profile.dataset.cardTheme=theme.id;
+  profile.dataset.cardRarity=theme.rarity;
+  profile.dataset.cardEffect=theme.typography?.effect||'default';
+  const badgeAssets=theme.cardAssets||{};
+  const badgeMap=[['.mk-max',badgeAssets.max],['.mk-min',badgeAssets.min],['.mk-cur',badgeAssets.current]];
+  for(const [selector,asset] of badgeMap){
+    const badge=profile.querySelector?.(selector);
+    if(!badge||!asset)continue;
+    const badgeFrame=document.createElement('img');
+    badgeFrame.className='v4-card-badge-frame';badgeFrame.src=asset;badgeFrame.alt='';badgeFrame.setAttribute('aria-hidden','true');
+    badge.prepend(badgeFrame);
+  }
   return true;
 }
 
@@ -182,5 +196,6 @@ export function renderCatalogPreviewV2(entry){
   if(entry.category==='point_marker')return renderMarkerV2(entry.id);
   if(entry.category==='ambient_effect')return `<span class="v3-landscape-preview">${renderAmbientV2(entry.id)}</span>`;
   if(entry.category==='line_style'){const spec=entry.renderSpec||{};return `<span class="v4-line-preview" aria-hidden="true"><span style="border-color:${spec.color||'#00e5aa'};border-top-width:${spec.width||2}px;border-top-style:${spec.dash?.length?'dashed':'solid'};box-shadow:0 0 ${spec.glowBlur||0}px ${spec.color||'#00e5aa'}"></span></span>`}
+  if(entry.category==='card_theme'&&entry.cardAssets?.header)return `<span class="v4-card-theme-preview" data-card-theme="${entry.id}" aria-hidden="true"><img class="v4-card-preview-header" src="${entry.cardAssets.header}" alt=""><span class="v4-card-preview-name" data-card-theme="${entry.id}" data-card-effect="${entry.typography?.effect||'default'}">마웨그</span><span class="v4-card-preview-badges"><img src="${entry.cardAssets.max}" alt=""><img src="${entry.cardAssets.min}" alt=""><img src="${entry.cardAssets.current}" alt=""></span></span>`;
   return `<span class="v3-landscape-preview">${img(entry,'v3-catalog-landscape')}</span>`;
 }

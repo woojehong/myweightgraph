@@ -2,17 +2,17 @@
   "schemaVersion": "showroom-v4-category-inventory/1",
   "category": "graph_skin",
   "items": [
-    {"slot":"graph_skin:uncommon:01","id":"gs_v4_uncommon_01","category":"graph_skin","rarity":"uncommon","variant":1,"name":"그을음목 장부","visual":"그을음목과 장부 장식의 그래프 배경","file":"graph_skin/gs4_uncommon_sootwood_ledger.webp"},
-    {"slot":"graph_skin:uncommon:02","id":"gs_v4_uncommon_02","category":"graph_skin","rarity":"uncommon","variant":2,"name":"드워프 대장장이 동판","visual":"드워프 대장장이의 구리 동판 그래프 배경","file":"graph_skin/gs4_uncommon_dwarfsmith_copperplate.webp"},
-    {"slot":"graph_skin:uncommon:03","id":"gs_v4_uncommon_03","category":"graph_skin","rarity":"uncommon","variant":3,"name":"밤감시대 모직 기록판","visual":"밤감시대 모직 기록판 그래프 배경","file":"graph_skin/gs4_uncommon_nightwatch_felt.webp"},
-    {"slot":"graph_skin:rare:01","id":"gs_v4_rare_01","category":"graph_skin","rarity":"rare","variant":1,"name":"별측량사의 천구의","visual":"별측량사의 천구의가 둘러싼 그래프 배경","file":"graph_skin/gs4_rare_star_surveyor_orrey.webp"},
-    {"slot":"graph_skin:rare:02","id":"gs_v4_rare_02","category":"graph_skin","rarity":"rare","variant":2,"name":"녹음 연금술 작업대","visual":"녹음 연금술 작업대 그래프 배경","file":"graph_skin/gs4_rare_verdant_alchemist.webp"},
-    {"slot":"graph_skin:rare:03","id":"gs_v4_rare_03","category":"graph_skin","rarity":"rare","variant":3,"name":"파도소환사의 조개 기록고","visual":"파도소환사의 조개 기록고 그래프 배경","file":"graph_skin/gs4_rare_tidecaller_archive.webp"},
-    {"slot":"graph_skin:epic:01","id":"gs_v4_epic_01","category":"graph_skin","rarity":"epic","variant":1,"name":"거울 예언자의 좌표판","visual":"거울 예언자의 좌표판 그래프 배경","file":"graph_skin/gs4_epic_mirror_oracle.webp"},
-    {"slot":"graph_skin:epic:02","id":"gs_v4_epic_02","category":"graph_skin","rarity":"epic","variant":2,"name":"폭풍 예언기관","visual":"폭풍 예언기관 그래프 배경","file":"graph_skin/gs4_epic_storm_prophet_engine.webp"},
-    {"slot":"graph_skin:epic:03","id":"gs_v4_epic_03","category":"graph_skin","rarity":"epic","variant":3,"name":"심연 기억직조기","visual":"심연 기억직조기 그래프 배경","file":"graph_skin/gs4_epic_abyssal_memory_loom.webp"},
-    {"slot":"graph_skin:legendary:01","id":"gs_v4_legendary_01","category":"graph_skin","rarity":"legendary","variant":1,"name":"꿈직조자의 무한 베틀","visual":"꿈직조자의 무한 베틀 그래프 배경","file":"graph_skin/gs4_legendary_dreamweaver_loom.webp"},
-    {"slot":"graph_skin:legendary:02","id":"gs_v4_legendary_02","category":"graph_skin","rarity":"legendary","variant":2,"name":"황금 성계 주조소","visual":"황금 성계 주조소 그래프 배경","file":"graph_skin/gs4_legendary_gilded_astral_foundry.webp"},
-    {"slot":"graph_skin:legendary:03","id":"gs_v4_legendary_03","category":"graph_skin","rarity":"legendary","variant":3,"name":"창세의 관문 기록판","visual":"창세의 관문 기록판 그래프 배경","file":"graph_skin/gs4_legendary_genesis_gate.webp"}
+    {"slot":"graph_skin:uncommon:01","id":"gs_v4_uncommon_01","category":"graph_skin","rarity":"uncommon","variant":1,"name":"무쇠산 작업장","visual":"검게 그을린 무쇠 작업장과 화로가 둘러싼 절제된 그래프 배경","file":"graph_skin/gs4_uncommon_ironpeak_workshop.webp"},
+    {"slot":"graph_skin:uncommon:02","id":"gs_v4_uncommon_02","category":"graph_skin","rarity":"uncommon","variant":2,"name":"달빛 여관","visual":"따뜻한 등불과 양피지가 놓인 달빛 여관의 그래프 배경","file":"graph_skin/gs4_uncommon_moonlit_inn.webp"},
+    {"slot":"graph_skin:uncommon:03","id":"gs_v4_uncommon_03","category":"graph_skin","rarity":"uncommon","variant":3,"name":"사막 유랑단","visual":"붉은 천막과 노을빛 사막을 담은 유랑단 그래프 배경","file":"graph_skin/gs4_uncommon_desert_caravan.webp"},
+    {"slot":"graph_skin:rare:01","id":"gs_v4_rare_01","category":"graph_skin","rarity":"rare","variant":1,"name":"세계수 꿈길","visual":"고대 세계수의 뿌리와 청록빛 꿈안개가 감싸는 그래프 배경","file":"graph_skin/gs4_rare_worldtree_dreamway.webp"},
+    {"slot":"graph_skin:rare:02","id":"gs_v4_rare_02","category":"graph_skin","rarity":"rare","variant":2,"name":"폭풍왕국","visual":"청금빛 첨탑과 해상 성채를 담은 폭풍왕국 그래프 배경","file":"graph_skin/gs4_rare_storm_kingdom.webp"},
+    {"slot":"graph_skin:rare:03","id":"gs_v4_rare_03","category":"graph_skin","rarity":"rare","variant":3,"name":"붉은철 요새","visual":"가시 돋친 붉은철 성벽과 잿불이 흐르는 요새 그래프 배경","file":"graph_skin/gs4_rare_red_iron_fortress.webp"},
+    {"slot":"graph_skin:epic:01","id":"gs_v4_epic_01","category":"graph_skin","rarity":"epic","variant":1,"name":"은빛달 궁정","visual":"진홍 수정과 황금 곡선 건축이 빛나는 은빛달 궁정 그래프 배경","file":"graph_skin/gs4_epic_silvermoon_court.webp"},
+    {"slot":"graph_skin:epic:02","id":"gs_v4_epic_02","category":"graph_skin","rarity":"epic","variant":2,"name":"별벼림 창조소","visual":"별빛 동력원과 보랏빛 기계 성소가 둘러싼 창조소 그래프 배경","file":"graph_skin/gs4_epic_starforged_creation.webp"},
+    {"slot":"graph_skin:epic:03","id":"gs_v4_epic_03","category":"graph_skin","rarity":"epic","variant":3,"name":"심해 여왕 궁전","visual":"청록 수정과 심해 진주광이 흐르는 여왕의 궁전 그래프 배경","file":"graph_skin/gs4_epic_deepsea_queen_palace.webp"},
+    {"slot":"graph_skin:legendary:01","id":"gs_v4_legendary_01","category":"graph_skin","rarity":"legendary","variant":1,"name":"빙관 왕좌","visual":"서리 첨탑과 얼어붙은 왕좌의 위압감을 담은 전설 그래프 배경","file":"graph_skin/gs4_legendary_frozen_crown.webp"},
+    {"slot":"graph_skin:legendary:02","id":"gs_v4_legendary_02","category":"graph_skin","rarity":"legendary","variant":2,"name":"황천 검은 성소","visual":"검은 첨탑과 황천 균열이 요동치는 전설 그래프 배경","file":"graph_skin/gs4_legendary_nether_black_sanctum.webp"},
+    {"slot":"graph_skin:legendary:03","id":"gs_v4_legendary_03","category":"graph_skin","rarity":"legendary","variant":3,"name":"용군단 화염둥지","visual":"거대한 용의 날개와 용암 고리가 감싸는 전설 그래프 배경","file":"graph_skin/gs4_legendary_dragonflame_nest.webp"}
   ]
 }

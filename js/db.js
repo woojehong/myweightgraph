@@ -133,6 +133,82 @@ export async function updateUser(userId, data) {
   await setDocR(doc(db, 'users', userId), data, { merge: true });
 }
 
+// Atomically records newly earned achievements and settles their wallet/item
+// rewards against the latest user document. The caller may have evaluated the
+// achievement state from a stale snapshot; re-reading both the user and every
+// candidate earned document in this transaction prevents duplicate coin grants
+// and last-write-wins loss when two pages sync at the same time.
+export async function settleAchievementsAtomically(userId, settlement) {
+  await _ready;
+  const candidates = [...new Map((settlement?.achievements || [])
+    .filter(entry => entry?.id)
+    .map(entry => [entry.id, entry])).values()];
+  const userRef = doc(db, 'users', userId);
+  const earnedRefs = candidates.map(entry =>
+    doc(db, 'achievements', userId, 'earned', entry.id));
+
+  return runTransaction(db, async tx => {
+    // Firestore transactions require all reads before the first write.
+    const [userSnap, ...earnedSnaps] = await Promise.all([
+      tx.get(userRef),
+      ...earnedRefs.map(ref => tx.get(ref)),
+    ]);
+    if (!userSnap.exists()) throw new Error('User not found');
+
+    const user = userSnap.data();
+    const newlyEarned = candidates.filter((entry, index) => {
+      const snap = earnedSnaps[index];
+      return !snap.exists() || snap.data()?.invalidated === true;
+    });
+
+    newlyEarned.forEach(entry => {
+      const earnedAt = entry.earnedAt || serverTimestamp();
+      tx.set(doc(db, 'achievements', userId, 'earned', entry.id), {
+        score: Number(entry.score) || 0,
+        invalidated: false,
+        earnedAt,
+      }, { merge: true });
+    });
+
+    const points = newlyEarned.reduce((sum, entry) =>
+      sum + (Number(entry.score) || 0), 0);
+    const updates = {};
+    let coinsGained = points;
+    if (user.coins == null) {
+      // Preserve the legacy first-sync policy: all historical achievement
+      // points become the initial wallet, without showing a fresh coin popup.
+      updates.coins = Number(settlement?.totalScore) || 0;
+      coinsGained = 0;
+    } else if (points > 0) {
+      updates.coins = (Number(user.coins) || 0) + points;
+    }
+
+    const requestedScore = Number(settlement?.totalScore) || 0;
+    const currentScore = Number(user.totalScore) || 0;
+    const nextScore = settlement?.allowScoreDecrease
+      ? requestedScore
+      : Math.max(currentScore + points, requestedScore);
+    if (user.totalScore !== nextScore) updates.totalScore = nextScore;
+
+    const rewardItems = [...new Set([
+      ...(Array.isArray(user.achievementRewardItems) ? user.achievementRewardItems : []),
+      ...(Array.isArray(settlement?.achievementRewardItems)
+        ? settlement.achievementRewardItems : []),
+    ])];
+    if (rewardItems.slice().sort().join('\u0001') !==
+        (user.achievementRewardItems || []).slice().sort().join('\u0001')) {
+      updates.achievementRewardItems = rewardItems;
+    }
+
+    if (Object.keys(updates).length) tx.update(userRef, updates);
+    return {
+      newlyEarnedIds: newlyEarned.map(entry => entry.id),
+      coinsGained,
+      user: { id: userId, ...user, ...updates },
+    };
+  });
+}
+
 // 쇼룸 상품 전용 원자 구매. 한 트랜잭션 안에서 최신 잔액과 보유 목록을 다시
 // 확인하므로 빠른 중복 클릭이나 여러 탭 구매로 인한 이중 차감을 막는다.
 // 기존 users/{uid}.coins 및 updateUser 기반 문서 구조는 그대로 유지한다.

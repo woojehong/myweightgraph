@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { readFile, stat } from 'node:fs/promises';
 import {
   SHOWROOM_CATALOG_V2, SHOWROOM_CATEGORIES, SHOWROOM_DEFAULTS,
-  LEGACY_SHOWROOM_ID_ALIASES, SHOWROOM_V4_ACTIVE_CATEGORIES, resolveShowroomItemIdV2, assertShowroomCatalogV2,
+  LEGACY_SHOWROOM_ID_ALIASES, GRANDFATHERED_RELEASED_ITEM_IDS, SHOWROOM_V4_ACTIVE_CATEGORIES, resolveShowroomItemIdV2, assertShowroomCatalogV2,
 } from '../js/showroom-catalog-v2.js';
+import { GRAPH_SKIN_PRICE_BY_RARITY, GRAPH_SKIN_SAFE_AREA } from '../js/showroom-graph-skins.js';
 import { TITLES_CATALOG_V2, TITLE_RARITY_COLORS } from '../js/titles-catalog-v2.js';
 import { ACHIEVEMENTS } from '../js/achievements.js';
 import { ACHIEVEMENT_ITEM_REWARDS_V2, normalizeAchievementTrophyRewardsV2, rewardItemsForAchievementsV2 } from '../js/achievement-item-rewards-v2.js';
@@ -18,27 +20,45 @@ import {
 } from '../js/showroom-v2.js';
 
 assert.equal(assertShowroomCatalogV2(),true);
-assert.deepEqual(SHOWROOM_V4_ACTIVE_CATEGORIES,['graph_skin']);
-assert.equal(SHOWROOM_CATALOG_V2.length,40);
+assert.deepEqual(SHOWROOM_V4_ACTIVE_CATEGORIES,['graph_skin','line_style','card_theme','ambient_effect']);
+assert.equal(SHOWROOM_CATALOG_V2.length,112);
 assert.equal(TITLES_CATALOG_V2.length,30);
-assert.equal(ALL_CATALOG_V2.length,70);
+assert.equal(ALL_CATALOG_V2.length,142);
 assert.deepEqual(SHOWROOM_CATEGORIES,['graph_skin','line_style','card_theme','point_marker','companion','ambient_effect','trophy','profile_emoji','emoji_border']);
 assert.deepEqual(V2_CATEGORIES,[...SHOWROOM_CATEGORIES,'title']);
-assert.equal(new Set(ALL_CATALOG_V2.map(entry=>entry.id)).size,70);
-assert.equal(new Set(SHOWROOM_CATALOG_V2.map(entry=>entry.asset)).size,40);
+assert.equal(new Set(ALL_CATALOG_V2.map(entry=>entry.id)).size,142);
+assert.equal(new Set(SHOWROOM_CATALOG_V2.filter(entry=>entry.asset).map(entry=>entry.asset)).size,44);
 
 for(const category of SHOWROOM_CATEGORIES){
   const entries=SHOWROOM_CATALOG_V2.filter(entry=>entry.category===category);
-  assert.equal(entries.length,category==='graph_skin'?12:category==='line_style'?0:4,category);
-  assert.deepEqual(entries.map(entry=>entry.rarity),category==='graph_skin'?['uncommon','uncommon','uncommon','rare','rare','rare','epic','epic','epic','legendary','legendary','legendary']:category==='line_style'?[]:category==='companion'
+  const expectedCount={graph_skin:12,line_style:32,card_theme:12,ambient_effect:36}[category]??4;
+  assert.equal(entries.length,expectedCount,category);
+  const per=expectedCount>=12?expectedCount/4:1;
+  assert.deepEqual(entries.map(entry=>entry.rarity),expectedCount>=12?['uncommon','rare','epic','legendary'].flatMap(r=>Array(per).fill(r)):category==='companion'
     ? ['common','common','common','common']
     : ['uncommon','rare','epic','legendary']);
 }
-for(const entry of SHOWROOM_CATALOG_V2){assert.equal(entry.testOnly,true,entry.id);assert.equal(entry.purchasable,false,entry.id)}
+for(const entry of SHOWROOM_CATALOG_V2){
+  const staged=['line_style','ambient_effect'].includes(entry.category)&&!GRANDFATHERED_RELEASED_ITEM_IDS.includes(entry.id);
+  assert.equal(entry.testOnly,staged,entry.id);
+  assert.equal(entry.purchasable,entry.category==='trophy'?false:!staged,entry.id);
+}
+const releasedGraphSkins=SHOWROOM_CATALOG_V2.filter(entry=>entry.category==='graph_skin');
+assert.deepEqual(GRAPH_SKIN_PRICE_BY_RARITY,{uncommon:900,rare:1800,epic:3600,legendary:7200});
+assert.deepEqual(releasedGraphSkins.map(entry=>entry.price),[900,900,900,1800,1800,1800,3600,3600,3600,7200,7200,7200]);
+assert.deepEqual(releasedGraphSkins.map(entry=>entry.name),[
+  '무쇠산 작업장','달빛 여관','사막 유랑단','세계수 꿈길','폭풍왕국','붉은철 요새',
+  '은빛달 궁정','별벼림 창조소','심해 여왕 궁전','빙관 왕좌','황천 검은 성소','용군단 화염둥지',
+]);
+for(const entry of releasedGraphSkins){
+  assert.equal(entry.testOnly,false,entry.id);assert.equal(entry.purchasable,true,entry.id);assert.equal(entry.persistable,true,entry.id);
+  assert.deepEqual(entry.safeArea,GRAPH_SKIN_SAFE_AREA,entry.id);
+}
+assert.deepEqual(GRANDFATHERED_RELEASED_ITEM_IDS,['ae_dust','ae_firefly','ae_bubble','ae_thunder']);
 assert.deepEqual(TITLE_RARITY_COLORS,{common:'#FFFFFF',uncommon:'#1EFF00',rare:'#0070DD',epic:'#A335EE',legendary:'#FF8000'});
-for(const entry of ALL_CATALOG_V2){assert.match(entry.id,/^[a-z0-9_]+$/);if(entry.category!=='graph_skin')assert.ok(Number.isFinite(entry.price)&&entry.price>=200)}
+for(const entry of ALL_CATALOG_V2)assert.match(entry.id,/^[a-z0-9_]+$/);
 
-assert.equal(Object.keys(LEGACY_SHOWROOM_ID_ALIASES).length,218);
+assert.ok(Object.keys(LEGACY_SHOWROOM_ID_ALIASES).length>=218);
 for(const [legacy,target] of Object.entries(LEGACY_SHOWROOM_ID_ALIASES)){
   assert.ok(getCatalogItemV2(target),`${legacy}:${target}`);
   assert.equal(resolveShowroomItemIdV2(legacy),target);
@@ -48,35 +68,46 @@ assert.equal(getCatalogItemV2('gs_slate_lines').id,'gs_v4_uncommon_01');
 assert.equal(getCatalogItemV2('gs_void_lattice').id,'gs_v4_rare_01');
 assert.equal(getCatalogItemV2('gs_phoenix_wake').id,'gs_v4_epic_01');
 assert.equal(getCatalogItemV2('gs_crown_of_dawn').id,'gs_v4_legendary_01');
+assert.equal(getCatalogItemV2('gs_explorer_parchment').id,'gs_v4_uncommon_01','released V3 graph ownership must migrate');
+assert.equal(getCatalogItemV2('ct_alpine_dawn').id,'ct4_uncommon_iron_outpost','released V3 card ownership must migrate');
+assert.equal(resolveShowroomItemIdV2('ae_bubble'),'ae_bubble','active legacy id must preserve its identity');
+assert.equal(resolveShowroomItemIdV2('ae_firefly'),'ae_firefly','active legacy id must not alias to another effect');
+assert.equal(resolveShowroomItemIdV2('ae_mist'),'ae_dust','retired legacy id must migrate to an active effect');
 
 const normalized=normalizeLoadoutV2({
   graph_skin:'gs_slate_lines', point_marker:'pm_dawn_relic', title:'legacy title',
   trophy:['tr_wood_medal','tr_crystal_cup','tr_phoenix_relic','tr_dawn_regalia','bad'],
 });
-assert.equal(normalized.graph_skin,null);
-assert.equal(normalized.point_marker,null);
+assert.equal(normalized.graph_skin,'gs_v4_uncommon_01');
+assert.equal(normalized.point_marker,'pm_phoenix_seal');
 assert.equal(normalized.title,null);
-assert.deepEqual(normalized.trophy,[]);
+assert.deepEqual(normalized.trophy,['tr_summit_compass','tr_sea_chalice','tr_giant_horn','tr_cosmic_goblet']);
 assert.deepEqual(SHOWROOM_DEFAULTS,{graph_skin:null,line_style:null,card_theme:null,point_marker:null,companion:null,ambient_effect:null,trophy:[],profile_emoji:null,emoji_border:null});
 assert.equal(contrastRatioV2('#ffffff','#000000'),21);
 assert.equal(lineContrastAdviceV2('#111827','#070b12').passes,false);
 assert.equal(lineContrastAdviceV2('#ffffff','#070b12').passes,true);
 
-const user={purchasedItemsV2:['gs_slate_lines'],achievementRewardItems:['ct_emerald_lodge'],adminGrantedItems:['title_dawn_watch']};
-assert.deepEqual([...ownedItemIdsV2(user)],['title_dawn_watch']);
-assert.deepEqual(unownedSelectionV2(user,{...SHOWROOM_DEFAULTS,graph_skin:'gs_v4_uncommon_01',card_theme:'ct_alpine_dawn',companion:'cp_sleepy_golem'}).map(entry=>entry.id),['gs_v4_uncommon_01','ct_alpine_dawn','cp_sleepy_golem']);
+const user={purchasedItemsV2:['gs_slate_lines','ae_bubble'],achievementRewardItems:['ct_emerald_lodge'],adminGrantedItems:['title_dawn_watch']};
+assert.deepEqual([...ownedItemIdsV2(user)],['gs_v4_uncommon_01','ae_bubble','ct4_uncommon_iron_outpost','title_dawn_watch']);
+assert.equal(unownedSelectionV2(user,{...SHOWROOM_DEFAULTS,ambient_effect:'ae_bubble'}).length,0,'purchased ambient effect must remain owned');
+assert.equal(getCatalogItemV2('ae_bubble').testOnly,false,'released ambient effect must not be restaged');
+assert.equal(getCatalogItemV2('ae_bubble').purchasable,true,'released ambient effect remains purchasable');
+assert.equal(persistableLoadoutV2({...SHOWROOM_DEFAULTS,ambient_effect:'ae_bubble'}).ambient_effect,'ae_bubble','owned released ambient effect must remain saveable');
+assert.deepEqual([...ownedItemIdsV2({purchasedItemsV2:['ae_mist'],adminGrantedItems:['ae_firefly'],achievementRewardItems:['ae_bubble']})],['ae_dust','ae_bubble','ae_firefly'],'all ownership sources must merge after alias migration');
+assert.equal(normalizeLoadoutV2({...SHOWROOM_DEFAULTS,ambient_effect:'ae_mist'}).ambient_effect,'ae_dust','retired loadout id must migrate to the active effect');
+assert.deepEqual(unownedSelectionV2(user,{...SHOWROOM_DEFAULTS,graph_skin:'gs_v4_uncommon_01',card_theme:'ct_alpine_dawn',companion:'cp_sleepy_golem'}).map(entry=>entry.id),['cp_sleepy_golem']);
 assert.deepEqual(getChartDecorationsV2(SHOWROOM_DEFAULTS),{});
 assert.equal(getChartDecorationsV2({point_marker:'pm_phoenix_seal'}).markerAsset,'./assets/showroom-v3/point_marker/pm_phoenix_seal.png');
 const transactionSnapshot={coins:4200,purchasedItemsV2:['legacy_owned'],achievementRewardItems:['legacy_reward'],adminGrantedItems:[]};
 const transactionBefore=structuredClone(transactionSnapshot);
-assert.throws(()=>validateCatalogPurchaseV2(['gs_v4_uncommon_01']),/테스트 아이템은 구매할 수 없습니다/);
+assert.deepEqual(validateCatalogPurchaseV2(['gs_v4_uncommon_01']).map(entry=>[entry.id,entry.price]),[['gs_v4_uncommon_01',900]]);
 assert.throws(()=>validateCatalogPurchaseV2(['tr_summit_compass']),/트로피는 구매할 수 없으며 업적 달성 또는 관리자 지급으로만 획득/);
 assert.deepEqual(transactionSnapshot,transactionBefore,'blocked purchase must not mutate coins or ownership');
-assert.deepEqual(persistableLoadoutV2({graph_skin:'gs_v4_uncommon_01',companion:'cp_sleepy_golem',trophy:['tr_cosmic_goblet']}),{...SHOWROOM_DEFAULTS,trophy:['tr_cosmic_goblet'],title:null});
+assert.deepEqual(persistableLoadoutV2({graph_skin:'gs_v4_uncommon_01',companion:'cp_sleepy_golem',trophy:['tr_cosmic_goblet']}),{...SHOWROOM_DEFAULTS,graph_skin:'gs_v4_uncommon_01',companion:'cp_sleepy_golem',trophy:['tr_cosmic_goblet'],title:null});
 assert.deepEqual([...ownedItemIdsV2({achievementRewardItems:['tr_cosmic_goblet']})],['tr_cosmic_goblet']);
 assert.deepEqual([...ownedItemIdsV2({adminGrantedItems:['tr_giant_horn']})],['tr_giant_horn']);
 
-for(const entry of SHOWROOM_CATALOG_V2){
+for(const entry of SHOWROOM_CATALOG_V2.filter(entry=>entry.asset)){
   const fileUrl=new URL(`../${entry.asset.replace(/^\.\//,'')}`,import.meta.url);
   const bytes=await readFile(fileUrl),info=await stat(fileUrl);
   assert.ok(info.size>30000,`${entry.id}: asset unexpectedly small`);
@@ -103,6 +134,17 @@ for(const entry of SHOWROOM_CATALOG_V2.filter(item=>item.category==='graph_skin'
 const graphManifest=JSON.parse(await readFile(new URL('../assets/showroom-v4/graph_skin.manifest.json',import.meta.url),'utf8'));
 assert.equal(graphManifest.items.length,12);assert.equal(graphManifest.category,'graph_skin');
 assert.equal(graphManifest.items.some(item=>item.asset.includes('-source.png')),false,'source PNG must never be a runtime asset');
+const safeZoneReport=JSON.parse(await readFile(new URL('../assets/showroom-v4/graph_skin.safe-zone.json',import.meta.url),'utf8'));
+assert.deepEqual(safeZoneReport.region,GRAPH_SKIN_SAFE_AREA);
+assert.equal(safeZoneReport.items.length,12);
+for(const report of safeZoneReport.items){
+  const manifestEntry=graphManifest.items.find(entry=>entry.id===report.id);
+  assert.ok(manifestEntry,report.id);
+  assert.equal(report.sha256,manifestEntry.sha256,`${report.id}: safe-zone report must match the verified image hash`);
+  assert.ok(report.edgeMean<=safeZoneReport.maxEdgeMean,`${report.id}: central graph safe area is too visually busy`);
+  const bytes=await readFile(new URL(`../${manifestEntry.asset.replace(/^\.\//,'')}`,import.meta.url));
+  assert.equal(createHash('sha256').update(bytes).digest('hex'),report.sha256,`${report.id}: safe-zone-approved asset changed`);
+}
 const generatedV4=await readFile(new URL('../js/showroom-catalog-v4.generated.js',import.meta.url),'utf8');
 assert.equal(generatedV4.includes('-source.png'),false,'generated runtime must not reference source PNG');
 
@@ -111,14 +153,17 @@ for(const [category,render] of [['companion',renderCompanionV2],['trophy',render
     const html=render(entry.id);assert.ok(html.includes('<img'),entry.id);assert.ok(html.includes(entry.asset),entry.id);assert.equal(html.includes('<svg'),false,entry.id);
   }
 }
-for(const entry of SHOWROOM_CATALOG_V2.filter(item=>item.category==='ambient_effect')){
-  const html=renderAmbientV2(entry.id);assert.ok(html.includes('<img'));assert.equal(html.includes('<i '),false);
+for(const entry of SHOWROOM_CATALOG_V2.filter(item=>item.category==='ambient_effect'))assert.equal(renderAmbientV2(entry.id),'');
+for(const entry of SHOWROOM_CATALOG_V2){
+  const html=renderCatalogPreviewV2(entry);
+  entry.asset?assert.ok(html.includes(entry.asset),entry.id):assert.ok(html.length>0,entry.id);
 }
-for(const entry of SHOWROOM_CATALOG_V2)assert.ok(renderCatalogPreviewV2(entry).includes(entry.asset),entry.id);
 
 let removedOldFrame=false,prependedFrame=null;
 const fakeProfile={
-  dataset:{},querySelector:selector=>selector===':scope > .v3-card-theme-frame'?{remove(){removedOldFrame=true}}:null,
+  dataset:{},
+  querySelectorAll:selector=>selector.includes(':scope > .v3-card-theme-frame')?[{remove(){removedOldFrame=true}}]:[],
+  querySelector:()=>null,
   removeAttribute(name){delete this.dataset[name]},prepend(frame){prependedFrame=frame},
 };
 const fakeCard={matches:()=>false,querySelector:selector=>selector===':scope > .cmp-profile, :scope > .sr-profile-head'?fakeProfile:null};
@@ -126,9 +171,9 @@ const previousDocument=globalThis.document;
 globalThis.document={createElement:tag=>({tagName:tag.toUpperCase(),setAttribute(name,value){this[name]=value}})};
 try{
   assert.equal(applyCardV2(fakeCard,{card_theme:'ct_alpine_dawn'}),true);
-  assert.equal(removedOldFrame,true);assert.equal(prependedFrame.tagName,'IMG');assert.equal(prependedFrame.className,'v3-card-theme-frame');
-  assert.equal(prependedFrame.src,'./assets/showroom-v3/card_theme/ct_alpine_dawn.webp');assert.equal(prependedFrame['aria-hidden'],'true');
-  assert.equal(fakeProfile.dataset.cardPreset,'ct_alpine_dawn');assert.equal('style' in fakeCard,false,'card background style must not be injected');
+  assert.equal(removedOldFrame,true);assert.equal(prependedFrame.tagName,'IMG');assert.equal(prependedFrame.className,'v4-card-theme-frame');
+  assert.equal(prependedFrame.src,'./assets/showroom-v4/card_theme/ct4_uncommon_iron_outpost_header.png');assert.equal(prependedFrame['aria-hidden'],'true');
+  assert.equal(fakeProfile.dataset.cardPreset,'ct4_uncommon_iron_outpost');assert.equal('style' in fakeCard,false,'card background style must not be injected');
 }finally{if(previousDocument===undefined)delete globalThis.document;else globalThis.document=previousDocument}
 
 const achIds=new Set(ACHIEVEMENTS.map(achievement=>achievement.id));
@@ -167,7 +212,7 @@ const datasetSource=chart.slice(chart.indexOf('const datasets = ['),chart.indexO
 assert.equal(datasetSource.includes('markerSize'),false,'image marker size must not affect ordinary dataset points');
 assert.equal(chart.includes("text: '체중 (kg)'"),false,'Y-axis title must be removed');
 assert.equal(chart.includes("text: '체중(kg)'"),false,'Y-axis title must be removed');
-for(const token of ['mainPlotDomBoundsPlugin','chart.chartArea','.v3-main-plot-decor[data-showroom-main-plot="true"]','--showroom-main-plot-bottom','fitMainPlotBounds(area,mainPlotAspectRatio||16/9)','lineStyleEffectPlugin','showroomLineColor','showroomLineWidth','chartDecorations?.lineDash','chartDecorations?.lineGlowBlur','chartDecorations?.lineTension','plugins: [canvasBgPlugin, lineStyleEffectPlugin, mainPlotDomBoundsPlugin'])assert.ok(chart.includes(token),token);
+for(const token of ['mainPlotDomBoundsPlugin','chart.chartArea','.v3-main-plot-decor[data-showroom-main-plot="true"]','--showroom-main-plot-bottom','fitMainPlotBounds(area,mainPlotAspectRatio||16/9)','lineStyleEffectPlugin','showroomFxPlugin','showroomLineColor','showroomLineWidth','chartDecorations?.lineDash','chartDecorations?.lineGlowBlur','chartDecorations?.lineTension','plugins: [canvasBgPlugin, lineStyleEffectPlugin, showroomFxPlugin, mainPlotDomBoundsPlugin'])assert.ok(chart.includes(token),token);
 const fitted=fitMainPlotBounds({left:58,top:16,right:658,bottom:430},16/9);
 assert.ok(fitted.left>=58,'main plot host must start inside chartArea left');
 assert.ok(fitted.top>=16,'main plot host must start inside chartArea top');
@@ -179,8 +224,8 @@ assert.equal((visualLab.match(/drawMarker\(ctx,marker,/g)||[]).length,1,'visual 
 assert.equal((visualLab.match(/drawMarker\(ctx,/g)||[]).length-1,1,'visual lab must render exactly one point marker');
 
 const sw=await readFile(new URL('../sw.js',import.meta.url),'utf8');
-assert.ok(sw.includes("weight-v59-showroom-images"));assert.equal(sw.includes('c.addAll(ASSETS).catch'),false);
-for(const entry of SHOWROOM_CATALOG_V2)assert.ok(sw.includes(`'${entry.asset}'`),`sw:${entry.asset}`);
+assert.ok(sw.includes("weight-v78-card-theme-coupling"));assert.equal(sw.includes('c.addAll(ASSETS).catch'),false);
+for(const entry of SHOWROOM_CATALOG_V2.filter(entry=>entry.asset))assert.ok(sw.includes(`'${entry.asset}'`),`sw:${entry.asset}`);
 
 const showroom=await readFile(new URL('../dressroom.html',import.meta.url),'utf8');
 for(const token of ['purchaseCatalogItemsV2','saveShowroomLoadoutV2','현재 범주 검색','unownedSelectionV2','decorateMainPlotV2','data-main-weight-plot="true"','data-chart-subgraphs="diet exercise"','mainPlotAspectRatio:16/9','테스트 중 · 구매 불가','item.purchasable!==false&&!item.testOnly','테스트 아이템은 세션 미리보기 전용이며 저장할 수 없습니다','id="trophyOrder"','renderTrophyOrder','data-trophy-move','보유 트로피 · 전시 순서','id="lineControls"','renderLineControls','id="lineColor"','id="lineWidth"','3:1 미만 경고','추천색'])assert.ok(showroom.includes(token),token);
