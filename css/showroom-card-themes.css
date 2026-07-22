@@ -39,12 +39,12 @@
 .sr-profile-head[data-card-theme] .mk{
   position:relative;
   isolation:isolate;
-  min-width:78px;
+  min-width:72px;
   box-sizing:border-box;
-  padding:8px 11px 9px;
+  padding:6px 9px 7px;
   border:0;
   border-radius:0;
-  background:rgba(5,8,13,.72)!important;
+  background:transparent!important;
   overflow:visible;
 }
 
@@ -66,7 +66,7 @@
 .sr-profile-head[data-card-theme] .mk span{
   position:relative;
   z-index:1;
-  text-shadow:0 1px 3px #000,0 0 4px #000;
+  text-shadow:0 1px 2px rgba(0,0,0,.92);
 }
 
 .sr-profile-markers{display:flex;gap:5px;margin-left:auto;flex-shrink:0}
@@ -84,12 +84,12 @@
 [data-card-theme="ct4_rare_worldtree_grove"]{--ct-font:Georgia,serif;--ct-name:#d9ffad;--ct-shadow:0 0 4px #9cff7a88,0 1px 3px #001b09}
 [data-card-theme="ct4_rare_storm_kingdom"]{--ct-font:Georgia,serif;--ct-name:#eaf4ff;--ct-shadow:0 0 5px #4aa8ff99,0 1px 3px #04152b}
 [data-card-theme="ct4_rare_red_iron_fortress"]{--ct-font:"Arial Black",sans-serif;--ct-name:#ffc1a6;--ct-shadow:1px 1px 0 #53170b,-1px 0 0 #1c0906}
-[data-card-theme="ct4_epic_silvermoon_court"]{--ct-font:"Palatino Linotype",serif;--ct-name:#fff1c4;--ct-shadow:0 0 4px #ffcf70,0 0 9px #ff3f7488}
-[data-card-theme="ct4_epic_deepsea_throne"]{--ct-font:Georgia,serif;--ct-name:#c7fff7;--ct-shadow:0 0 4px #51ffe3,0 0 10px #1684c999}
-[data-card-theme="ct4_epic_astral_observatory"]{--ct-font:"Trebuchet MS",sans-serif;--ct-name:#e7e6ff;--ct-shadow:0 0 4px #7a8fff,0 0 11px #b467ff99}
-[data-card-theme="ct4_legendary_frozen_crown"]{--ct-font:Georgia,serif;--ct-name:#f3fbff;--ct-shadow:0 0 3px #fff,0 0 8px #54c9ff,0 0 14px #2767ff}
-[data-card-theme="ct4_legendary_nether_sanctum"]{--ct-font:"Palatino Linotype",serif;--ct-name:#d5ffcf;--ct-shadow:0 0 3px #adff9a,0 0 9px #35df74,0 0 15px #7c3cff}
-[data-card-theme="ct4_legendary_dragonfire_cataclysm"]{--ct-font:"Arial Black",sans-serif;--ct-name:#fff1c2;--ct-shadow:0 0 3px #fff,0 0 8px #ffb000,0 0 15px #ff3600}
+[data-card-theme="ct4_epic_silvermoon_court"]{--ct-font:"Palatino Linotype",serif;--ct-name:#fff1c4;--ct-shadow:0 1px 2px #260812,0 0 4px #ffcf7066}
+[data-card-theme="ct4_epic_deepsea_throne"]{--ct-font:Georgia,serif;--ct-name:#c7fff7;--ct-shadow:0 1px 2px #001b22,0 0 4px #51ffe366}
+[data-card-theme="ct4_epic_astral_observatory"]{--ct-font:"Trebuchet MS",sans-serif;--ct-name:#e7e6ff;--ct-shadow:0 1px 2px #101329,0 0 4px #7a8fff66}
+[data-card-theme="ct4_legendary_frozen_crown"]{--ct-font:Georgia,serif;--ct-name:#f3fbff;--ct-shadow:0 1px 2px #061427,0 0 5px #54c9ff88}
+[data-card-theme="ct4_legendary_nether_sanctum"]{--ct-font:"Palatino Linotype",serif;--ct-name:#d5ffcf;--ct-shadow:0 1px 2px #07170a,0 0 5px #35df7477}
+[data-card-theme="ct4_legendary_dragonfire_cataclysm"]{--ct-font:"Arial Black",sans-serif;--ct-name:#fff1c2;--ct-shadow:0 1px 2px #2b0a00,0 0 5px #ff8a0077}
 
 [data-card-theme] .cmp-name,
 [data-card-theme] .sr-name,
@@ -98,7 +98,7 @@
   font-weight:900;
   color:var(--ct-name,#fff)!important;
   text-shadow:var(--ct-shadow,0 1px 3px #000);
-  letter-spacing:.025em;
+  letter-spacing:0;
 }
 
 [data-card-rarity="rare"] .cmp-name,[data-card-rarity="rare"] .sr-name,
@@ -110,7 +110,7 @@
 
 @keyframes ct-rare-glow{0%,100%{filter:brightness(.94)}50%{filter:brightness(1.18)}}
 @keyframes ct-epic-shimmer{0%,100%{filter:brightness(.95) saturate(.95)}50%{filter:brightness(1.22) saturate(1.18)}}
-@keyframes ct-legendary-surge{0%,100%{filter:brightness(.98)}45%{filter:brightness(1.35)}60%{filter:brightness(1.08)}}
+@keyframes ct-legendary-surge{0%,100%{filter:brightness(.98)}50%{filter:brightness(1.08)}}
 
 .v4-card-theme-preview{
   position:relative;

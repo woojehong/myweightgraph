@@ -104,17 +104,17 @@
     }
 
     /* ── 미니 프로필 (데스크탑 기본) ───────────────────────────── */
-    .cmp-profile{ display:flex; align-items:center; gap:9px; margin-bottom:8px; padding:0 6px; flex-wrap:wrap; }
+    .cmp-profile{ display:flex; align-items:center; gap:9px; margin-bottom:8px; padding:0 6px; flex-wrap:nowrap; }
     .cmp-avatar{ width:32px; height:32px; flex-shrink:0; }
     .cmp-avatar-inner{
       width:26px; height:26px; border-radius:50%; background:#0d1117;
       display:flex; align-items:center; justify-content:center;
       font-size:15px; position:relative; z-index:1; overflow:hidden;
     }
-    .cmp-info{ display:flex; flex-direction:column; line-height:1.25; min-width:0; }
+    .cmp-info{ display:flex; flex:1 1 auto; overflow:hidden; flex-direction:row; align-items:center; gap:6px; line-height:1.15; min-width:0; }
     .cmp-title{ font-size:9px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .cmp-name{ font-size:13px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .cmp-score{ font-size:9px; color:var(--muted); }
+    .cmp-score{ display:none; }
 
     /* ── 최고/최저/현재 배지 (프로필 줄 오른쪽 정렬) ───────────── */
     .cmp-markers{ display:flex; gap:5px; margin-left:auto; flex-shrink:0; }
@@ -422,7 +422,6 @@ function cellHTML(u) {
         <div class="cmp-info">
           ${title ? `<span class="cmp-title" style="color:${title.color}">${esc(title.name)}</span>` : ''}
           <span class="cmp-name" style="color:${tc}">${esc(u.name)}</span>
-          ${u.totalScore > 0 ? `<span class="cmp-score">${u.totalScore} PT</span>` : ''}
         </div>
         ${markers}
       </div>
