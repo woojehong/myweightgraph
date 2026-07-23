@@ -422,14 +422,14 @@ window.toggleMonth = el => {
 };
 
 function mealTlHtml(uid, date, mealTime, currentColor) {
-  const cols = ['green','yellow','red'];
-  const bg = { green:'rgba(102,187,106,', yellow:'rgba(255,167,38,', red:'rgba(239,83,80,' };
+  const cols = ['green','yellow','red','skip'];
+  const rgb = { green:'102,187,106', yellow:'255,167,38', red:'239,83,80', skip:'255,255,255' };
   const btns = cols.map(c =>
     `<button onclick="adminSetMeal('${uid}','${date}','${mealTime}','${c}')"
-      title="${{green:'좋음',yellow:'보통',red:'나쁨'}[c]}"
+      title="${{green:'좋음',yellow:'보통',red:'나쁨',skip:'결식(안 먹음)'}[c]}"
       style="width:13px;height:13px;border-radius:2px;border:none;cursor:pointer;
-             background:${bg[c]}${currentColor===c?'.9':'.18'});
-             outline:${currentColor===c?`2px solid ${bg[c]}.9)`:'none'};
+             background:rgba(${rgb[c]},${currentColor===c?'.9':'.18'});
+             outline:${currentColor===c?`2px solid rgba(${rgb[c]},.9)`:'none'};
              outline-offset:1px"></button>`
   ).join('');
   const reset = `<button onclick="adminSetMeal('${uid}','${date}','${mealTime}',null)"

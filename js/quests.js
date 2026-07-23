@@ -12,6 +12,7 @@
 //  5) 주는 일요일 시작(그래프와 동일), 활동일 경계는 오전 6시.
 // ─────────────────────────────────────────────────────────────────────────────
 import { activityDay, isDailyComplete } from './daily-rewards.js';
+import { MEAL_TIMES, mealEntryCount, isMealQualityStatus } from './meal-status.js';
 
 export const WATER_GOAL_DEFAULT = 6;   // 500ml 잔 기준 기본 목표
 export const WATER_GOAL   = WATER_GOAL_DEFAULT;
@@ -28,10 +29,12 @@ const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
 export function weekStartOf(dateStr){ const d=parseDs(dateStr); d.setDate(d.getDate()-d.getDay()); return ds(d); }
 export function monthStartOf(dateStr){ const d=parseDs(dateStr); return ds(new Date(d.getFullYear(),d.getMonth(),1)); }
 
-const greenMeals  = r => ['morning','lunch','dinner'].filter(m => r?.meal?.[m]==='green').length;
-const mealsLogged = r => ['morning','lunch','dinner'].filter(m => r?.meal?.[m]!=null).length;
+const greenMeals  = r => MEAL_TIMES.filter(m => r?.meal?.[m]==='green').length;
+const mealsLogged = r => mealEntryCount(r);
 const allGreenDay = r => greenMeals(r)===3;
-const noRedDay    = r => mealsLogged(r)===3 && !['morning','lunch','dinner'].some(m=>r?.meal?.[m]==='red');
+// 결식은 기록/완주에는 포함하지만 식단 품질 보너스(노레드)에는 포함하지 않는다.
+const noRedDay    = r => MEAL_TIMES.every(m => isMealQualityStatus(r?.meal?.[m]))
+  && !MEAL_TIMES.some(m=>r?.meal?.[m]==='red');
 const exerciseDone= r => r?.exercise===true;
 
 // ── 일간 ────────────────────────────────────────────────────────────────────

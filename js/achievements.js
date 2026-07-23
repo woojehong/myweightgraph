@@ -1,4 +1,5 @@
 // achievements.js
+import { MEAL_TIMES, isMealLogged, isFullMealDay } from './meal-status.js';
 
 export const RECORD_START_DATE = '2026-06-01'; // 기록 누적 기준일 (체중/식단/운동 횟수)
 export const LOSS_START_DATE   = '2026-01-01'; // 감량/갱신 기준일
@@ -344,10 +345,10 @@ function extractData(records, user) {
   const mealWeekMap = {}, mealMonthMap = {};
   activeDays.forEach(r => {
     const m = r.meal || {};
-    const entries = [m.morning, m.lunch, m.dinner].filter(v => v != null);
+    const entries = MEAL_TIMES.map(time => m[time]).filter(isMealLogged);
     mealEntryCount += entries.length;
     mealGreenCount += entries.filter(v => v === 'green').length;
-    if (entries.length === 3) {
+    if (isFullMealDay(r)) {
       mealFullDays++;
       if (m.morning === 'green' && m.lunch === 'green' && m.dinner === 'green') mealGreenDays++;
     }

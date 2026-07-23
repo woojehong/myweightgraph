@@ -9,6 +9,7 @@ import { firebaseConfig, DEFAULT_GOAL }               from "./firebase-config.js
 import { sha256 }                                     from "./auth.js";
 import { DAILY_REWARD_POINTS, activityDay, isCurrentActivityDay,
          isDailyComplete }                            from "./daily-rewards.js";
+import { normalizeMeal, normalizeMealRecord }          from "./meal-status.js";
 import { getCatalogItemV2, normalizeLoadoutV2, persistableLoadoutV2,
          validateCatalogPurchaseV2, selectedItemIdsV2, ownedItemIdsV2 } from "./showroom-v2.js";
 
@@ -262,7 +263,7 @@ export async function deleteUser(userId) {
 function recordsRef(uid) { return collection(db, 'weights', uid, 'records'); }
 export async function getWeights(userId) {
   const snap = await getDocsR(query(recordsRef(userId), orderBy('date','asc')));
-  return snap.docs.map(d => d.data());
+  return snap.docs.map(d => normalizeMealRecord(d.data()));
 }
 export async function setWeight(userId, dateStr, weight) {
   if (weight === null) {
@@ -280,8 +281,10 @@ export async function setDietExercise(userId, dateStr, data) {
   //         water?: number, mood?: number|null,
   //         journal?: {noAlcohol, noSnack, earlySleep}, steps?: number|null,
   //         stepsSource?: 'manual'|'auto' }
+  const normalized = { ...data };
+  if (Object.hasOwn(normalized, 'meal')) normalized.meal = normalizeMeal(normalized.meal, { strict:true });
   await setDocR(doc(db, 'weights', userId, 'records', dateStr),
-    { date: dateStr, ...data, updatedAt: serverTimestamp() }, { merge: true });
+    { date: dateStr, ...normalized, updatedAt: serverTimestamp() }, { merge: true });
 }
 export const setDayData = setDietExercise;
 

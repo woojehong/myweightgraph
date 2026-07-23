@@ -417,7 +417,7 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
 
   // ── 식단·운동 히트맵 플러그인 ────────────────────────────────────────
   const EMPTY_CLR = 'rgba(255,255,255,.05)';
-  const MEAL_CLR  = { green: 'rgba(102,187,106,.88)', yellow: 'rgba(255,167,38,.88)', red: 'rgba(239,83,80,.88)' };
+  const MEAL_CLR  = { green: 'rgba(102,187,106,.88)', yellow: 'rgba(255,167,38,.88)', red: 'rgba(239,83,80,.88)', skip: 'rgba(255,255,255,0)' };
   const EX_CLR    = { yes: 'rgba(102,187,106,.88)', no: 'rgba(239,83,80,.88)' };
   const toDs = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 

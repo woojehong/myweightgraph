@@ -26,6 +26,7 @@
     .tl-btn.red-tl    { background:var(--red); }
     .tl-btn.yellow-tl { background:var(--orange); }
     .tl-btn.green-tl  { background:var(--green); }
+    .tl-btn.skip-tl   { background:rgba(255,255,255,.9); border:1px solid rgba(255,255,255,.95); }
 
     /* 운동 버튼 */
     .ex-btn {
@@ -101,6 +102,7 @@
     .pr-dot.green{background:#66bb6a}
     .pr-dot.yellow{background:#ffa726}
     .pr-dot.red{background:#ef5350}
+    .pr-dot.skip{background:rgba(255,255,255,.9);box-shadow:inset 0 0 0 1px rgba(255,255,255,.95)}
     .pr-dot:active{transform:scale(1.2)}
     .pr-ex{width:26px;height:26px;flex-shrink:0;border-radius:7px;border:1px solid var(--border);
       background:var(--bg);color:var(--muted);font-size:12px;cursor:pointer;padding:0}
@@ -435,7 +437,7 @@ window.setMeal = async (dateStr, mealTime, value) => {
   await setDietExercise(uid, dateStr, { meal: newMeal });
   if(rec) rec.meal=newMeal;
   else allRecords.push({ date:dateStr, meal:newMeal });
-  ['red','yellow','green'].forEach(c=>{
+  ['green','yellow','red','skip'].forEach(c=>{
     const btn=document.querySelector(`#daycard-${dateStr} .tl-btn.${c}-tl[onclick*="${mealTime}"]`);
     if(btn) btn.classList.toggle('on', newMeal[mealTime]===c);
   });
@@ -445,8 +447,9 @@ window.setMeal = async (dateStr, mealTime, value) => {
 };
 
 // ── 지난 기록 압축행: 탭할 때마다 순환 ────────────────────────────────
-// 식단: 없음 → 초록 → 노랑 → 빨강 → 없음 (초록이 한 번에 오도록)
-const MEAL_CYCLE = [null, 'green', 'yellow', 'red'];
+// 식단: 없음 → 초록 → 노랑 → 빨강 → 결식 → 없음
+const MEAL_CYCLE = [null, 'green', 'yellow', 'red', 'skip'];
+const MEAL_LABELS = { green:'좋음', yellow:'보통', red:'나쁨', skip:'결식(안 먹음)' };
 window.cycleMeal = async (dateStr, mealTime) => {
   const rec = allRecords.find(r=>r.date===dateStr);
   const cur = rec?.meal?.[mealTime] ?? null;
@@ -620,14 +623,15 @@ async function render() {
     const hasSaved=val!=null;
     const allDone = hasSaved && meal.morning!=null && meal.lunch!=null
       && meal.dinner!=null && (exercise===true||exercise===false);
-    // 식단: 초 → 노 → 빨 순서
+    // 식단: 초 → 노 → 빨 → 결식 순서
     const mealBlock = ['morning','lunch','dinner'].map((m,mi)=>`
       <div class="tdy-meal">
         <span class="tdy-mlabel">${['아침','점심','저녁'][mi]}</span>
         <div class="tl-group">
-          <button class="tl-btn green-tl ${meal[m]==='green'?'on':''}"  onclick="setMeal('${dateStr}','${m}','green')"></button>
-          <button class="tl-btn yellow-tl ${meal[m]==='yellow'?'on':''}" onclick="setMeal('${dateStr}','${m}','yellow')"></button>
-          <button class="tl-btn red-tl ${meal[m]==='red'?'on':''}"    onclick="setMeal('${dateStr}','${m}','red')"></button>
+          <button class="tl-btn green-tl ${meal[m]==='green'?'on':''}" title="좋음" aria-label="${['아침','점심','저녁'][mi]} 좋음" onclick="setMeal('${dateStr}','${m}','green')"></button>
+          <button class="tl-btn yellow-tl ${meal[m]==='yellow'?'on':''}" title="보통" aria-label="${['아침','점심','저녁'][mi]} 보통" onclick="setMeal('${dateStr}','${m}','yellow')"></button>
+          <button class="tl-btn red-tl ${meal[m]==='red'?'on':''}" title="나쁨" aria-label="${['아침','점심','저녁'][mi]} 나쁨" onclick="setMeal('${dateStr}','${m}','red')"></button>
+          <button class="tl-btn skip-tl ${meal[m]==='skip'?'on':''}" title="결식(안 먹음)" aria-label="${['아침','점심','저녁'][mi]} 결식" onclick="setMeal('${dateStr}','${m}','skip')"></button>
         </div>
       </div>`).join('');
 
@@ -673,8 +677,8 @@ async function render() {
     const water = rec?.water || 0;
     const done = val != null && meal.morning != null && meal.lunch != null
                  && meal.dinner != null && (ex === true || ex === false);
-    const dot = m => `<button class="pr-dot ${meal[m]||'none'}" title="${['아침','점심','저녁'][['morning','lunch','dinner'].indexOf(m)]}"
-      onclick="cycleMeal('${dateStr}','${m}')" aria-label="${m} 식단 변경"></button>`;
+    const dot = m => `<button class="pr-dot ${meal[m]||'none'}" title="${['아침','점심','저녁'][['morning','lunch','dinner'].indexOf(m)]} · ${MEAL_LABELS[meal[m]]||'미입력'}"
+      onclick="cycleMeal('${dateStr}','${m}')" aria-label="${m} 식단 ${MEAL_LABELS[meal[m]]||'미입력'} 변경"></button>`;
     pastRows += `
       <div class="past-row${done?' done':''}" id="pastrow-${dateStr}">
         <span class="pr-date">${fmtDate(d).slice(5)} <em>${DAY_KO[d.getDay()]}</em></span>
