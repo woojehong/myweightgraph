@@ -27,6 +27,10 @@
     .tl-btn.yellow-tl { background:var(--orange); }
     .tl-btn.green-tl  { background:var(--green); }
     .tl-btn.skip-tl   { background:rgba(255,255,255,.9); border:1px solid rgba(255,255,255,.95); }
+    /* 운동: 활성화된 것만 가운데 체크/X 아이콘 표시 */
+    .ex-group .tl-btn{display:flex;align-items:center;justify-content:center;
+      font-size:0;color:#0d1117;font-weight:900;line-height:1}
+    .ex-group .tl-btn.on{font-size:13px}
 
     /* 운동 버튼 */
     .ex-btn {
@@ -104,6 +108,21 @@
     .pr-dot.red{background:#ef5350}
     .pr-dot.skip{background:rgba(255,255,255,.9);box-shadow:inset 0 0 0 1px rgba(255,255,255,.95)}
     .pr-dot:active{transform:scale(1.2)}
+    .pr-ex-group{display:flex;gap:4px;flex-shrink:0}
+    .pr-ex-group .tl-btn{width:18px;height:18px}
+    .pr-ex-group .tl-btn.on{font-size:11px}
+    /* 물 막대를 클릭 가능한 버튼으로 */
+    button.pr-water{padding:0;cursor:pointer;border:none}
+    button.pr-water:hover i{filter:brightness(1.2)}
+    /* 물 팝오버 */
+    .water-pop{position:absolute;z-index:500;background:var(--surface);border:1px solid var(--border);
+      border-radius:12px;padding:10px;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+    .wp-cups{display:flex;gap:2px;flex-wrap:wrap;max-width:200px;justify-content:center}
+    .wp-cup{width:22px;height:26px;border:none;background:transparent;cursor:pointer;
+      opacity:.28;filter:grayscale(1);transition:all .12s;font-size:15px;padding:0}
+    .wp-cup.full{opacity:1;filter:none}
+    .wp-cup:active{transform:scale(1.25)}
+    .wp-num{text-align:center;font-size:11px;color:var(--muted);margin-top:6px}
     .pr-ex{width:26px;height:26px;flex-shrink:0;border-radius:7px;border:1px solid var(--border);
       background:var(--bg);color:var(--muted);font-size:12px;cursor:pointer;padding:0}
     .pr-ex.yes{border-color:var(--green);color:var(--green);background:rgba(102,187,106,.12)}
@@ -463,25 +482,38 @@ window.cycleMeal = async (dateStr, mealTime) => {
   if (next) await reward(dateStr, mealTime);
   scheduleAchSync();
 };
-// 운동: 없음 → ✓ → ✕ → 없음
-window.cycleExercise = async (dateStr) => {
-  const rec = allRecords.find(r=>r.date===dateStr);
-  const cur = rec?.exercise;
-  const next = cur === true ? false : cur === false ? null : true;
-  await setDietExercise(uid, dateStr, { exercise: next });
-  if (rec) rec.exercise = next; else allRecords.push({ date:dateStr, exercise:next });
-  const btn = document.querySelector(`#pastrow-${dateStr} .pr-ex`);
-  if (btn) { btn.className = `pr-ex ${next===true?'yes':next===false?'no':''}`;
-             btn.textContent = next===true?'✓':next===false?'✕':'–'; }
-  refreshPastRow(dateStr);
-  if (next === true) await reward(dateStr, 'exercise');
-  scheduleAchSync();
+// 지난 기록 물 팝오버 — 컵 10개로 0~10 조절
+window.openWaterPop = (dateStr, ev) => {
+  ev?.stopPropagation();
+  closeWaterPop();
+  const anchor = ev.currentTarget;
+  const rec = allRecords.find(r=>r.date===dateStr) || {};
+  const water = rec.water || 0;
+  const cups = Array.from({length:10},(_,i)=>
+    `<button class="wp-cup ${i<water?'full':''}" onclick="setWater('${dateStr}',${i+1});event.stopPropagation()" aria-label="물 ${i+1}잔">🥛</button>`).join('');
+  const pop = document.createElement('div');
+  pop.className = 'water-pop'; pop.id = 'waterPop';
+  pop.innerHTML = `<div class="wp-cups">${cups}</div><div class="wp-num" id="wpNum">${water}/10</div>`;
+  pop.onclick = e => e.stopPropagation();
+  document.body.appendChild(pop);
+  const r = anchor.getBoundingClientRect();
+  pop.style.top = `${r.bottom + window.scrollY + 6}px`;
+  pop.style.left = `${Math.max(8, Math.min(r.left + window.scrollX, window.innerWidth - pop.offsetWidth - 8))}px`;
+  setTimeout(()=>document.addEventListener('click', closeWaterPop, { once:true }), 0);
 };
+function closeWaterPop(){ document.getElementById('waterPop')?.remove(); }
+
 function refreshPastRow(dateStr){
   const row = document.getElementById(`pastrow-${dateStr}`);
   if (!row) return;
   const r = allRecords.find(x=>x.date===dateStr) || {};
   const m = r.meal || {};
+  // 물 막대·숫자·팝오버 갱신
+  const w = r.water || 0;
+  const bar = row.querySelector('.pr-water i'); if (bar) bar.style.width = Math.min(100,w/10*100)+'%';
+  const num = row.querySelector('.pr-wnum'); if (num) num.textContent = `${w}/10`;
+  const wpNum = document.getElementById('wpNum'); if (wpNum) wpNum.textContent = `${w}/10`;
+  document.querySelectorAll('#waterPop .wp-cup').forEach((c,i)=>c.classList.toggle('full', i<w));
   const done = r.weight!=null && m.morning!=null && m.lunch!=null && m.dinner!=null
                && (r.exercise===true || r.exercise===false);
   row.classList.toggle('done', done);
@@ -495,12 +527,12 @@ window.setExercise = async (dateStr, value) => {
   await setDietExercise(uid, dateStr, { exercise: newVal });
   if(rec) rec.exercise=newVal;
   else allRecords.push({ date:dateStr, exercise:newVal });
-  document.querySelectorAll(`#daycard-${dateStr} .ex-btn`).forEach((btn,i)=>{
-    btn.className='ex-btn';
-    if(newVal===true  && i===0) btn.className='ex-btn on-check';
-    if(newVal===false && i===1) btn.className='ex-btn on-cross';
+  document.querySelectorAll(`#daycard-${dateStr} .ex-group, #pastrow-${dateStr} .ex-group`).forEach(grp=>{
+    grp.querySelector('.green-tl').classList.toggle('on', newVal===true);
+    grp.querySelector('.red-tl').classList.toggle('on', newVal===false);
   });
   refreshCardState(dateStr);
+  refreshPastRow(dateStr);
   if(newVal===true||newVal===false) await reward(dateStr,'exercise');
   scheduleAchSync();
 };
@@ -517,7 +549,8 @@ window.setWater = async (dateStr, n) => {
   const newVal = cur===n ? n-1 : n;   // 마지막 잔을 다시 탭하면 한 잔 취소
   await setDietExercise(uid, dateStr, { water:newVal });
   rec.water=newVal;
-  renderLife(dateStr);
+  renderLife(dateStr);          // 오늘 카드 물 갱신 (있으면)
+  refreshPastRow(dateStr);      // 지난 기록 행·팝오버 물 갱신 (있으면)
   refreshQuestPanel();          // 수분 목표 달성 여부 즉시 반영
   await reward(dateStr,'water',newVal);
   scheduleAchSync();
@@ -655,9 +688,9 @@ async function render() {
           <div class="tdy-gap"></div>
           <div class="tdy-meal">
             <span class="tdy-mlabel">운동</span>
-            <div class="tl-group">
-              <button class="tl-btn green-tl ${exercise===true?'on':''}"  onclick="setExercise('${dateStr}',true)"></button>
-              <button class="tl-btn red-tl ${exercise===false?'on':''}" onclick="setExercise('${dateStr}',false)"></button>
+            <div class="tl-group ex-group">
+              <button class="tl-btn green-tl ${exercise===true?'on':''}"  aria-label="운동함" onclick="setExercise('${dateStr}',true)">✓</button>
+              <button class="tl-btn red-tl ${exercise===false?'on':''}" aria-label="운동 안 함" onclick="setExercise('${dateStr}',false)">✕</button>
             </div>
           </div>
         </div>
@@ -688,10 +721,13 @@ async function render() {
           onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();submitDay('${dateStr}')}"
           onblur="submitDay('${dateStr}')">
         <span class="pr-meals">${dot('morning')}${dot('lunch')}${dot('dinner')}</span>
-        <button class="pr-ex ${ex===true?'yes':ex===false?'no':''}" onclick="cycleExercise('${dateStr}')"
-          aria-label="운동 변경">${ex===true?'✓':ex===false?'✕':'–'}</button>
-        <span class="pr-water"><i style="width:${Math.min(100,water/myWaterGoal()*100)}%"></i></span>
-        <span class="pr-wnum">${water}/${myWaterGoal()}</span>
+        <span class="pr-ex-group ex-group">
+          <button class="tl-btn green-tl ${ex===true?'on':''}"  aria-label="운동함" onclick="setExercise('${dateStr}',true)">✓</button>
+          <button class="tl-btn red-tl ${ex===false?'on':''}" aria-label="운동 안 함" onclick="setExercise('${dateStr}',false)">✕</button>
+        </span>
+        <button class="pr-water" onclick="openWaterPop('${dateStr}',event)" aria-label="물 조절 (${water}/10)">
+          <i style="width:${Math.min(100,water/10*100)}%"></i></button>
+        <span class="pr-wnum">${water}/10</span>
       </div>`;
   }
 
