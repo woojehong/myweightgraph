@@ -1,4 +1,4 @@
-const CACHE = 'weight-v103-individual-card-theme-art';
+const CACHE = 'weight-v104-borderless-profile-copy';
 const ASSETS = [
   './index.html', './dashboard.html', './input.html', './import.html',
   './achievements.html', './compare.html', './dressroom.html', './shop.html', './guide.html', './visual-lab.html',
