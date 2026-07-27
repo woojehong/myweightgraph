@@ -153,12 +153,14 @@ assert.ok(compare.includes('.cmp-profile{display:grid;grid-template-columns:132p
 assert.ok(compare.includes('.cmp-info{grid-column:2;grid-row:1;display:flex;'));
 assert.ok(compare.includes('profileShowcaseForUserV2(u,132)'),'desktop cards must use the full-body square showcase portrait');
 for(const token of ['class="cmp-message-panel"','data-message-save','data-message-reset','class="cmp-trophies"','grid-template-columns:repeat(3,minmax(0,1fr))'])assert.ok(compare.includes(token),token);
+for(const token of ['grid-template-columns:repeat(7,34px)','grid-auto-rows:34px','direction:rtl','max-height:72px'])assert.ok((showroom+compare).includes(token),token);
 assert.equal(compare.includes('오늘 남긴 한마디가 없습니다.'),false,'other users with no message must have no empty-state copy');
 assert.equal(compare.includes('cmp-message-label'),false,'message panel must not render a redundant title');
 assert.ok(compare.includes('placeholder="오늘의 한마디를 입력해보세요"'));
 assert.ok(compare.includes('graphOnlyMode?`<div class="cmp-graph-only-name">'),'graph-only mode must bypass the decorated identity header');
 assert.equal(compare.includes('<span class="cmp-score">'), false, 'score must not crowd the identity header');
 for(const token of ['.sr-profile-head{display:grid;grid-template-columns:132px','profileShowcaseForUserV2(user,132,draft)','class="sr-message-preview"','class="sr-trophy-preview"','class="sr-bulk-items"','추가로 구매할 아이템','총 결제'])assert.ok(showroom.includes(token),token);
+for(const token of ['.sr-profile-head[data-card-theme] .sr-profile-markers{display:grid','min-width:100%;justify-self:stretch!important','.cmp-profile[data-card-theme] .cmp-markers{display:grid'])assert.ok((showroom+compare).includes(token),token);
 assert.ok(css.includes('background:transparent!important'), 'theme art must not be covered by an opaque badge fill');
 assert.equal(css.includes('filter:brightness(1.35)'), false, 'legendary typography animation must remain readable');
 for (const item of CARD_THEME_ITEMS) for (const asset of Object.values(item.cardAssets)) assert.ok(sw.includes(`'${asset}'`), asset);

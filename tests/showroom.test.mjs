@@ -11,7 +11,7 @@ import { ACHIEVEMENTS } from '../js/achievements.js';
 import { ACHIEVEMENT_ITEM_REWARDS_V2, normalizeAchievementTrophyRewardsV2, rewardItemsForAchievementsV2 } from '../js/achievement-item-rewards-v2.js';
 import { fitMainPlotBounds } from '../js/chart-render.js';
 import {
-  ALL_CATALOG_V2, V2_CATEGORIES, normalizeLoadoutV2, getCatalogItemV2,
+  ALL_CATALOG_V2, V2_CATEGORIES, CATEGORY_META, normalizeLoadoutV2, getCatalogItemV2,
   COMPANION_LAYOUT_DEFAULTS, COMPANION_LAYOUT_LIMITS, normalizeCompanionLayoutV2,
   ownedItemIdsV2, unownedSelectionV2, persistableLoadoutV2, validateCatalogPurchaseV2,
   renderEmojiBorderV2, getChartDecorationsV2,
@@ -253,16 +253,17 @@ assert.ok(Math.abs(fitted.width/fitted.height-16/9)<1e-9,'main plot host must re
 assert.equal(mainPlotDecorator.includes('v2-trophies'),false,'trophies must leave the graph and render in the card header');
 const compareHeaderSource=await readFile(new URL('../compare.html',import.meta.url),'utf8');
 assert.ok(compareHeaderSource.includes('<div class="cmp-trophies">${trophies.map(renderTrophyV2).join(\'\')}</div>'),'trophies must render in the header medal rail');
-assert.ok(compareHeaderSource.includes('flex-direction:row-reverse'),'new trophies must extend leftward from the top-right');
+for(const token of ['grid-template-columns:repeat(7,34px)','grid-auto-rows:34px','direction:rtl','max-height:72px'])assert.ok(compareHeaderSource.includes(token),token);
 assert.equal((visualLab.match(/drawMarker\(ctx,marker,/g)||[]).length,1,'visual lab must show the image marker only at the lowest point');
 assert.equal((visualLab.match(/drawMarker\(ctx,/g)||[]).length-1,1,'visual lab must render exactly one point marker');
 
 const sw=await readFile(new URL('../sw.js',import.meta.url),'utf8');
-assert.ok(sw.includes("weight-v93-showroom-header-copy"));assert.equal(sw.includes('c.addAll(ASSETS).catch'),false);
+assert.ok(sw.includes("weight-v94-wide-stat-panels"));assert.equal(sw.includes('c.addAll(ASSETS).catch'),false);
 for(const entry of SHOWROOM_CATALOG_V2.filter(entry=>entry.asset))assert.ok(sw.includes(`'${entry.asset}'`),`sw:${entry.asset}`);
 
 const showroom=await readFile(new URL('../dressroom.html',import.meta.url),'utf8');
-for(const token of ['purchaseCatalogItemsV2','saveShowroomLoadoutV2','현재 범주 검색','unownedSelectionV2','decorateMainPlotV2','data-main-weight-plot="true"','data-chart-subgraphs="diet exercise"','mainPlotAspectRatio:16/9','테스트 중 · 구매 불가','item.purchasable!==false&&!item.testOnly','테스트 아이템은 세션 미리보기 전용이며 저장할 수 없습니다','id="trophyOrder"','renderTrophyOrder','data-trophy-move','보유 트로피 · 전시 순서','id="lineControls"','renderLineControls','id="lineColor"','id="lineWidth"','3:1 미만 경고','추천색'])assert.ok(showroom.includes(token),token);
+for(const token of ['purchaseCatalogItemsV2','saveShowroomLoadoutV2','현재 범주 검색','unownedSelectionV2','decorateMainPlotV2','data-main-weight-plot="true"','data-chart-subgraphs="diet exercise"','mainPlotAspectRatio:16/9','테스트 중 · 구매 불가','item.purchasable!==false&&!item.testOnly','테스트 아이템은 세션 미리보기 전용이며 저장할 수 없습니다','id="trophyOrder"','renderTrophyOrder','data-trophy-move','data-trophy-drag','dragstart','dragover','drop','드래그 또는 화살표로 전시 순서 변경','/14 전시','draft.trophy.length>=14','id="lineControls"','renderLineControls','id="lineColor"','id="lineWidth"','3:1 미만 경고','추천색'])assert.ok(showroom.includes(token),token);
+assert.equal(CATEGORY_META.trophy.max,14,'header trophy showcase capacity must be 7 × 2');
 for(const retiredToken of ['id="companionControls"','renderCompanionControls','data-companion-layout','동반자 없음'])assert.equal(showroom.includes(retiredToken),false,retiredToken);
 assert.ok(showroom.includes('.sr-cats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))'));
 assert.ok(showroom.includes('@media(max-width:520px){.sr-cats{grid-template-columns:repeat(2,minmax(0,1fr))}}'));

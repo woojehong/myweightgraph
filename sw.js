@@ -1,4 +1,4 @@
-const CACHE = 'weight-v93-showroom-header-copy';
+const CACHE = 'weight-v94-wide-stat-panels';
 const ASSETS = [
   './index.html', './dashboard.html', './input.html', './import.html',
   './achievements.html', './compare.html', './dressroom.html', './shop.html', './guide.html', './visual-lab.html',
