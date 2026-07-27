@@ -250,13 +250,15 @@ assert.ok(fitted.left>=58,'main plot host must start inside chartArea left');
 assert.ok(fitted.top>=16,'main plot host must start inside chartArea top');
 assert.ok(fitted.bottom<=430,'main plot host must not reach subgraph reservation below chartArea');
 assert.ok(Math.abs(fitted.width/fitted.height-16/9)<1e-9,'main plot host must remain exactly 16:9');
-assert.ok(mainPlotDecorator.includes('<span class="v2-trophies">'),'trophy shelf must be a child of the chartArea-bound host');
-assert.ok(css.includes('.v2-trophies{position:absolute;z-index:4;left:6px;top:6px'),'trophy shelf must be pinned to the host top-left');
+assert.equal(mainPlotDecorator.includes('v2-trophies'),false,'trophies must leave the graph and render in the card header');
+const compareHeaderSource=await readFile(new URL('../compare.html',import.meta.url),'utf8');
+assert.ok(compareHeaderSource.includes('<div class="cmp-trophies">${trophies.map(renderTrophyV2).join(\'\')}</div>'),'trophies must render in the header medal rail');
+assert.ok(compareHeaderSource.includes('flex-direction:row-reverse'),'new trophies must extend leftward from the top-right');
 assert.equal((visualLab.match(/drawMarker\(ctx,marker,/g)||[]).length,1,'visual lab must show the image marker only at the lowest point');
 assert.equal((visualLab.match(/drawMarker\(ctx,/g)||[]).length-1,1,'visual lab must render exactly one point marker');
 
 const sw=await readFile(new URL('../sw.js',import.meta.url),'utf8');
-assert.ok(sw.includes("weight-v91-showcase-header"));assert.equal(sw.includes('c.addAll(ASSETS).catch'),false);
+assert.ok(sw.includes("weight-v92-profile-header-editor"));assert.equal(sw.includes('c.addAll(ASSETS).catch'),false);
 for(const entry of SHOWROOM_CATALOG_V2.filter(entry=>entry.asset))assert.ok(sw.includes(`'${entry.asset}'`),`sw:${entry.asset}`);
 
 const showroom=await readFile(new URL('../dressroom.html',import.meta.url),'utf8');

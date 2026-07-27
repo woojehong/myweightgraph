@@ -104,26 +104,36 @@
     }
 
     /* ── 미니 프로필 (데스크탑 기본) ───────────────────────────── */
-    .cmp-profile{ display:flex; align-items:center; gap:14px; min-height:132px; margin-bottom:8px; padding:8px 12px; flex-wrap:nowrap; }
-    .cmp-avatar{ width:116px; height:116px; flex:0 0 116px; }
+    .cmp-profile{display:grid;grid-template-columns:132px minmax(0,1fr) minmax(300px,.95fr);grid-template-rows:auto minmax(82px,1fr);column-gap:16px;row-gap:8px;min-height:166px;margin-bottom:8px;padding:12px 14px}
+    .cmp-avatar{width:132px;height:132px;grid-column:1;grid-row:1/3;align-self:center}
     .cmp-avatar-inner{
       width:26px; height:26px; border-radius:50%; background:#0d1117;
       display:flex; align-items:center; justify-content:center;
       font-size:15px; position:relative; z-index:1; overflow:hidden;
     }
-    .cmp-info{ display:flex; flex:1 1 auto; overflow:hidden; flex-direction:column; align-items:flex-start; justify-content:center; gap:5px; line-height:1.2; min-width:0; }
+    .cmp-info{grid-column:2;grid-row:1;display:flex;overflow:hidden;flex-direction:column;align-items:flex-start;justify-content:start;gap:4px;line-height:1.2;min-width:0;padding-top:3px}
     .cmp-title{ font-size:11px; font-weight:750; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
     .cmp-name{ font-size:17px; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
-    .cmp-message{max-width:100%;margin-top:5px;padding:6px 9px;border-left:2px solid rgba(255,255,255,.2);background:rgba(255,255,255,.035);border-radius:0 7px 7px 0;color:rgba(255,255,255,.72);font-size:10px;line-height:1.35;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .cmp-message-panel{grid-column:2;grid-row:2;min-width:0;display:flex;flex-direction:column;gap:6px;padding:9px 10px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.035);border-radius:9px}
+    .cmp-message-label{font-size:9px;font-weight:800;color:rgba(255,255,255,.52);letter-spacing:.04em}
+    .cmp-message{margin:0;color:rgba(255,255,255,.78);font-size:10px;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere}
+    .cmp-message-input{width:100%;min-height:50px;resize:none;border:0;outline:0;background:transparent;color:var(--text);font:inherit;font-size:10px;line-height:1.45;padding:0}
+    .cmp-message-actions{display:flex;justify-content:flex-end;gap:5px;margin-top:auto}
+    .cmp-message-actions button{padding:3px 8px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--muted);font-size:8px}
+    .cmp-message-actions .save{border-color:rgba(0,229,170,.45);color:var(--teal)}
+    .cmp-message-empty{color:rgba(255,255,255,.35);font-style:italic}
     .cmp-score{ display:none; }
 
     /* ── 최고/최저/현재 배지 (프로필 줄 오른쪽 정렬) ───────────── */
-    .cmp-markers{ display:flex; flex-direction:column; align-items:stretch; gap:5px; margin-left:auto; flex:0 0 104px; }
+    .cmp-trophies{grid-column:3;grid-row:1;display:flex;flex-direction:row-reverse;justify-content:flex-start;align-items:flex-start;gap:5px;min-height:34px}
+    .cmp-trophies .v3-trophy-image{width:34px;height:34px;object-fit:contain;filter:drop-shadow(0 3px 4px #000b)}
+    .cmp-markers{grid-column:3;grid-row:2;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:end;gap:8px;min-width:0}
     .mk{
-      display:flex; flex-direction:column; align-items:flex-end; line-height:1.15;
-      padding:3px 7px; border-radius:7px; white-space:nowrap;
+      display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.15;
+      min-height:62px;padding:6px 8px;border-radius:9px;white-space:nowrap;text-align:center;
     }
-    .mk b{ font-size:11px; font-weight:800; color:#fff; }
+    .mk b{display:flex;flex-direction:column;gap:3px;font-size:13px;font-weight:800;color:#fff}
+    .mk b em{font-size:9px;font-style:normal;font-weight:700;color:rgba(255,255,255,.78)}
     .mk span{ font-size:9px; color:rgba(255,255,255,.78); margin-top:1px; }
     .mk-max{ background:rgba(195,65,42,.92); }
     .mk-min{ background:rgba(34,128,50,.92); }
@@ -132,16 +142,19 @@
 
     /* ── 모바일: 미니 프로필 2배 축소 (아이콘·텍스트 간격 확보) ── */
     @media(max-width:767px){
-      .cmp-profile{ gap:8px; margin-bottom:6px; padding:0 6px; }
-      .cmp-avatar{ width:64px; height:64px; flex-basis:64px; }
+      .cmp-profile{grid-template-columns:64px minmax(0,1fr);grid-template-rows:auto auto auto auto;min-height:0;margin-bottom:6px;padding:8px;gap:7px}
+      .cmp-avatar{width:64px;height:64px;grid-column:1;grid-row:1/3}
       .cmp-avatar-inner{ width:14px; height:14px; font-size:9px; }
-      .cmp-profile{min-height:76px}
+      .cmp-info{grid-column:2;grid-row:1}
+      .cmp-message-panel{grid-column:1/3;grid-row:3}
+      .cmp-trophies{grid-column:2;grid-row:2}
+      .cmp-markers{grid-column:1/3;grid-row:4}
       .cmp-title{ font-size:8px; }
       .cmp-name{ font-size:11px; }
-      .cmp-message{font-size:8px;padding:4px 6px}
+      .cmp-message,.cmp-message-input{font-size:8px}
       .cmp-score{ font-size:7px; }
-      .cmp-markers{ gap:4px; }
-      .mk{ padding:2px 5px; border-radius:6px; }
+      .cmp-markers{gap:4px}
+      .mk{min-height:48px;padding:4px;border-radius:6px}
       .mk b{ font-size:9px; }
       .mk span{ font-size:7px; }
       .cmp-content{grid-template-columns:minmax(0,1fr) 58px}
@@ -216,13 +229,13 @@
 <div class="toast" id="toast"></div>
 
 <script type="module">
-import { getUser, getUsers, getWeights, getSettings, getTierSettings } from './js/db.js';
+import { getUser, getUsers, getWeights, getSettings, getTierSettings, updateUser } from './js/db.js';
 import { isAuthed, clearAuth } from './js/auth.js';
 import { renderChart, aggregateRecords, periodLabel } from './js/chart-render.js';
 import { getTierForScore, DEFAULT_TIERS } from './js/achievements.js';
 import { esc } from './js/util.js';
-import { applyCardV2, decorateMainPlotV2, getChartDecorationsV2, profileVisualForUserV2, profileShowcaseForUserV2, titleInfoV2 } from './js/showroom-v2.js?v=91';
-import { activeTodayMessage } from './js/today-message.js';
+import { applyCardV2, decorateMainPlotV2, getChartDecorationsV2, normalizeLoadoutV2, profileVisualForUserV2, profileShowcaseForUserV2, renderTrophyV2, titleInfoV2 } from './js/showroom-v2.js?v=92';
+import { activeTodayMessage, normalizeTodayMessage, todayMessageDayKey } from './js/today-message.js';
 
 const uid = new URLSearchParams(location.search).get('user') || localStorage.getItem('uid');
 if (!uid) location.href = 'index.html';
@@ -404,6 +417,8 @@ function cellHTML(u) {
   const tc = tier.color;
   const title=titleInfoV2(u.showroomLoadoutV2);
   const todayMessage=activeTodayMessage(u);
+  const isMine=u.id===uid;
+  const trophies=normalizeLoadoutV2(u.showroomLoadoutV2).trophy;
   const recs = aggregateRecords(weightsCache[u.id] || [], viewMode);
   const hasData = recs.filter(r => r.weight != null).length >= 2;
   const body = hasData
@@ -414,7 +429,7 @@ function cellHTML(u) {
   const m = markerStats(recs);
   const badge = (cls, label, w, date) => `
     <div class="mk ${cls}">
-      <b>${label} ${w.toFixed(1)}kg</b>
+      <b><em>${label}</em>${w.toFixed(1)}kg</b>
       <span>${shortDate(date)}</span>
     </div>`;
   const markers = m ? `
@@ -429,12 +444,16 @@ function cellHTML(u) {
     <div class="cmp-cell ${graphOnlyMode?'graph-only':''}">
       ${graphOnlyMode?`<div class="cmp-graph-only-name">${esc(u.name)}</div>`:`
       <div class="cmp-profile">
-        <div class="cmp-avatar">${profileShowcaseForUserV2(u,116)}</div>
+        <div class="cmp-avatar">${profileShowcaseForUserV2(u,132)}</div>
         <div class="cmp-info">
           ${title ? `<span class="cmp-title" style="color:${title.color}">${esc(title.name)}</span>` : ''}
           <span class="cmp-name" style="color:${tc}">${esc(u.name)}</span>
-          ${todayMessage?`<span class="cmp-message">${esc(todayMessage)}</span>`:''}
         </div>
+        <div class="cmp-message-panel">
+          <span class="cmp-message-label">오늘의 한마디</span>
+          ${isMine?`<textarea class="cmp-message-input" data-today-message maxlength="160" placeholder="하고 싶은 말이나 짧은 자기소개">${esc(todayMessage)}</textarea><div class="cmp-message-actions"><button data-message-reset>초기화</button><button class="save" data-message-save>저장</button></div>`:todayMessage?`<p class="cmp-message">${esc(todayMessage)}</p>`:`<p class="cmp-message cmp-message-empty">오늘 남긴 한마디가 없습니다.</p>`}
+        </div>
+        <div class="cmp-trophies">${trophies.map(renderTrophyV2).join('')}</div>
         ${markers}
       </div>`}
       <div class="cmp-content avatar-hidden">${body}</div>
@@ -461,6 +480,9 @@ async function renderGrid() {
   const users = selected.map(id => allUsers.find(u => u.id === id)).filter(Boolean);
   grid.innerHTML = users.map(cellHTML).join('');
   [...grid.querySelectorAll('.cmp-cell')].forEach((cell,index) => {const u=users[index];if(!graphOnlyMode)applyCardV2(cell,u?.showroomLoadoutV2);const plot=cell.querySelector('[data-main-weight-plot="true"]');if(plot)decorateMainPlotV2(plot,u?.showroomLoadoutV2)});
+  const mine=grid.querySelector('.cmp-cell textarea[data-today-message]');
+  grid.querySelector('[data-message-save]')?.addEventListener('click',()=>saveMessage(mine?.value||''));
+  grid.querySelector('[data-message-reset]')?.addEventListener('click',()=>saveMessage(''));
 
   // 캔버스가 DOM에 들어간 뒤 차트 렌더
   users.forEach(u => {
@@ -473,6 +495,18 @@ async function renderGrid() {
       catch (e) { console.warn('renderChart failed for', u.id, e); }
     }
   });
+}
+
+async function saveMessage(raw){
+  const todayMessage=normalizeTodayMessage(raw);
+  const todayMessageDay=todayMessage?todayMessageDayKey():null;
+  try{
+    await updateUser(uid,{todayMessage,todayMessageDay});
+    allUsers=allUsers.map(user=>user.id===uid?{...user,todayMessage,todayMessageDay}:user);
+    curUser={...curUser,todayMessage,todayMessageDay};
+    showToast(todayMessage?'오늘의 한마디를 저장했습니다.':'오늘의 한마디를 초기화했습니다.');
+    renderGrid();
+  }catch(error){showToast(error.message||'저장하지 못했습니다.','err')}
 }
 
 // 창 크기 변경 시 종횡비 재계산 위해 재렌더 (디바운스)

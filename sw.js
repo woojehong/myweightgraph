@@ -1,4 +1,4 @@
-const CACHE = 'weight-v91-showcase-header';
+const CACHE = 'weight-v92-profile-header-editor';
 const ASSETS = [
   './index.html', './dashboard.html', './input.html', './import.html',
   './achievements.html', './compare.html', './dressroom.html', './shop.html', './guide.html', './visual-lab.html',

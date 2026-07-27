@@ -1,7 +1,7 @@
 import {
   SHOWROOM_CATALOG_V2, SHOWROOM_CATEGORIES, SHOWROOM_DEFAULTS,
   resolveShowroomItemIdV2,
-} from './showroom-catalog-v2.js?v=91';
+} from './showroom-catalog-v2.js?v=92';
 import { TITLES_CATALOG_V2, TITLE_RARITY_COLORS } from './titles-catalog-v2.js';
 
 export const RARITY_META=Object.freeze({
@@ -202,11 +202,10 @@ export function decorateMainPlotV2(plot,raw){
   if(!plot?.matches?.('[data-main-weight-plot="true"]'))return false;
   plot.querySelector(':scope > .v3-main-plot-decor')?.remove();
   const loadout=normalizeLoadoutV2(raw),graph=getCatalogItemV2(loadout.graph_skin),ambient=getCatalogItemV2(loadout.ambient_effect);
-  const trophies=loadout.trophy.map(getCatalogItemV2).filter(Boolean);
-  if(!graph&&!ambient&&!trophies.length)return false;
+  if(!graph&&!ambient)return false;
   const host=document.createElement('div');
   host.className='v3-main-plot-decor';host.setAttribute('aria-hidden','true');host.dataset.showroomMainPlot='true';host.dataset.aspectRatio='16:9';host.dataset.hasGraph=graph?'true':'false';
-  host.innerHTML=`${img(graph,'v3-graph-layer')}${img(ambient,'v3-ambient-layer')}<span class="v3-plot-scrim"></span><span class="v2-trophies">${trophies.map(entry=>renderTrophyV2(entry.id)).join('')}</span>`;
+  host.innerHTML=`${img(graph,'v3-graph-layer')}${img(ambient,'v3-ambient-layer')}<span class="v3-plot-scrim"></span>`;
   plot.prepend(host);
   return true;
 }
