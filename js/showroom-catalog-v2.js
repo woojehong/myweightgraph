@@ -150,7 +150,9 @@ const showroomV5Ids=new Set(SHOWROOM_V5_ADDITIONS.map(entry=>entry.id));
 export const SHOWROOM_CATALOG_V2=Object.freeze([
   ...SHOWROOM_CATALOG_BASE,
   ...SHOWROOM_V5_ADDITIONS,
-]);
+].map(entry => entry.purchasable === true
+  ? Object.freeze({ ...entry, price:showroomPriceOf(entry.category, entry.rarity) })
+  : entry));
 
 // Exact V2 ids are retained only as a compatibility index. They are not active catalog entries.
 const LEGACY_IDS_BY_CATEGORY = Object.freeze({

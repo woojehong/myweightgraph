@@ -50,7 +50,7 @@ const tierSpecs = Object.freeze({
 });
 
 export const COMPANION_V5_TIER_SPECS = tierSpecs;
-export const COMPANION_V5_PRICE_BY_RARITY = Object.freeze({ uncommon: 300, rare: 750, epic: 1800, legendary: 3600 });
+export const COMPANION_V5_PRICE_BY_RARITY = Object.freeze({ uncommon: 360, rare: 720, epic: 1170, legendary: 1800 });
 
 const releasedItem = (rarity, [id, name, visual]) => Object.freeze({
   id,

@@ -4,10 +4,10 @@ import { SHOWROOM_V4_RUNTIME } from './showroom-catalog-v4.generated.js';
 // asset QA. Keeping the generated manifest staging-only prevents accidental
 // release of other unfinished V4 categories.
 export const GRAPH_SKIN_PRICE_BY_RARITY = Object.freeze({
-  uncommon: 900,
-  rare: 1800,
-  epic: 3600,
-  legendary: 7200,
+  uncommon: 600,
+  rare: 1200,
+  epic: 1950,
+  legendary: 3000,
 });
 
 export const GRAPH_SKIN_SAFE_AREA = Object.freeze({

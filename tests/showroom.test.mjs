@@ -54,8 +54,8 @@ for(const entry of SHOWROOM_CATALOG_V2){
   assert.equal(entry.purchasable,entry.category==='trophy'?false:!staged,entry.id);
 }
 const releasedGraphSkins=SHOWROOM_CATALOG_V2.filter(entry=>entry.category==='graph_skin');
-assert.deepEqual(GRAPH_SKIN_PRICE_BY_RARITY,{uncommon:900,rare:1800,epic:3600,legendary:7200});
-assert.deepEqual(releasedGraphSkins.map(entry=>entry.price),[900,900,900,1800,1800,1800,3600,3600,3600,7200,7200,7200]);
+assert.deepEqual(GRAPH_SKIN_PRICE_BY_RARITY,{uncommon:600,rare:1200,epic:1950,legendary:3000});
+assert.deepEqual(releasedGraphSkins.map(entry=>entry.price),[600,600,600,1200,1200,1200,1950,1950,1950,3000,3000,3000]);
 assert.deepEqual(releasedGraphSkins.map(entry=>entry.name),[
   '무쇠산 작업장','달빛 여관','사막 유랑단','세계수 꿈길','폭풍왕국','붉은철 요새',
   '은빛달 궁정','별벼림 창조소','심해 여왕 궁전','빙관 왕좌','황천 검은 성소','용군단 화염둥지',
@@ -114,7 +114,7 @@ assert.deepEqual(getChartDecorationsV2(SHOWROOM_DEFAULTS),{});
 assert.equal(getChartDecorationsV2({point_marker:'pm_phoenix_seal'}).markerAsset,'./assets/showroom-v3/point_marker/pm_phoenix_seal.png');
 const transactionSnapshot={coins:4200,purchasedItemsV2:['legacy_owned'],achievementRewardItems:['legacy_reward'],adminGrantedItems:[]};
 const transactionBefore=structuredClone(transactionSnapshot);
-assert.deepEqual(validateCatalogPurchaseV2(['gs_v4_uncommon_01']).map(entry=>[entry.id,entry.price]),[['gs_v4_uncommon_01',900]]);
+assert.deepEqual(validateCatalogPurchaseV2(['gs_v4_uncommon_01']).map(entry=>[entry.id,entry.price]),[['gs_v4_uncommon_01',600]]);
 assert.throws(()=>validateCatalogPurchaseV2(['tr_summit_compass']),/트로피는 구매할 수 없으며 업적 달성 또는 관리자 지급으로만 획득/);
 assert.deepEqual(transactionSnapshot,transactionBefore,'blocked purchase must not mutate coins or ownership');
 assert.deepEqual(persistableLoadoutV2({graph_skin:'gs_v4_uncommon_01',companion:'cp_sleepy_golem',trophy:['tr_cosmic_goblet'],companionLayout:{scale:1.35,opacity:.65,x:24,y:81}}),{...SHOWROOM_DEFAULTS,graph_skin:'gs_v4_uncommon_01',companion:'cp_sleepy_golem',trophy:['tr_cosmic_goblet'],title:null,companionLayout:{scale:1.35,opacity:.65,x:24,y:81}});
@@ -242,7 +242,7 @@ assert.equal((visualLab.match(/drawMarker\(ctx,marker,/g)||[]).length,1,'visual 
 assert.equal((visualLab.match(/drawMarker\(ctx,/g)||[]).length-1,1,'visual lab must render exactly one point marker');
 
 const sw=await readFile(new URL('../sw.js',import.meta.url),'utf8');
-assert.ok(sw.includes("weight-v87-reward-economy"));assert.equal(sw.includes('c.addAll(ASSETS).catch'),false);
+assert.ok(sw.includes("weight-v88-reward-prices"));assert.equal(sw.includes('c.addAll(ASSETS).catch'),false);
 for(const entry of SHOWROOM_CATALOG_V2.filter(entry=>entry.asset))assert.ok(sw.includes(`'${entry.asset}'`),`sw:${entry.asset}`);
 
 const showroom=await readFile(new URL('../dressroom.html',import.meta.url),'utf8');

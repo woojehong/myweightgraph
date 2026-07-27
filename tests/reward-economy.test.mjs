@@ -4,7 +4,7 @@ import {
   dailyProgress, dailyBonusProgress, weeklyProgress, monthlyProgress,
   weekStartOf, cappedEarned, sumPoints, WEEKLY_CAP, MONTHLY_CAP,
 } from '../js/quests.js';
-import { showroomPriceOf } from '../js/showroom-catalog-v2.js';
+import { showroomPriceOf, SHOWROOM_CATALOG_V2 } from '../js/showroom-catalog-v2.js';
 import { calculateEarnedIds, calcTotalScore } from '../js/achievements.js';
 
 const fullDay = (date, water=1) => ({
@@ -37,6 +37,9 @@ assert.equal(showroomPriceOf('card_theme','legendary'), 2200);
 assert.equal(showroomPriceOf('companion','legendary'), 1800);
 assert.equal(showroomPriceOf('profile_emoji','legendary'), 1200);
 assert.equal(showroomPriceOf('emoji_border','legendary'), 900);
+for (const item of SHOWROOM_CATALOG_V2.filter(item => item.purchasable === true))
+  assert.equal(item.price, showroomPriceOf(item.category, item.rarity),
+    `${item.id}의 실제 카탈로그 가격도 경제표와 일치해야 한다`);
 
 const db = fs.readFileSync(new URL('../js/db.js', import.meta.url), 'utf8');
 assert.ok(db.includes('isRewardEligibleDay(dateStr)'));

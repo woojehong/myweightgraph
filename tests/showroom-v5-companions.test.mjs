@@ -82,7 +82,7 @@ for (const entry of COMPANION_ITEMS_V5) {
   assert.equal(resolveShowroomItemIdV2(entry.id), entry.id, `${entry.id}: new identity must not be aliased`);
   assert.equal(getCatalogItemV2(entry.id)?.id, entry.id);
   assert.equal(entry.rarity, isLegendary ? 'legendary' : isEpic ? 'epic' : isRare ? 'rare' : 'uncommon');
-  assert.equal(entry.price, isLegendary ? 3600 : isEpic ? 1800 : isRare ? 750 : 300);
+  assert.equal(entry.price, isLegendary ? 1800 : isEpic ? 1170 : isRare ? 720 : 360);
   assert.equal(entry.testOnly, false);
   assert.equal(entry.purchasable, true);
   assert.equal(entry.persistable, true);
@@ -111,10 +111,10 @@ for (const entry of COMPANION_ITEMS_V5) {
   else assert.ok(magenta <= 1, `${entry.id}: chroma-key fringe remains`);
 }
 
-assert.deepEqual(validateCatalogPurchaseV2(['cp_u01']).map(item => [item.id, item.price]), [['cp_u01', 300]]);
-assert.deepEqual(validateCatalogPurchaseV2(['cp_r01']).map(item => [item.id, item.price]), [['cp_r01', 750]]);
-assert.deepEqual(validateCatalogPurchaseV2(['cp_e01']).map(item => [item.id, item.price]), [['cp_e01', 1800]]);
-assert.deepEqual(validateCatalogPurchaseV2(['cp_l01']).map(item => [item.id, item.price]), [['cp_l01', 3600]]);
+assert.deepEqual(validateCatalogPurchaseV2(['cp_u01']).map(item => [item.id, item.price]), [['cp_u01', 360]]);
+assert.deepEqual(validateCatalogPurchaseV2(['cp_r01']).map(item => [item.id, item.price]), [['cp_r01', 720]]);
+assert.deepEqual(validateCatalogPurchaseV2(['cp_e01']).map(item => [item.id, item.price]), [['cp_e01', 1170]]);
+assert.deepEqual(validateCatalogPurchaseV2(['cp_l01']).map(item => [item.id, item.price]), [['cp_l01', 1800]]);
 assert.equal(persistableLoadoutV2({ ...SHOWROOM_DEFAULTS, companion: 'cp_r10' }).companion, 'cp_r10');
 assert.deepEqual([...ownedItemIdsV2({ purchasedItemsV2: ['cp_u03'] })], ['cp_u03']);
 
