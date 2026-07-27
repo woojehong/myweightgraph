@@ -1,4 +1,4 @@
-const CACHE = 'weight-v101-card-theme-collection';
+const CACHE = 'weight-v102-clean-card-theme-crops';
 const ASSETS = [
   './index.html', './dashboard.html', './input.html', './import.html',
   './achievements.html', './compare.html', './dressroom.html', './shop.html', './guide.html', './visual-lab.html',

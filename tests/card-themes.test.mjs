@@ -34,7 +34,7 @@ for(const token of ['grid-template-columns:repeat(7,30px)','grid-template-rows:r
 for(const token of ['.sr-profile-head[data-card-theme] .sr-profile-markers{display:grid','min-width:100%;justify-self:stretch!important','.cmp-profile[data-card-theme] .cmp-markers{display:grid'])assert.ok((showroom+compare).includes(token),token);
 
 const sw = await readFile(new URL('../sw.js',import.meta.url),'utf8');
-assert.ok(sw.includes('weight-v101-card-theme-collection'));
+assert.ok(sw.includes('weight-v102-clean-card-theme-crops'));
 for(const item of CARD_THEME_ITEMS)assert.ok(sw.includes(item.asset),item.id);
 for(const item of PORTRAIT_FRAME_ITEMS_V7)assert.ok(sw.includes(item.asset),item.id);
 
