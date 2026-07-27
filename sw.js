@@ -1,4 +1,4 @@
-const CACHE = 'weight-v99-integrated-card-panels';
+const CACHE = 'weight-v100-fitted-panel-frames';
 const ASSETS = [
   './index.html', './dashboard.html', './input.html', './import.html',
   './achievements.html', './compare.html', './dressroom.html', './shop.html', './guide.html', './visual-lab.html',
@@ -111,6 +111,8 @@ const ASSETS = [
   './assets/showroom-v7/emoji_border/eb_l_rediron_warchief.png',
   './assets/showroom-v8/card_theme/ct8_legendary_frozen_throne.png',
   './assets/showroom-v8/card_theme/ct8_legendary_nether_sanctum.png',
+  './assets/showroom-v8/card_theme/panels/frozen_panel_frame.png',
+  './assets/showroom-v8/card_theme/panels/nether_panel_frame.png',
 ];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
