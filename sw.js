@@ -1,4 +1,4 @@
-const CACHE = 'weight-v100-fitted-panel-frames';
+const CACHE = 'weight-v101-card-theme-collection';
 const ASSETS = [
   './index.html', './dashboard.html', './input.html', './import.html',
   './achievements.html', './compare.html', './dressroom.html', './shop.html', './guide.html', './visual-lab.html',
@@ -113,6 +113,24 @@ const ASSETS = [
   './assets/showroom-v8/card_theme/ct8_legendary_nether_sanctum.png',
   './assets/showroom-v8/card_theme/panels/frozen_panel_frame.png',
   './assets/showroom-v8/card_theme/panels/nether_panel_frame.png',
+  './assets/showroom-v8/card_theme/ct8_u_bear_dugout.webp',
+  './assets/showroom-v8/card_theme/ct8_u_twin_stadium.webp',
+  './assets/showroom-v8/card_theme/ct8_u_tiger_clubhouse.webp',
+  './assets/showroom-v8/card_theme/ct8_u_walnut_cafe.webp',
+  './assets/showroom-v8/card_theme/ct8_u_dawn_runner.webp',
+  './assets/showroom-v8/card_theme/ct8_r_wolong_silk.webp',
+  './assets/showroom-v8/card_theme/ct8_r_red_hare_lacquer.webp',
+  './assets/showroom-v8/card_theme/ct8_r_crescent_dragon.webp',
+  './assets/showroom-v8/card_theme/ct8_r_imperial_bronze.webp',
+  './assets/showroom-v8/card_theme/ct8_r_moon_archive.webp',
+  './assets/showroom-v8/card_theme/ct8_e_crimson_reactor.webp',
+  './assets/showroom-v8/card_theme/ct8_e_storm_guardian.webp',
+  './assets/showroom-v8/card_theme/ct8_e_web_tech.webp',
+  './assets/showroom-v8/card_theme/ct8_e_dimensional_mystic.webp',
+  './assets/showroom-v8/card_theme/ct8_e_kinetic_alloy.webp',
+  './assets/showroom-v8/card_theme/ct8_l_sun_crystal_regalia.webp',
+  './assets/showroom-v8/card_theme/ct8_l_raven_arcane.webp',
+  './assets/showroom-v8/card_theme/ct8_l_dark_ranger_requiem.webp',
 ];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));

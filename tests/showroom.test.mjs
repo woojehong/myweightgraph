@@ -22,17 +22,17 @@ import {
 
 assert.equal(assertShowroomCatalogV2(),true);
 assert.deepEqual(SHOWROOM_V4_ACTIVE_CATEGORIES,['graph_skin','line_style','ambient_effect','emoji_border']);
-assert.equal(SHOWROOM_CATALOG_V2.length,164);
+assert.equal(SHOWROOM_CATALOG_V2.length,182);
 assert.equal(TITLES_CATALOG_V2.length,30);
-assert.equal(ALL_CATALOG_V2.length,150);
+assert.equal(ALL_CATALOG_V2.length,168);
 assert.deepEqual(SHOWROOM_CATEGORIES,['graph_skin','line_style','card_theme','point_marker','companion','ambient_effect','trophy','profile_emoji','emoji_border']);
 assert.deepEqual(V2_CATEGORIES,[...SHOWROOM_CATEGORIES.filter(category=>category!=='companion'),'title']);
-assert.equal(new Set(ALL_CATALOG_V2.map(entry=>entry.id)).size,150);
-assert.equal(new Set(SHOWROOM_CATALOG_V2.filter(entry=>entry.asset).map(entry=>entry.asset)).size,96);
+assert.equal(new Set(ALL_CATALOG_V2.map(entry=>entry.id)).size,168);
+assert.equal(new Set(SHOWROOM_CATALOG_V2.filter(entry=>entry.asset).map(entry=>entry.asset)).size,114);
 
 for(const category of SHOWROOM_CATEGORIES){
   const entries=SHOWROOM_CATALOG_V2.filter(entry=>entry.category===category);
-  const expectedCount={graph_skin:12,line_style:32,card_theme:2,companion:44,ambient_effect:36,profile_emoji:10,emoji_border:20}[category]??4;
+  const expectedCount={graph_skin:12,line_style:32,card_theme:20,companion:44,ambient_effect:36,profile_emoji:10,emoji_border:20}[category]??4;
   assert.equal(entries.length,expectedCount,category);
   const per=['companion','profile_emoji','card_theme'].includes(category)?1:expectedCount>=12?expectedCount/4:1;
   assert.deepEqual(entries.map(entry=>entry.rarity),category==='companion'
@@ -40,12 +40,12 @@ for(const category of SHOWROOM_CATEGORIES){
     : category==='profile_emoji'
       ? Array(10).fill('legendary')
     : category==='card_theme'
-      ? Array(2).fill('legendary')
+      ? [...Array(5).fill('uncommon'),...Array(5).fill('rare'),...Array(5).fill('epic'),...Array(5).fill('legendary')]
     : expectedCount===0?[]
     : expectedCount>=12?['uncommon','rare','epic','legendary'].flatMap(r=>Array(per).fill(r))
     : ['uncommon','rare','epic','legendary']);
 }
-assert.equal(SHOWROOM_CATALOG_V2.filter(entry=>entry.category==='card_theme').length,2,'only the expanded-header approval prototypes may be active');
+assert.equal(SHOWROOM_CATALOG_V2.filter(entry=>entry.category==='card_theme').length,20,'the expanded-header collection must contain five themes per rarity');
 const legendaryProfiles=SHOWROOM_CATALOG_V2.filter(entry=>entry.category==='profile_emoji'&&entry.rarity==='legendary'&&entry.id.startsWith('pe_l_'));
 assert.equal(legendaryProfiles.length,10,'the first V6 legendary profile set must contain ten additive items');
 assert.ok(['빙관의 타락왕자','파도유리 대마도사','강철턱 대족장','까마귀탑의 수호자'].every(name=>legendaryProfiles.some(entry=>entry.name===name)));
@@ -251,7 +251,7 @@ assert.equal((visualLab.match(/drawMarker\(ctx,marker,/g)||[]).length,1,'visual 
 assert.equal((visualLab.match(/drawMarker\(ctx,/g)||[]).length-1,1,'visual lab must render exactly one point marker');
 
 const sw=await readFile(new URL('../sw.js',import.meta.url),'utf8');
-assert.ok(sw.includes("weight-v100-fitted-panel-frames"));assert.equal(sw.includes('c.addAll(ASSETS).catch'),false);
+assert.ok(sw.includes("weight-v101-card-theme-collection"));assert.equal(sw.includes('c.addAll(ASSETS).catch'),false);
 for(const entry of SHOWROOM_CATALOG_V2.filter(entry=>entry.asset))assert.ok(sw.includes(`'${entry.asset}'`),`sw:${entry.asset}`);
 
 const showroom=await readFile(new URL('../dressroom.html',import.meta.url),'utf8');

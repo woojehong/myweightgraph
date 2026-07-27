@@ -5,9 +5,9 @@ import { PORTRAIT_FRAME_ITEMS_V7 } from '../js/showroom-portrait-frames-v7.js';
 import { SHOWROOM_CATALOG_V2 } from '../js/showroom-catalog-v2.js';
 import { applyCardV2 } from '../js/showroom-v2.js';
 
-assert.equal(CARD_THEME_ITEMS.length,2);
-assert.deepEqual(CARD_THEME_ITEMS.map(item=>item.id),['ct8_legendary_frozen_throne','ct8_legendary_nether_sanctum']);
-assert.equal(SHOWROOM_CATALOG_V2.filter(item => item.category === 'card_theme').length,2);
+assert.equal(CARD_THEME_ITEMS.length,20);
+assert.deepEqual(CARD_THEME_ITEMS.map(item=>item.rarity),[...Array(5).fill('uncommon'),...Array(5).fill('rare'),...Array(5).fill('epic'),...Array(5).fill('legendary')]);
+assert.equal(SHOWROOM_CATALOG_V2.filter(item => item.category === 'card_theme').length,20);
 for(const item of CARD_THEME_ITEMS){assert.equal(item.testOnly,true);assert.equal(item.purchasable,false);assert.equal(item.persistable,false)}
 assert.equal(PORTRAIT_FRAME_ITEMS_V7.length,20);
 assert.deepEqual(PORTRAIT_FRAME_ITEMS_V7.map(item=>item.rarity),[
@@ -34,7 +34,7 @@ for(const token of ['grid-template-columns:repeat(7,30px)','grid-template-rows:r
 for(const token of ['.sr-profile-head[data-card-theme] .sr-profile-markers{display:grid','min-width:100%;justify-self:stretch!important','.cmp-profile[data-card-theme] .cmp-markers{display:grid'])assert.ok((showroom+compare).includes(token),token);
 
 const sw = await readFile(new URL('../sw.js',import.meta.url),'utf8');
-assert.ok(sw.includes('weight-v100-fitted-panel-frames'));
+assert.ok(sw.includes('weight-v101-card-theme-collection'));
 for(const item of CARD_THEME_ITEMS)assert.ok(sw.includes(item.asset),item.id);
 for(const item of PORTRAIT_FRAME_ITEMS_V7)assert.ok(sw.includes(item.asset),item.id);
 
