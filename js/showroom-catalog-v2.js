@@ -4,6 +4,7 @@ import { CARD_THEME_ITEMS } from './showroom-card-themes.js';
 import { LINE_STYLE_ITEMS, AMBIENT_EFFECT_ITEMS } from './showroom-fx.js';
 import { COMPANION_ITEMS_V5 } from './showroom-companions-v5.js';
 import { PROFILE_EMOJI_ITEMS_V6 } from './showroom-profile-emojis-v6.js';
+import { PORTRAIT_FRAME_ITEMS_V7 } from './showroom-portrait-frames-v7.js';
 
 // Maweg showroom catalog: V4 fully replaces V3 only after a validated 108-item runtime module exists.
 const item = (category, id, name, rarity, price, asset, visual) => Object.freeze({
@@ -20,12 +21,7 @@ const specs = Object.freeze({
     ['gs_cosmic_timekeeper','우주 시계판','legendary',3500,'webp','황금 천체 장치가 움직이는 별빛 판'],
   ],
   line_style: [],
-  card_theme: [
-    ['ct_alpine_dawn','설산의 여명','uncommon',500,'webp','새벽 설산이 펼쳐지는 카드 테마'],
-    ['ct_sunken_temple','침몰한 신전','rare',1000,'webp','심해 유적과 푸른 빛의 카드 테마'],
-    ['ct_moonlit_grove','달빛 숲','epic',1800,'webp','고목과 달빛 폭포가 둘러싼 카드 테마'],
-    ['ct_cosmic_observatory','우주 관측소','legendary',3500,'webp','행성과 성운이 보이는 황금 관측소'],
-  ],
+  card_theme: [],
   point_marker: [
     ['pm_expedition_compass','원정 나침반','uncommon',500,'png','원정대를 안내하는 황동 나침반'],
     ['pm_moon_crystal','달빛 수정','rare',1000,'png','은빛 달빛이 맺힌 푸른 수정'],
@@ -56,12 +52,7 @@ const specs = Object.freeze({
     ['pe_dragonblood','용혈 전사','epic',1800,'png','용의 힘을 이어받은 붉은 전사'],
     ['pe_celestial_oracle','천상의 예언자','legendary',3500,'png','별의 흐름을 읽는 천상의 예언자'],
   ],
-  emoji_border: [
-    ['eb_forged_iron','단조 철테','uncommon',500,'png','묵직하게 벼린 철제 프로필 테두리'],
-    ['eb_worldroot','세계수 테두리','rare',1000,'png','잎과 뿌리가 자라난 세계수 테두리'],
-    ['eb_giant_hunter','거인 사냥꾼','epic',1800,'png','거인의 뿔과 룬으로 만든 테두리'],
-    ['eb_twin_dragon','쌍룡 고리','legendary',3500,'png','두 마리 용이 보석을 감싼 황금 고리'],
-  ],
+  emoji_border: [],
 });
 
 export const SHOWROOM_CATEGORIES = Object.freeze(Object.keys(specs));
@@ -78,15 +69,17 @@ const SHOWROOM_CATALOG_V3_FALLBACK = Object.freeze(SHOWROOM_CATEGORIES.flatMap(c
 // 코드 네이티브 범주: 이미지 에셋 없이 renderSpec으로 그린다.
 export const CODE_NATIVE_CATEGORIES = Object.freeze(['line_style','ambient_effect']);
 const isCodeNative = category => CODE_NATIVE_CATEGORIES.includes(category);
+const RESETTING_CATEGORIES = Object.freeze(['card_theme','emoji_border']);
 // 생성 파일(showroom-catalog-v4.generated.js)은 GPT 스크립트가 덮어쓰므로 건드리지 않고 여기서 병합한다.
 const v4Items=[
   ...(Array.isArray(SHOWROOM_V4_RUNTIME?.items)?SHOWROOM_V4_RUNTIME.items.filter(entry=>entry.category!=='graph_skin'):[]),
   ...GRAPH_SKIN_ITEMS,
   ...CARD_THEME_ITEMS,
+  ...PORTRAIT_FRAME_ITEMS_V7,
   ...LINE_STYLE_ITEMS, ...AMBIENT_EFFECT_ITEMS,
 ].filter((item,i,arr)=>arr.findIndex(x=>x.id===item.id)===i);
 // v4 승격 조건: 12개 이상 & 4등급 균등(4의 배수)
-const completeV4Category=category=>{const entries=v4Items.filter(item=>item.category===category);return entries.length>=12&&entries.length%4===0&&entries.every(item=>(isCodeNative(category)?item.asset===null&&item.renderSpec:item.asset?.startsWith(`./assets/showroom-v4/${category}/`)))};
+const completeV4Category=category=>{const entries=v4Items.filter(item=>item.category===category);return entries.length>=12&&entries.length%4===0&&entries.every(item=>(isCodeNative(category)?item.asset===null&&item.renderSpec:category==='emoji_border'?item.asset?.startsWith('./assets/showroom-v7/emoji_border/'):item.asset?.startsWith(`./assets/showroom-v4/${category}/`)))};
 export const SHOWROOM_V4_ACTIVE_CATEGORIES=Object.freeze(SHOWROOM_CATEGORIES.filter(completeV4Category));
 export const SHOWROOM_CATALOG_VERSION=SHOWROOM_V4_ACTIVE_CATEGORIES.length?`v4-mixed:${SHOWROOM_V4_ACTIVE_CATEGORIES.join(',')}`:'v3-fallback';
 // ── 가격 정책 ────────────────────────────────────────────────────────────
@@ -176,6 +169,7 @@ const activeIds = new Set(Object.values(activeByCategory).flat());
 const aliasPairs=[];
 for(const category of SHOWROOM_CATEGORIES){
   const legacy=LEGACY_IDS_BY_CATEGORY[category];
+  if(activeByCategory[category].length===0)continue;
   legacy.forEach((id,index)=>{
     const _n=activeByCategory[category].length;
     const _per=_n>=12&&_n%4===0?_n/4:1;
@@ -212,7 +206,7 @@ export function assertShowroomCatalogV2(catalog=SHOWROOM_CATALOG_V2){
       : additions;
     if(additions.length!==expectedAdditions.length)throw new Error(`${category}: missing V5 additions`);
     const isV4Tier=baseEntries.length>=12&&baseEntries.length%4===0;
-    const expectedPerCategory=isV4Tier?baseEntries.length:(isCodeNative(category)?0:4);
+    const expectedPerCategory=isV4Tier?baseEntries.length:(isCodeNative(category)||RESETTING_CATEGORIES.includes(category)?0:4);
     if(baseEntries.length!==expectedPerCategory)throw new Error(`${category}: expected ${expectedPerCategory} base items, got ${baseEntries.length}`);
     const perRarity=isV4Tier?baseEntries.length/4:1;
     const expected=expectedPerCategory===0?[]:isV4Tier
@@ -231,14 +225,14 @@ export function assertShowroomCatalogV2(catalog=SHOWROOM_CATALOG_V2){
       }
       if(ids.has(entry.id))throw new Error(`duplicate catalog id: ${entry.id}`);ids.add(entry.id);
       if(entry.asset!==null){if(assets.has(entry.asset))throw new Error(`duplicate catalog asset: ${entry.asset}`);assets.add(entry.asset)}
-      const expectedRoot=PROFILE_EMOJI_ITEMS_V6.some(item=>item.id===entry.id)?'./assets/showroom-v6':showroomV5Ids.has(entry.id)?'./assets/showroom-v5':isV4Tier?'./assets/showroom-v4':'./assets/showroom-v3';
+      const expectedRoot=PORTRAIT_FRAME_ITEMS_V7.some(item=>item.id===entry.id)?'./assets/showroom-v7':PROFILE_EMOJI_ITEMS_V6.some(item=>item.id===entry.id)?'./assets/showroom-v6':showroomV5Ids.has(entry.id)?'./assets/showroom-v5':isV4Tier?'./assets/showroom-v4':'./assets/showroom-v3';
       if(isCodeNative(category)&&entry.asset===null){
         if(!entry.renderSpec)throw new Error(`${entry.id}: invalid code-native item`);
       }else if(!entry.asset||!entry.asset.startsWith(`${expectedRoot}/${category}/`))throw new Error(`${entry.id}: invalid asset path`);
     }
   }
   if(catalog===SHOWROOM_CATALOG_V2){
-    if(Object.keys(LEGACY_SHOWROOM_ID_ALIASES).length<218)throw new Error('legacy alias coverage regressed below the original 218 ids');
+    if(Object.keys(LEGACY_SHOWROOM_ID_ALIASES).length<158)throw new Error('legacy alias coverage regressed below active-category compatibility ids');
     for(const [legacy,target] of Object.entries(LEGACY_SHOWROOM_ID_ALIASES)){
       const targetItem=catalog.find(entry=>entry.id===target);
       if(!targetItem)throw new Error(`${legacy}: missing alias target ${target}`);

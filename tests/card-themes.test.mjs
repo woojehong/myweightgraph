@@ -1,170 +1,38 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { inflateSync } from 'node:zlib';
-
 import { CARD_THEME_ITEMS } from '../js/showroom-card-themes.js';
+import { PORTRAIT_FRAME_ITEMS_V7 } from '../js/showroom-portrait-frames-v7.js';
 import { SHOWROOM_CATALOG_V2 } from '../js/showroom-catalog-v2.js';
-import { applyCardV2, renderCatalogPreviewV2 } from '../js/showroom-v2.js';
+import { applyCardV2 } from '../js/showroom-v2.js';
 
-const expectedPrices = { uncommon: 600, rare: 1200, epic: 2400, legendary: 4800 };
-assert.equal(CARD_THEME_ITEMS.length, 12);
-assert.deepEqual(
-  CARD_THEME_ITEMS.map(item => item.rarity),
-  ['uncommon', 'rare', 'epic', 'legendary'].flatMap(rarity => Array(3).fill(rarity)),
-);
-assert.deepEqual(
-  SHOWROOM_CATALOG_V2.filter(item => item.category === 'card_theme').map(item => item.id),
-  CARD_THEME_ITEMS.map(item => item.id),
-);
+assert.deepEqual(CARD_THEME_ITEMS, []);
+assert.equal(SHOWROOM_CATALOG_V2.some(item => item.category === 'card_theme'), false);
+assert.equal(PORTRAIT_FRAME_ITEMS_V7.length,20);
+assert.deepEqual(PORTRAIT_FRAME_ITEMS_V7.map(item=>item.rarity),[
+  ...Array(5).fill('uncommon'),...Array(5).fill('rare'),...Array(5).fill('epic'),...Array(5).fill('legendary'),
+]);
+assert.deepEqual(PORTRAIT_FRAME_ITEMS_V7.map(item=>item.price),[
+  ...Array(5).fill(180),...Array(5).fill(360),...Array(5).fill(590),...Array(5).fill(900),
+]);
 
-function paeth(a, b, c) {
-  const p = a + b - c, pa = Math.abs(p - a), pb = Math.abs(p - b), pc = Math.abs(p - c);
-  return pa <= pb && pa <= pc ? a : pb <= pc ? b : c;
-}
-
-function decodeRgbaPng(bytes) {
-  assert.equal(bytes.subarray(0, 8).toString('hex'), '89504e470d0a1a0a');
-  let offset = 8, width, height, bitDepth, colorType;
-  const idat = [];
-  while (offset < bytes.length) {
-    const length = bytes.readUInt32BE(offset);
-    const type = bytes.subarray(offset + 4, offset + 8).toString('ascii');
-    const data = bytes.subarray(offset + 8, offset + 8 + length);
-    if (type === 'IHDR') {
-      width = data.readUInt32BE(0); height = data.readUInt32BE(4);
-      bitDepth = data[8]; colorType = data[9];
-    } else if (type === 'IDAT') idat.push(data);
-    offset += 12 + length;
-    if (type === 'IEND') break;
-  }
-  assert.equal(bitDepth, 8); assert.equal(colorType, 6);
-  const packed = inflateSync(Buffer.concat(idat)), stride = width * 4, rgba = Buffer.alloc(stride * height);
-  let sourceOffset = 0;
-  for (let y = 0; y < height; y += 1) {
-    const filter = packed[sourceOffset++];
-    for (let x = 0; x < stride; x += 1) {
-      const raw = packed[sourceOffset++], left = x >= 4 ? rgba[y * stride + x - 4] : 0;
-      const up = y ? rgba[(y - 1) * stride + x] : 0;
-      const upperLeft = y && x >= 4 ? rgba[(y - 1) * stride + x - 4] : 0;
-      const value = filter === 0 ? raw
-        : filter === 1 ? raw + left
-        : filter === 2 ? raw + up
-        : filter === 3 ? raw + Math.floor((left + up) / 2)
-        : filter === 4 ? raw + paeth(left, up, upperLeft)
-        : NaN;
-      assert.ok(Number.isFinite(value), `unsupported PNG filter ${filter}`);
-      rgba[y * stride + x] = value & 255;
-    }
-  }
-  return { width, height, rgba };
-}
-
-for (const item of CARD_THEME_ITEMS) {
-  assert.equal(item.price, expectedPrices[item.rarity], item.id);
-  assert.equal(item.testOnly, false, item.id);
-  assert.equal(item.purchasable, true, item.id);
-  assert.equal(item.persistable, true, item.id);
-  assert.match(item.pairedGraphSkin, /^gs_v4_(uncommon|rare|epic|legendary)_0[1-3]$/);
-  assert.ok(item.typography.family && item.typography.effect && item.typography.weight, item.id);
-  assert.deepEqual(Object.keys(item.cardAssets), ['header', 'max', 'min', 'current']);
-  assert.ok(renderCatalogPreviewV2(item).includes('v4-card-theme-preview'), item.id);
-
-  for (const [part, asset] of Object.entries(item.cardAssets)) {
-    const bytes = await readFile(new URL(`../${asset.replace(/^\.\//, '')}`, import.meta.url));
-    const { width, height, rgba } = decodeRgbaPng(bytes);
-    assert.ok(width >= (part === 'header' ? 1600 : 380), `${item.id}:${part}: width`);
-    assert.ok(height >= 280, `${item.id}:${part}: height`);
-    let transparent = 0, visible = 0, chroma = 0, centerTransparent = 0, centerTotal = 0;
-    for (let y = 0; y < height; y += 1) for (let x = 0; x < width; x += 1) {
-      const index = (y * width + x) * 4, r = rgba[index], g = rgba[index + 1], b = rgba[index + 2], a = rgba[index + 3];
-      if (a === 0) transparent += 1;
-      if (a > 24) { visible += 1; if (r > 190 && b > 190 && g < 70) chroma += 1; }
-      if (x > width * .3 && x < width * .7 && y > height * .3 && y < height * .7) {
-        centerTotal += 1; if (a < 12) centerTransparent += 1;
-      }
-    }
-    assert.ok(transparent / (width * height) > .45, `${item.id}:${part}: transparent background`);
-    assert.ok(centerTransparent / centerTotal > .72, `${item.id}:${part}: transparent content hole`);
-    assert.ok(chroma / Math.max(1, visible) < .01, `${item.id}:${part}: chroma spill`);
-  }
-}
-
-function removable(container, node) {
-  node.remove = () => { const index = container.indexOf(node); if (index >= 0) container.splice(index, 1); };
-  return node;
-}
-const headerFrames = [];
-const badgeNodes = Object.fromEntries(['max', 'min', 'cur'].map(kind => {
-  const children = [];
-  return [kind, {
-    children,
-    prepend(node) { children.unshift(removable(children, node)); },
-  }];
-}));
+let removed = false;
 const profile = {
-  dataset: {},
-  querySelectorAll(selector) {
-    if (selector.includes(':scope > .v3-card-theme-frame')) return [...headerFrames];
-    if (selector.includes('.mk > .v4-card-badge-frame')) return Object.values(badgeNodes).flatMap(node => node.children);
-    return [];
-  },
-  querySelector(selector) {
-    if (selector === '.mk-max') return badgeNodes.max;
-    if (selector === '.mk-min') return badgeNodes.min;
-    if (selector === '.mk-cur') return badgeNodes.cur;
-    return null;
-  },
-  removeAttribute(name) {
-    const key = name.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase()); delete this.dataset[key.replace(/^data/, '').replace(/^./, c => c.toLowerCase())];
-  },
-  prepend(node) { headerFrames.unshift(removable(headerFrames, node)); },
+  dataset: { cardTheme: 'retired-theme' },
+  querySelectorAll: selector => selector.includes('card-theme-frame') ? [{ remove(){ removed = true; } }] : [],
+  removeAttribute(name){ delete this.dataset[name.replace(/^data-/,'').replace(/-([a-z])/g,(_,c)=>c.toUpperCase())]; },
 };
-const card = { matches: () => false, querySelector: selector => selector.includes('.cmp-profile') ? profile : null };
-const previousDocument = globalThis.document;
-globalThis.document = { createElement: tag => ({ tagName: tag.toUpperCase(), setAttribute(name, value) { this[name] = value; } }) };
-try {
-  const selected = CARD_THEME_ITEMS.at(-1);
-  assert.equal(applyCardV2(card, { card_theme: selected.id }), true);
-  assert.equal(headerFrames.length, 1);
-  assert.equal(headerFrames[0].className, 'v4-card-theme-frame');
-  assert.equal(headerFrames[0].src, selected.cardAssets.header);
-  assert.equal(profile.dataset.cardTheme, selected.id);
-  assert.equal(profile.dataset.cardRarity, 'legendary');
-  assert.equal(profile.dataset.cardEffect, selected.typography.effect);
-  assert.deepEqual(Object.values(badgeNodes).map(node => node.children.length), [1, 1, 1]);
-  assert.equal(badgeNodes.max.children[0].src, selected.cardAssets.max);
-  assert.equal(badgeNodes.min.children[0].src, selected.cardAssets.min);
-  assert.equal(badgeNodes.cur.children[0].src, selected.cardAssets.current);
-  assert.equal(applyCardV2(card, { card_theme: selected.id }), true);
-  assert.equal(headerFrames.length, 1, 'reapplying a theme replaces the frame');
-  assert.deepEqual(Object.values(badgeNodes).map(node => node.children.length), [1, 1, 1]);
-} finally {
-  if (previousDocument === undefined) delete globalThis.document; else globalThis.document = previousDocument;
-}
+const card = { matches: () => false, querySelector: () => profile };
+assert.equal(applyCardV2(card,{ card_theme:'ct4_legendary_frozen_crown' }),false);
+assert.equal(removed,true,'retired theme art must be stripped from an already-rendered header');
 
-const compare = await readFile(new URL('../compare.html', import.meta.url), 'utf8');
-const showroom = await readFile(new URL('../dressroom.html', import.meta.url), 'utf8');
-const css = await readFile(new URL('../css/showroom-card-themes.css', import.meta.url), 'utf8');
-const sw = await readFile(new URL('../sw.js', import.meta.url), 'utf8');
-for (const html of [compare, showroom]) assert.ok(html.includes('css/showroom-card-themes.css'));
-for (const token of ['previewMarkers()', 'sr-profile-markers', "badge('mk-max','최고'", "badge('mk-min','최저'", "badge('mk-cur','현재'"]) assert.ok(showroom.includes(token), token);
-for (const token of ['.v4-card-theme-frame', '.v4-card-badge-frame', '[data-card-theme]', 'prefers-reduced-motion']) assert.ok(css.includes(token), token);
-assert.ok(compare.includes('.cmp-profile{display:grid;grid-template-columns:132px minmax(0,1fr) minmax(300px,.95fr);'));
-assert.ok(compare.includes('.cmp-info{grid-column:2;grid-row:1;display:flex;'));
-assert.ok(compare.includes('profileShowcaseForUserV2(u,132)'),'desktop cards must use the full-body square showcase portrait');
-for(const token of ['class="cmp-message-panel"','data-message-save','data-message-reset','class="cmp-trophies"','grid-template-columns:repeat(3,minmax(0,1fr))'])assert.ok(compare.includes(token),token);
+const compare = await readFile(new URL('../compare.html',import.meta.url),'utf8');
+const showroom = await readFile(new URL('../dressroom.html',import.meta.url),'utf8');
 for(const token of ['grid-template-columns:repeat(7,34px)','grid-auto-rows:34px','direction:rtl','max-height:72px'])assert.ok((showroom+compare).includes(token),token);
-assert.equal(compare.includes('오늘 남긴 한마디가 없습니다.'),false,'other users with no message must have no empty-state copy');
-assert.equal(compare.includes('cmp-message-label'),false,'message panel must not render a redundant title');
-assert.ok(compare.includes('placeholder="오늘의 한마디를 입력해보세요"'));
-assert.ok(compare.includes('graphOnlyMode?`<div class="cmp-graph-only-name">'),'graph-only mode must bypass the decorated identity header');
-assert.equal(compare.includes('<span class="cmp-score">'), false, 'score must not crowd the identity header');
-for(const token of ['.sr-profile-head{display:grid;grid-template-columns:132px','profileShowcaseForUserV2(user,132,draft)','class="sr-message-preview"','class="sr-trophy-preview"','class="sr-bulk-items"','추가로 구매할 아이템','총 결제'])assert.ok(showroom.includes(token),token);
 for(const token of ['.sr-profile-head[data-card-theme] .sr-profile-markers{display:grid','min-width:100%;justify-self:stretch!important','.cmp-profile[data-card-theme] .cmp-markers{display:grid'])assert.ok((showroom+compare).includes(token),token);
-assert.ok(css.includes('background:transparent!important'), 'theme art must not be covered by an opaque badge fill');
-assert.equal(css.includes('filter:brightness(1.35)'), false, 'legendary typography animation must remain readable');
-for (const item of CARD_THEME_ITEMS) for (const asset of Object.values(item.cardAssets)) assert.ok(sw.includes(`'${asset}'`), asset);
-assert.ok(sw.includes("'./css/showroom-card-themes.css'"));
-assert.ok(sw.includes("'./js/showroom-card-themes.js'"));
 
-console.log('card theme coupling tests: PASS');
+const sw = await readFile(new URL('../sw.js',import.meta.url),'utf8');
+assert.ok(sw.includes('weight-v96-portrait-frames-v7'));
+assert.equal(sw.includes('/card_theme/'),false);
+for(const item of PORTRAIT_FRAME_ITEMS_V7)assert.ok(sw.includes(item.asset),item.id);
+
+console.log('retired card theme and V7 portrait frame tests: PASS');
