@@ -8,6 +8,9 @@ export const RARITY_META=Object.freeze({
   common:{label:'일반',color:'#FFFFFF'}, uncommon:{label:'고급',color:'#1EFF00'},
   rare:{label:'희귀',color:'#0070DD'}, epic:{label:'영웅',color:'#A335EE'},
   legendary:{label:'전설',color:'#FF8000'},
+  mythic:{label:'신화',color:'#FF8000'},
+  transcendent:{label:'초월',color:'#FF2D2D'},
+  artifact:{label:'유물',color:'#E6CC80'},
 });
 export const CATEGORY_META=Object.freeze({
   graph_skin:{name:'그래프 스킨',icon:'📈'}, line_style:{name:'그래프 선',icon:'〰️'}, card_theme:{name:'카드 테마',icon:'🖼️'},

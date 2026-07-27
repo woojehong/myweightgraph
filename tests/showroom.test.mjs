@@ -7,6 +7,7 @@ import {
 } from '../js/showroom-catalog-v2.js';
 import { GRAPH_SKIN_PRICE_BY_RARITY, GRAPH_SKIN_SAFE_AREA } from '../js/showroom-graph-skins.js';
 import { POINT_MARKER_ITEMS_V9 } from '../js/showroom-point-markers-v9.js';
+import { TROPHY_ITEMS_V10 } from '../js/showroom-trophies-v10.js';
 import { TITLES_CATALOG_V2, TITLE_RARITY_COLORS } from '../js/titles-catalog-v2.js';
 import { ACHIEVEMENTS } from '../js/achievements.js';
 import { ACHIEVEMENT_ITEM_REWARDS_V2, normalizeAchievementTrophyRewardsV2, rewardItemsForAchievementsV2 } from '../js/achievement-item-rewards-v2.js';
@@ -23,17 +24,17 @@ import {
 
 assert.equal(assertShowroomCatalogV2(),true);
 assert.deepEqual(SHOWROOM_V4_ACTIVE_CATEGORIES,['graph_skin','line_style','ambient_effect','emoji_border']);
-assert.equal(SHOWROOM_CATALOG_V2.length,202);
+assert.equal(SHOWROOM_CATALOG_V2.length,210);
 assert.equal(TITLES_CATALOG_V2.length,30);
-assert.equal(ALL_CATALOG_V2.length,188);
+assert.equal(ALL_CATALOG_V2.length,196);
 assert.deepEqual(SHOWROOM_CATEGORIES,['graph_skin','line_style','card_theme','point_marker','companion','ambient_effect','trophy','profile_emoji','emoji_border']);
 assert.deepEqual(V2_CATEGORIES,[...SHOWROOM_CATEGORIES.filter(category=>category!=='companion'),'title']);
-assert.equal(new Set(ALL_CATALOG_V2.map(entry=>entry.id)).size,188);
-assert.equal(new Set(SHOWROOM_CATALOG_V2.filter(entry=>entry.asset).map(entry=>entry.asset)).size,134);
+assert.equal(new Set(ALL_CATALOG_V2.map(entry=>entry.id)).size,196);
+assert.equal(new Set(SHOWROOM_CATALOG_V2.filter(entry=>entry.asset).map(entry=>entry.asset)).size,142);
 
 for(const category of SHOWROOM_CATEGORIES){
   const entries=SHOWROOM_CATALOG_V2.filter(entry=>entry.category===category);
-  const expectedCount={graph_skin:12,line_style:32,card_theme:20,point_marker:10,companion:44,ambient_effect:36,profile_emoji:24,emoji_border:20}[category]??4;
+  const expectedCount={graph_skin:12,line_style:32,card_theme:20,point_marker:10,companion:44,ambient_effect:36,trophy:12,profile_emoji:24,emoji_border:20}[category]??4;
   assert.equal(entries.length,expectedCount,category);
   const per=['companion','profile_emoji','card_theme'].includes(category)?1:expectedCount>=12?expectedCount/4:1;
   assert.deepEqual(entries.map(entry=>entry.rarity),category==='companion'
@@ -44,6 +45,8 @@ for(const category of SHOWROOM_CATEGORIES){
       ? [...Array(5).fill('uncommon'),...Array(5).fill('rare'),...Array(5).fill('epic'),...Array(5).fill('legendary')]
     : category==='point_marker'
       ? [...Array(3).fill('uncommon'),'rare','epic',...Array(5).fill('legendary')]
+    : category==='trophy'
+      ? Array(12).fill('artifact')
     : expectedCount===0?[]
     : expectedCount>=12?['uncommon','rare','epic','legendary'].flatMap(r=>Array(per).fill(r))
     : ['uncommon','rare','epic','legendary']);
@@ -79,7 +82,8 @@ assert.deepEqual(TITLE_RARITY_COLORS,{common:'#FFFFFF',uncommon:'#1EFF00',rare:'
 for(const entry of ALL_CATALOG_V2)assert.match(entry.id,/^[a-z0-9_]+$/);
 assert.equal(ALL_CATALOG_V2.some(entry=>entry.category==='companion'),false,'retired companion category must stay out of every user/admin catalog surface');
 
-assert.ok(Object.keys(LEGACY_SHOWROOM_ID_ALIASES).length>=98);
+assert.ok(Object.keys(LEGACY_SHOWROOM_ID_ALIASES).length>=64);
+assert.equal(Object.keys(LEGACY_SHOWROOM_ID_ALIASES).some(id=>id.startsWith('tr_')),false,'retired trophies must never alias to new trophies');
 for(const [legacy,target] of Object.entries(LEGACY_SHOWROOM_ID_ALIASES)){
   if(legacy.startsWith('cp_')){assert.equal(getCatalogItemV2(target),null,`${legacy}: retired companion aliases must remain inert`);continue}
   assert.ok(getCatalogItemV2(target),`${legacy}:${target}`);
@@ -103,7 +107,7 @@ const normalized=normalizeLoadoutV2({
 assert.equal(normalized.graph_skin,'gs_v4_uncommon_01');
 assert.equal(normalized.point_marker,null);
 assert.equal(normalized.title,null);
-assert.deepEqual(normalized.trophy,['tr_summit_compass','tr_sea_chalice','tr_giant_horn','tr_cosmic_goblet']);
+assert.deepEqual(normalized.trophy,[]);
 assert.deepEqual(SHOWROOM_DEFAULTS,{graph_skin:null,line_style:null,card_theme:null,point_marker:null,companion:null,ambient_effect:null,trophy:[],profile_emoji:null,emoji_border:null});
 assert.deepEqual(COMPANION_LAYOUT_DEFAULTS,{scale:1,opacity:1,x:90,y:15});
 assert.deepEqual(COMPANION_LAYOUT_LIMITS,{scale:{min:.5,max:5},opacity:{min:.2,max:1},x:{min:5,max:95},y:{min:5,max:95}});
@@ -130,15 +134,15 @@ assert.equal(pairedMarker.markerAsset,pairedMarker.markerLowAsset);
 const transactionSnapshot={coins:4200,purchasedItemsV2:['legacy_owned'],achievementRewardItems:['legacy_reward'],adminGrantedItems:[]};
 const transactionBefore=structuredClone(transactionSnapshot);
 assert.deepEqual(validateCatalogPurchaseV2(['gs_v4_uncommon_01']).map(entry=>[entry.id,entry.price]),[['gs_v4_uncommon_01',600]]);
-assert.throws(()=>validateCatalogPurchaseV2(['tr_summit_compass']),/트로피는 구매할 수 없으며 업적 달성 또는 관리자 지급으로만 획득/);
+assert.throws(()=>validateCatalogPurchaseV2(['tr_a_world_series_constellation']),/트로피는 구매할 수 없으며 업적 달성 또는 관리자 지급으로만 획득/);
 assert.deepEqual(transactionSnapshot,transactionBefore,'blocked purchase must not mutate coins or ownership');
-assert.deepEqual(persistableLoadoutV2({graph_skin:'gs_v4_uncommon_01',companion:'cp_sleepy_golem',trophy:['tr_cosmic_goblet'],companionLayout:{scale:1.35,opacity:.65,x:24,y:81}}),{...SHOWROOM_DEFAULTS,graph_skin:'gs_v4_uncommon_01',companion:null,trophy:['tr_cosmic_goblet'],title:null,companionLayout:{scale:1.35,opacity:.65,x:24,y:81}});
+assert.deepEqual(persistableLoadoutV2({graph_skin:'gs_v4_uncommon_01',companion:'cp_sleepy_golem',trophy:['tr_a_world_cup_orb'],companionLayout:{scale:1.35,opacity:.65,x:24,y:81}}),{...SHOWROOM_DEFAULTS,graph_skin:'gs_v4_uncommon_01',companion:null,trophy:['tr_a_world_cup_orb'],title:null,companionLayout:{scale:1.35,opacity:.65,x:24,y:81}});
 assert.ok(profileVisualForUserV2({emoji:'🦁'},32).includes('🙂'),'unselected showroom profiles must use the single smiling default instead of legacy emoji remnants');
 assert.equal(profileVisualForUserV2({emoji:'🦁'},32).includes('🦁'),false,'legacy user emoji must not leak into common profile surfaces');
 assert.equal(profileVisualForUserV2({emoji:'🦁',showroomLoadoutV2:{profile_emoji:'pe_archive_spirit',emoji_border:'eb_forged_iron'}},32).includes('pe_archive_spirit.png'),false);
 assert.equal(profileVisualForUserV2({emoji:'🦁',showroomLoadoutV2:{profile_emoji:'pe_archive_spirit',emoji_border:'eb_forged_iron'}},32).includes('eb_forged_iron.png'),false);
-assert.deepEqual([...ownedItemIdsV2({achievementRewardItems:['tr_cosmic_goblet']})],['tr_cosmic_goblet']);
-assert.deepEqual([...ownedItemIdsV2({adminGrantedItems:['tr_giant_horn']})],['tr_giant_horn']);
+assert.deepEqual([...ownedItemIdsV2({achievementRewardItems:['tr_a_world_cup_orb']})],['tr_a_world_cup_orb']);
+assert.deepEqual([...ownedItemIdsV2({adminGrantedItems:['tr_a_big_ears']})],['tr_a_big_ears']);
 
 for(const entry of SHOWROOM_CATALOG_V2.filter(entry=>entry.asset)){
   const fileUrl=new URL(`../${entry.asset.replace(/^\.\//,'')}`,import.meta.url);
@@ -219,8 +223,8 @@ const achIds=new Set(ACHIEVEMENTS.map(achievement=>achievement.id));
 for(const [achId,ids] of Object.entries(ACHIEVEMENT_ITEM_REWARDS_V2)){
   assert.ok(achIds.has(achId),achId);for(const id of ids)assert.ok(getCatalogItemV2(id),`${achId}:${id}`);
 }
-assert.deepEqual(normalizeAchievementTrophyRewardsV2({record_1:'tr_summit_compass',bad:'not-a-trophy'}),{record_1:['tr_summit_compass']});
-assert.ok(rewardItemsForAchievementsV2(new Set(['record_1']),{record_1:'tr_summit_compass'}).includes('tr_summit_compass'));
+assert.deepEqual(normalizeAchievementTrophyRewardsV2({record_1:'tr_a_world_series_constellation',bad:'not-a-trophy'}),{record_1:['tr_a_world_series_constellation']});
+assert.ok(rewardItemsForAchievementsV2(new Set(['record_1']),{record_1:'tr_a_world_series_constellation'}).includes('tr_a_world_series_constellation'));
 
 const visualLab=await readFile(new URL('../visual-lab.html',import.meta.url),'utf8');
 assert.ok(visualLab.includes('SHOWROOM_CATALOG_V2'));assert.ok(visualLab.includes('decorateMainPlotV2'));assert.ok(visualLab.includes('<canvas id="demoCanvas"'));assert.equal(visualLab.toLowerCase().includes('firebase'),false);
@@ -266,7 +270,7 @@ assert.equal((visualLab.match(/drawMarker\(ctx,marker,/g)||[]).length,1,'visual 
 assert.equal((visualLab.match(/drawMarker\(ctx,/g)||[]).length-1,1,'visual lab must render exactly one point marker');
 
 const sw=await readFile(new URL('../sw.js',import.meta.url),'utf8');
-assert.ok(sw.includes("weight-v108-paired-point-markers"));assert.equal(sw.includes('c.addAll(ASSETS).catch'),false);
+assert.ok(sw.includes("weight-v109-artifact-trophies"));assert.equal(sw.includes('c.addAll(ASSETS).catch'),false);
 for(const entry of SHOWROOM_CATALOG_V2.filter(entry=>entry.asset))assert.ok(sw.includes(`'${entry.asset}'`),`sw:${entry.asset}`);
 for(const entry of POINT_MARKER_ITEMS_V9)for(const asset of Object.values(entry.markerAssets))assert.ok(sw.includes(`'${asset}'`),`${asset}: paired marker must be pre-cached`);
 
@@ -287,7 +291,7 @@ assert.ok(db.includes('applyShowroomEffects:false'),'dashboard showroom effects 
 const purchaseSource=db.slice(db.indexOf('export async function purchaseCatalogItemsV2'),db.indexOf('export const purchaseShowroomItem'));
 assert.ok(purchaseSource.indexOf('validateCatalogPurchaseV2(itemIds)')<purchaseSource.indexOf('runTransaction'),'test-only purchase must fail before Firestore transaction');
 const admin=await readFile(new URL('../admin.html',import.meta.url),'utf8');
-for(const token of ['achievementTrophyRewards','data-ach-trophy','saveAchTrophy','트로피 보상 저장됨'])assert.ok(admin.includes(token),token);
+for(const token of ['achievementTrophyRewards','buildTrophyConnector','toggleTrophyReward','saveTrophyRewards','업적별 트로피 보상을 저장했습니다.'])assert.ok(admin.includes(token),token);
 for(const page of ['index.html','input.html','dashboard.html','compare.html','achievements.html','dressroom.html','import.html','admin.html']){
   const html=await readFile(new URL(`../${page}`,import.meta.url),'utf8');
   assert.ok(html.includes(page==='dressroom.html'?'profileShowcaseForUserV2':'profileVisualForUserV2'),`${page}: common showroom profile renderer missing`);
