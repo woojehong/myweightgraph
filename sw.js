@@ -1,4 +1,4 @@
-const CACHE = 'weight-v88-reward-prices';
+const CACHE = 'weight-v89-reward-prices';
 const ASSETS = [
   './index.html', './dashboard.html', './input.html', './import.html',
   './achievements.html', './compare.html', './dressroom.html', './shop.html', './guide.html', './visual-lab.html',

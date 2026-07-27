@@ -1,7 +1,7 @@
 import {
   SHOWROOM_CATALOG_V2, SHOWROOM_CATEGORIES, SHOWROOM_DEFAULTS,
   resolveShowroomItemIdV2,
-} from './showroom-catalog-v2.js';
+} from './showroom-catalog-v2.js?v=89';
 import { TITLES_CATALOG_V2, TITLE_RARITY_COLORS } from './titles-catalog-v2.js';
 
 export const RARITY_META=Object.freeze({
