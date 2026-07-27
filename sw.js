@@ -1,4 +1,4 @@
-const CACHE = 'weight-v90-legendary-profiles';
+const CACHE = 'weight-v91-showcase-header';
 const ASSETS = [
   './index.html', './dashboard.html', './input.html', './import.html',
   './achievements.html', './compare.html', './dressroom.html', './shop.html', './guide.html', './visual-lab.html',
@@ -7,6 +7,7 @@ const ASSETS = [
   './js/chart-render.js', './js/achievements.js', './js/achievements-engine.js',
   './js/quests.js', './js/quest-panel.js', './js/showroom-fx.js',
   './js/util.js', './js/daily-rewards.js', './js/meal-status.js', './js/showroom-v2.js',
+  './js/today-message.js',
   './js/showroom-catalog-v2.js', './js/showroom-catalog-v4.generated.js', './js/showroom-graph-skins.js', './js/showroom-card-themes.js', './js/showroom-companions-v5.js', './js/showroom-profile-emojis-v6.js', './js/titles-catalog-v2.js', './js/achievement-item-rewards-v2.js',
   './manifest.json', './favicon.png',
   './register-sw.js',

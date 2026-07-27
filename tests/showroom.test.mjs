@@ -24,10 +24,10 @@ assert.equal(assertShowroomCatalogV2(),true);
 assert.deepEqual(SHOWROOM_V4_ACTIVE_CATEGORIES,['graph_skin','line_style','card_theme','ambient_effect']);
 assert.equal(SHOWROOM_CATALOG_V2.length,162);
 assert.equal(TITLES_CATALOG_V2.length,30);
-assert.equal(ALL_CATALOG_V2.length,192);
+assert.equal(ALL_CATALOG_V2.length,148);
 assert.deepEqual(SHOWROOM_CATEGORIES,['graph_skin','line_style','card_theme','point_marker','companion','ambient_effect','trophy','profile_emoji','emoji_border']);
-assert.deepEqual(V2_CATEGORIES,[...SHOWROOM_CATEGORIES,'title']);
-assert.equal(new Set(ALL_CATALOG_V2.map(entry=>entry.id)).size,192);
+assert.deepEqual(V2_CATEGORIES,[...SHOWROOM_CATEGORIES.filter(category=>category!=='companion'),'title']);
+assert.equal(new Set(ALL_CATALOG_V2.map(entry=>entry.id)).size,148);
 assert.equal(new Set(SHOWROOM_CATALOG_V2.filter(entry=>entry.asset).map(entry=>entry.asset)).size,94);
 
 for(const category of SHOWROOM_CATEGORIES){
@@ -78,9 +78,11 @@ for(const entry of releasedGraphSkins){
 assert.deepEqual(GRANDFATHERED_RELEASED_ITEM_IDS,['ae_dust','ae_firefly','ae_bubble','ae_thunder']);
 assert.deepEqual(TITLE_RARITY_COLORS,{common:'#FFFFFF',uncommon:'#1EFF00',rare:'#0070DD',epic:'#A335EE',legendary:'#FF8000'});
 for(const entry of ALL_CATALOG_V2)assert.match(entry.id,/^[a-z0-9_]+$/);
+assert.equal(ALL_CATALOG_V2.some(entry=>entry.category==='companion'),false,'retired companion category must stay out of every user/admin catalog surface');
 
 assert.ok(Object.keys(LEGACY_SHOWROOM_ID_ALIASES).length>=218);
 for(const [legacy,target] of Object.entries(LEGACY_SHOWROOM_ID_ALIASES)){
+  if(legacy.startsWith('cp_')){assert.equal(getCatalogItemV2(target),null,`${legacy}: retired companion aliases must remain inert`);continue}
   assert.ok(getCatalogItemV2(target),`${legacy}:${target}`);
   assert.equal(resolveShowroomItemIdV2(legacy),target);
 }
@@ -120,7 +122,7 @@ assert.equal(getCatalogItemV2('ae_bubble').purchasable,true,'released ambient ef
 assert.equal(persistableLoadoutV2({...SHOWROOM_DEFAULTS,ambient_effect:'ae_bubble'}).ambient_effect,'ae_bubble','owned released ambient effect must remain saveable');
 assert.deepEqual([...ownedItemIdsV2({purchasedItemsV2:['ae_mist'],adminGrantedItems:['ae_firefly'],achievementRewardItems:['ae_bubble']})],['ae_dust','ae_bubble','ae_firefly'],'all ownership sources must merge after alias migration');
 assert.equal(normalizeLoadoutV2({...SHOWROOM_DEFAULTS,ambient_effect:'ae_mist'}).ambient_effect,'ae_dust','retired loadout id must migrate to the active effect');
-assert.deepEqual(unownedSelectionV2(user,{...SHOWROOM_DEFAULTS,graph_skin:'gs_v4_uncommon_01',card_theme:'ct_alpine_dawn',companion:'cp_sleepy_golem'}).map(entry=>entry.id),['cp_sleepy_golem']);
+assert.deepEqual(unownedSelectionV2(user,{...SHOWROOM_DEFAULTS,graph_skin:'gs_v4_uncommon_01',card_theme:'ct_alpine_dawn',companion:'cp_sleepy_golem'}).map(entry=>entry.id),[]);
 assert.deepEqual(getChartDecorationsV2(SHOWROOM_DEFAULTS),{});
 assert.equal(getChartDecorationsV2({point_marker:'pm_phoenix_seal'}).markerAsset,'./assets/showroom-v3/point_marker/pm_phoenix_seal.png');
 const transactionSnapshot={coins:4200,purchasedItemsV2:['legacy_owned'],achievementRewardItems:['legacy_reward'],adminGrantedItems:[]};
@@ -128,7 +130,7 @@ const transactionBefore=structuredClone(transactionSnapshot);
 assert.deepEqual(validateCatalogPurchaseV2(['gs_v4_uncommon_01']).map(entry=>[entry.id,entry.price]),[['gs_v4_uncommon_01',600]]);
 assert.throws(()=>validateCatalogPurchaseV2(['tr_summit_compass']),/트로피는 구매할 수 없으며 업적 달성 또는 관리자 지급으로만 획득/);
 assert.deepEqual(transactionSnapshot,transactionBefore,'blocked purchase must not mutate coins or ownership');
-assert.deepEqual(persistableLoadoutV2({graph_skin:'gs_v4_uncommon_01',companion:'cp_sleepy_golem',trophy:['tr_cosmic_goblet'],companionLayout:{scale:1.35,opacity:.65,x:24,y:81}}),{...SHOWROOM_DEFAULTS,graph_skin:'gs_v4_uncommon_01',companion:'cp_sleepy_golem',trophy:['tr_cosmic_goblet'],title:null,companionLayout:{scale:1.35,opacity:.65,x:24,y:81}});
+assert.deepEqual(persistableLoadoutV2({graph_skin:'gs_v4_uncommon_01',companion:'cp_sleepy_golem',trophy:['tr_cosmic_goblet'],companionLayout:{scale:1.35,opacity:.65,x:24,y:81}}),{...SHOWROOM_DEFAULTS,graph_skin:'gs_v4_uncommon_01',companion:null,trophy:['tr_cosmic_goblet'],title:null,companionLayout:{scale:1.35,opacity:.65,x:24,y:81}});
 assert.ok(profileVisualForUserV2({emoji:'🦁'},32).includes('🙂'),'unselected showroom profiles must use the single smiling default instead of legacy emoji remnants');
 assert.equal(profileVisualForUserV2({emoji:'🦁'},32).includes('🦁'),false,'legacy user emoji must not leak into common profile surfaces');
 assert.ok(profileVisualForUserV2({emoji:'🦁',showroomLoadoutV2:{profile_emoji:'pe_archive_spirit',emoji_border:'eb_forged_iron'}},32).includes('pe_archive_spirit.png'));
@@ -177,11 +179,12 @@ for(const report of safeZoneReport.items){
 const generatedV4=await readFile(new URL('../js/showroom-catalog-v4.generated.js',import.meta.url),'utf8');
 assert.equal(generatedV4.includes('-source.png'),false,'generated runtime must not reference source PNG');
 
-for(const [category,render] of [['companion',renderCompanionV2],['trophy',renderTrophyV2],['point_marker',renderMarkerV2],['profile_emoji',renderProfileEmojiV2],['emoji_border',renderEmojiBorderV2]]){
+for(const [category,render] of [['trophy',renderTrophyV2],['point_marker',renderMarkerV2],['profile_emoji',renderProfileEmojiV2],['emoji_border',renderEmojiBorderV2]]){
   for(const entry of SHOWROOM_CATALOG_V2.filter(item=>item.category===category)){
     const html=render(entry.id);assert.ok(html.includes('<img'),entry.id);assert.ok(html.includes(entry.asset),entry.id);assert.equal(html.includes('<svg'),false,entry.id);
   }
 }
+assert.equal(renderCompanionV2('cp_l01'),'','retired companions must never render');
 for(const entry of SHOWROOM_CATALOG_V2.filter(item=>item.category==='ambient_effect'))assert.equal(renderAmbientV2(entry.id),'');
 for(const entry of SHOWROOM_CATALOG_V2){
   const html=renderCatalogPreviewV2(entry);
@@ -253,13 +256,12 @@ assert.equal((visualLab.match(/drawMarker\(ctx,marker,/g)||[]).length,1,'visual 
 assert.equal((visualLab.match(/drawMarker\(ctx,/g)||[]).length-1,1,'visual lab must render exactly one point marker');
 
 const sw=await readFile(new URL('../sw.js',import.meta.url),'utf8');
-assert.ok(sw.includes("weight-v90-legendary-profiles"));assert.equal(sw.includes('c.addAll(ASSETS).catch'),false);
+assert.ok(sw.includes("weight-v91-showcase-header"));assert.equal(sw.includes('c.addAll(ASSETS).catch'),false);
 for(const entry of SHOWROOM_CATALOG_V2.filter(entry=>entry.asset))assert.ok(sw.includes(`'${entry.asset}'`),`sw:${entry.asset}`);
 
 const showroom=await readFile(new URL('../dressroom.html',import.meta.url),'utf8');
-for(const token of ['purchaseCatalogItemsV2','saveShowroomLoadoutV2','현재 범주 검색','unownedSelectionV2','decorateMainPlotV2','data-main-weight-plot="true"','data-chart-subgraphs="diet exercise"','mainPlotAspectRatio:16/9','테스트 중 · 구매 불가','item.purchasable!==false&&!item.testOnly','테스트 아이템은 세션 미리보기 전용이며 저장할 수 없습니다','id="trophyOrder"','renderTrophyOrder','data-trophy-move','보유 트로피 · 전시 순서','id="lineControls"','renderLineControls','id="lineColor"','id="lineWidth"','3:1 미만 경고','추천색','id="companionControls"','renderCompanionControls','data-companion-layout="${key}"','크기','투명도','위치 X','위치 Y','최종 저장’ 전에는 계정에 저장되지 않습니다'])assert.ok(showroom.includes(token),token);
-const companionControlSource=showroom.slice(showroom.indexOf('function renderCompanionControls'),showroom.indexOf('function filtered'));
-assert.equal(companionControlSource.includes('saveShowroomLoadoutV2'),false,'companion sliders must mutate only the draft before final save');
+for(const token of ['purchaseCatalogItemsV2','saveShowroomLoadoutV2','현재 범주 검색','unownedSelectionV2','decorateMainPlotV2','data-main-weight-plot="true"','data-chart-subgraphs="diet exercise"','mainPlotAspectRatio:16/9','테스트 중 · 구매 불가','item.purchasable!==false&&!item.testOnly','테스트 아이템은 세션 미리보기 전용이며 저장할 수 없습니다','id="trophyOrder"','renderTrophyOrder','data-trophy-move','보유 트로피 · 전시 순서','id="lineControls"','renderLineControls','id="lineColor"','id="lineWidth"','3:1 미만 경고','추천색'])assert.ok(showroom.includes(token),token);
+for(const retiredToken of ['id="companionControls"','renderCompanionControls','data-companion-layout','동반자 없음'])assert.equal(showroom.includes(retiredToken),false,retiredToken);
 assert.ok(showroom.includes('.sr-cats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))'));
 assert.ok(showroom.includes('@media(max-width:520px){.sr-cats{grid-template-columns:repeat(2,minmax(0,1fr))}}'));
 assert.equal(showroom.includes('id="logoutBtn"'),false,'dressroom header must not render the large logout button');

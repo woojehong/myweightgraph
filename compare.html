@@ -104,22 +104,23 @@
     }
 
     /* ── 미니 프로필 (데스크탑 기본) ───────────────────────────── */
-    .cmp-profile{ display:flex; align-items:center; gap:9px; margin-bottom:8px; padding:0 6px; flex-wrap:nowrap; }
-    .cmp-avatar{ width:32px; height:32px; flex-shrink:0; }
+    .cmp-profile{ display:flex; align-items:center; gap:14px; min-height:132px; margin-bottom:8px; padding:8px 12px; flex-wrap:nowrap; }
+    .cmp-avatar{ width:116px; height:116px; flex:0 0 116px; }
     .cmp-avatar-inner{
       width:26px; height:26px; border-radius:50%; background:#0d1117;
       display:flex; align-items:center; justify-content:center;
       font-size:15px; position:relative; z-index:1; overflow:hidden;
     }
-    .cmp-info{ display:flex; flex:1 1 auto; overflow:hidden; flex-direction:row; align-items:center; gap:6px; line-height:1.15; min-width:0; }
-    .cmp-title{ font-size:9px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .cmp-name{ font-size:13px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .cmp-info{ display:flex; flex:1 1 auto; overflow:hidden; flex-direction:column; align-items:flex-start; justify-content:center; gap:5px; line-height:1.2; min-width:0; }
+    .cmp-title{ font-size:11px; font-weight:750; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+    .cmp-name{ font-size:17px; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+    .cmp-message{max-width:100%;margin-top:5px;padding:6px 9px;border-left:2px solid rgba(255,255,255,.2);background:rgba(255,255,255,.035);border-radius:0 7px 7px 0;color:rgba(255,255,255,.72);font-size:10px;line-height:1.35;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .cmp-score{ display:none; }
 
     /* ── 최고/최저/현재 배지 (프로필 줄 오른쪽 정렬) ───────────── */
-    .cmp-markers{ display:flex; gap:5px; margin-left:auto; flex-shrink:0; }
+    .cmp-markers{ display:flex; flex-direction:column; align-items:stretch; gap:5px; margin-left:auto; flex:0 0 104px; }
     .mk{
-      display:flex; flex-direction:column; align-items:center; line-height:1.15;
+      display:flex; flex-direction:column; align-items:flex-end; line-height:1.15;
       padding:3px 7px; border-radius:7px; white-space:nowrap;
     }
     .mk b{ font-size:11px; font-weight:800; color:#fff; }
@@ -127,14 +128,17 @@
     .mk-max{ background:rgba(195,65,42,.92); }
     .mk-min{ background:rgba(34,128,50,.92); }
     .mk-cur{ background:rgba(20,98,152,.92); }
+    .cmp-graph-only-name{padding:3px 8px 7px;color:var(--text);font-size:12px;font-weight:800}
 
     /* ── 모바일: 미니 프로필 2배 축소 (아이콘·텍스트 간격 확보) ── */
     @media(max-width:767px){
       .cmp-profile{ gap:8px; margin-bottom:6px; padding:0 6px; }
-      .cmp-avatar{ width:18px; height:18px; }
+      .cmp-avatar{ width:64px; height:64px; flex-basis:64px; }
       .cmp-avatar-inner{ width:14px; height:14px; font-size:9px; }
-      .cmp-title{ font-size:7px; }
-      .cmp-name{ font-size:9px; }
+      .cmp-profile{min-height:76px}
+      .cmp-title{ font-size:8px; }
+      .cmp-name{ font-size:11px; }
+      .cmp-message{font-size:8px;padding:4px 6px}
       .cmp-score{ font-size:7px; }
       .cmp-markers{ gap:4px; }
       .mk{ padding:2px 5px; border-radius:6px; }
@@ -197,6 +201,7 @@
     <div class="subgraph-toggles" aria-label="보조 그래프 표시 설정">
       <label class="subgraph-toggle" for="dietToggle"><input id="dietToggle" type="checkbox">식단 표시</label>
       <label class="subgraph-toggle" for="exerciseToggle"><input id="exerciseToggle" type="checkbox">운동 표시</label>
+      <label class="subgraph-toggle" for="graphOnlyToggle"><input id="graphOnlyToggle" type="checkbox">그래프만 표시</label>
       <label class="marker-size-control" for="markerSize"><span>포인트 크기</span><input id="markerSize" type="range" min="20" max="44" step="2" value="32"><output id="markerSizeValue" for="markerSize">32px</output></label>
     </div>
     <div class="picker" id="picker">
@@ -216,7 +221,8 @@ import { isAuthed, clearAuth } from './js/auth.js';
 import { renderChart, aggregateRecords, periodLabel } from './js/chart-render.js';
 import { getTierForScore, DEFAULT_TIERS } from './js/achievements.js';
 import { esc } from './js/util.js';
-import { applyCardV2, decorateMainPlotV2, getChartDecorationsV2, profileVisualForUserV2, titleInfoV2 } from './js/showroom-v2.js?v=90';
+import { applyCardV2, decorateMainPlotV2, getChartDecorationsV2, profileVisualForUserV2, profileShowcaseForUserV2, titleInfoV2 } from './js/showroom-v2.js?v=91';
+import { activeTodayMessage } from './js/today-message.js';
 
 const uid = new URLSearchParams(location.search).get('user') || localStorage.getItem('uid');
 if (!uid) location.href = 'index.html';
@@ -250,17 +256,20 @@ let viewMode = 'day';
 let showAvatars = localStorage.getItem('compare_show_avatars_v2') !== '0';
 let showDietGraph = localStorage.getItem('compare_show_diet') === 'true';
 let showExerciseGraph = localStorage.getItem('compare_show_exercise') === 'true';
+let graphOnlyMode = false;
 const storedMarkerSize=Number(localStorage.getItem('compare_marker_size'));
 let markerSize=Number.isFinite(storedMarkerSize)&&storedMarkerSize>=20&&storedMarkerSize<=44?Math.round(storedMarkerSize/2)*2:32;
 function syncAvatarToggle(){document.getElementById('avToggle')?.classList.toggle('active',showAvatars)}
 window.toggleAvatars=()=>{showAvatars=!showAvatars;try{localStorage.setItem('compare_show_avatars_v2',showAvatars?'1':'0')}catch(e){}syncAvatarToggle();renderGrid()};
 function persistSubgraphToggle(key,enabled){try{enabled?localStorage.setItem(key,'true'):localStorage.removeItem(key)}catch(e){}}
 function bindSubgraphToggles(){
-  const diet=document.getElementById('dietToggle'),exercise=document.getElementById('exerciseToggle'),size=document.getElementById('markerSize'),sizeValue=document.getElementById('markerSizeValue');
+  const diet=document.getElementById('dietToggle'),exercise=document.getElementById('exerciseToggle'),graphOnly=document.getElementById('graphOnlyToggle'),size=document.getElementById('markerSize'),sizeValue=document.getElementById('markerSizeValue');
   diet.checked=showDietGraph;exercise.checked=showExerciseGraph;
+  graphOnly.checked=false;
   size.value=String(markerSize);sizeValue.value=`${markerSize}px`;
   diet.addEventListener('change',()=>{showDietGraph=diet.checked;persistSubgraphToggle('compare_show_diet',showDietGraph);renderGrid()});
   exercise.addEventListener('change',()=>{showExerciseGraph=exercise.checked;persistSubgraphToggle('compare_show_exercise',showExerciseGraph);renderGrid()});
+  graphOnly.addEventListener('change',()=>{graphOnlyMode=graphOnly.checked;renderGrid()});
   size.addEventListener('input',()=>{sizeValue.value=`${size.value}px`});
   size.addEventListener('change',()=>{markerSize=Number(size.value);try{localStorage.setItem('compare_marker_size',String(markerSize))}catch(e){}renderGrid()});
 }
@@ -394,6 +403,7 @@ function cellHTML(u) {
   const tier = getTierForScore(u.totalScore || 0, TIERS);
   const tc = tier.color;
   const title=titleInfoV2(u.showroomLoadoutV2);
+  const todayMessage=activeTodayMessage(u);
   const recs = aggregateRecords(weightsCache[u.id] || [], viewMode);
   const hasData = recs.filter(r => r.weight != null).length >= 2;
   const body = hasData
@@ -416,15 +426,17 @@ function cellHTML(u) {
 
   // 사용자 프로필 이모지
   return `
-    <div class="cmp-cell">
+    <div class="cmp-cell ${graphOnlyMode?'graph-only':''}">
+      ${graphOnlyMode?`<div class="cmp-graph-only-name">${esc(u.name)}</div>`:`
       <div class="cmp-profile">
-        <div class="cmp-avatar">${profileVisualForUserV2(u,32)}</div>
+        <div class="cmp-avatar">${profileShowcaseForUserV2(u,116)}</div>
         <div class="cmp-info">
           ${title ? `<span class="cmp-title" style="color:${title.color}">${esc(title.name)}</span>` : ''}
           <span class="cmp-name" style="color:${tc}">${esc(u.name)}</span>
+          ${todayMessage?`<span class="cmp-message">${esc(todayMessage)}</span>`:''}
         </div>
         ${markers}
-      </div>
+      </div>`}
       <div class="cmp-content avatar-hidden">${body}</div>
     </div>`;
 }
@@ -448,7 +460,7 @@ async function renderGrid() {
 
   const users = selected.map(id => allUsers.find(u => u.id === id)).filter(Boolean);
   grid.innerHTML = users.map(cellHTML).join('');
-  [...grid.querySelectorAll('.cmp-cell')].forEach((cell,index) => {const u=users[index];applyCardV2(cell,u?.showroomLoadoutV2);const plot=cell.querySelector('[data-main-weight-plot="true"]');if(plot)decorateMainPlotV2(plot,u?.showroomLoadoutV2)});
+  [...grid.querySelectorAll('.cmp-cell')].forEach((cell,index) => {const u=users[index];if(!graphOnlyMode)applyCardV2(cell,u?.showroomLoadoutV2);const plot=cell.querySelector('[data-main-weight-plot="true"]');if(plot)decorateMainPlotV2(plot,u?.showroomLoadoutV2)});
 
   // 캔버스가 DOM에 들어간 뒤 차트 렌더
   users.forEach(u => {

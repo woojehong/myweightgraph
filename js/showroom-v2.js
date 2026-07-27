@@ -1,7 +1,7 @@
 import {
   SHOWROOM_CATALOG_V2, SHOWROOM_CATEGORIES, SHOWROOM_DEFAULTS,
   resolveShowroomItemIdV2,
-} from './showroom-catalog-v2.js?v=90';
+} from './showroom-catalog-v2.js?v=91';
 import { TITLES_CATALOG_V2, TITLE_RARITY_COLORS } from './titles-catalog-v2.js';
 
 export const RARITY_META=Object.freeze({
@@ -13,18 +13,20 @@ export const CATEGORY_META=Object.freeze({
   graph_skin:{name:'그래프 스킨',icon:'📈'}, line_style:{name:'그래프 선',icon:'〰️'}, card_theme:{name:'카드 테마',icon:'🖼️'},
   point_marker:{name:'포인트 마커',icon:'📍'}, companion:{name:'동반자',icon:'🐾'},
   ambient_effect:{name:'공간 효과',icon:'✨'}, trophy:{name:'트로피',icon:'🏆',multi:true,max:4},
-  profile_emoji:{name:'프로필 이모티콘',icon:'🙂'}, emoji_border:{name:'이모티콘 테두리',icon:'⭕'},
+  profile_emoji:{name:'프로필 초상',icon:'🙂'}, emoji_border:{name:'초상 프레임',icon:'▣'},
   title:{name:'칭호',icon:'🏷️'},
 });
+export const RETIRED_SHOWROOM_CATEGORIES=Object.freeze(['companion']);
+const retiredCategories=new Set(RETIRED_SHOWROOM_CATEGORIES);
 export const ALL_CATALOG_V2=Object.freeze([
-  ...SHOWROOM_CATALOG_V2,
+  ...SHOWROOM_CATALOG_V2.filter(entry=>!retiredCategories.has(entry.category)),
   ...TITLES_CATALOG_V2.map(entry=>Object.freeze({...entry,category:'title',visual:entry.description,implKey:`title:${entry.id}`})),
 ]);
 const BY_ID=new Map(ALL_CATALOG_V2.map(entry=>[entry.id,entry]));
 const canonicalId=id=>resolveShowroomItemIdV2(id);
 export const getCatalogItemV2=id=>BY_ID.get(canonicalId(id))||null;
 export const itemsByCategoryV2=category=>ALL_CATALOG_V2.filter(entry=>entry.category===category);
-export const V2_CATEGORIES=Object.freeze([...SHOWROOM_CATEGORIES,'title']);
+export const V2_CATEGORIES=Object.freeze([...SHOWROOM_CATEGORIES.filter(category=>!retiredCategories.has(category)),'title']);
 
 export const COMPANION_LAYOUT_DEFAULTS=Object.freeze({scale:1,opacity:1,x:90,y:15});
 export const COMPANION_LAYOUT_LIMITS=Object.freeze({
@@ -103,7 +105,7 @@ const img=(entry,className,attrs='')=>entry?.asset
   : '';
 export const markerPathV2=()=>null;
 export const markerAssetV2=id=>{const entry=getCatalogItemV2(id);return entry?.category==='point_marker'?entry.asset:null};
-export const renderCompanionV2=id=>img(getCatalogItemV2(id),'v3-companion-image');
+export const renderCompanionV2=()=> '';
 export const renderTrophyV2=id=>img(getCatalogItemV2(id),'v3-trophy-image');
 export const renderMarkerV2=id=>img(getCatalogItemV2(id),'v3-marker-image');
 export const renderAmbientV2=id=>img(getCatalogItemV2(id),'v3-ambient-preview');
@@ -121,11 +123,13 @@ export function renderEmojiBorderV2(id,size=52){
   const entry=getCatalogItemV2(id);
   return entry?`<img class="v3-emoji-border" src="${entry.asset}" width="${size}" height="${size}" alt="" aria-hidden="true" draggable="false" decoding="async">`:'';
 }
-export function profileVisualV2(raw,size=48,fallbackEmoji='🙂'){
+export function profileVisualV2(raw,size=48,fallbackEmoji='🙂',mode='compact'){
   const loadout=normalizeLoadoutV2(raw);
-  return `<span class="v2-profile" style="width:${size}px;height:${size}px">${renderEmojiBorderV2(loadout.emoji_border,size+14)}${renderProfileEmojiV2(loadout.profile_emoji,size-8,fallbackEmoji)}</span>`;
+  const displayMode=mode==='showcase'?'showcase':'compact';
+  return `<span class="v2-profile v2-profile-${displayMode}" style="width:${size}px;height:${size}px">${renderEmojiBorderV2(loadout.emoji_border,size+14)}<span class="v2-profile-art">${renderProfileEmojiV2(loadout.profile_emoji,size-8,fallbackEmoji)}</span></span>`;
 }
 export const profileVisualForUserV2=(user,size=48,loadout=user?.showroomLoadoutV2)=>profileVisualV2(loadout,size);
+export const profileShowcaseForUserV2=(user,size=116,loadout=user?.showroomLoadoutV2)=>profileVisualV2(loadout,size,'🙂','showcase');
 export function titleInfoV2(raw){
   const loadout=normalizeLoadoutV2(raw),entry=getCatalogItemV2(loadout.title);
   return entry?{...entry,color:TITLE_RARITY_COLORS[entry.rarity]}:null;
@@ -198,13 +202,11 @@ export function decorateMainPlotV2(plot,raw){
   if(!plot?.matches?.('[data-main-weight-plot="true"]'))return false;
   plot.querySelector(':scope > .v3-main-plot-decor')?.remove();
   const loadout=normalizeLoadoutV2(raw),graph=getCatalogItemV2(loadout.graph_skin),ambient=getCatalogItemV2(loadout.ambient_effect);
-  const companion=getCatalogItemV2(loadout.companion);
   const trophies=loadout.trophy.map(getCatalogItemV2).filter(Boolean);
-  if(!graph&&!ambient&&!companion&&!trophies.length)return false;
+  if(!graph&&!ambient&&!trophies.length)return false;
   const host=document.createElement('div');
   host.className='v3-main-plot-decor';host.setAttribute('aria-hidden','true');host.dataset.showroomMainPlot='true';host.dataset.aspectRatio='16:9';host.dataset.hasGraph=graph?'true':'false';
-  const layout=loadout.companionLayout,companionStyle=`--companion-scale:${layout.scale};--companion-opacity:${layout.opacity};--companion-x:${layout.x};--companion-y:${layout.y}`;
-  host.innerHTML=`${img(graph,'v3-graph-layer')}${img(ambient,'v3-ambient-layer')}<span class="v3-plot-scrim"></span>${companion?`<span class="v2-companion" style="${companionStyle}">${renderCompanionV2(companion.id)}</span>`:''}<span class="v2-trophies">${trophies.map(entry=>renderTrophyV2(entry.id)).join('')}</span>`;
+  host.innerHTML=`${img(graph,'v3-graph-layer')}${img(ambient,'v3-ambient-layer')}<span class="v3-plot-scrim"></span><span class="v2-trophies">${trophies.map(entry=>renderTrophyV2(entry.id)).join('')}</span>`;
   plot.prepend(host);
   return true;
 }
@@ -215,7 +217,6 @@ export function renderCatalogPreviewV2(entry){
   if(entry.category==='profile_emoji')return renderProfileEmojiV2(entry.id,64);
   if(entry.category==='emoji_border')return `<span class="v2-profile v3-catalog-profile" style="width:68px;height:68px">${renderEmojiBorderV2(entry.id,76)}${renderProfileEmojiV2(SHOWROOM_DEFAULTS.profile_emoji,46)}</span>`;
   if(entry.category==='title')return `<span style="color:${TITLE_RARITY_COLORS[entry.rarity]};font-weight:800">${entry.name}</span>`;
-  if(entry.category==='companion')return renderCompanionV2(entry.id);
   if(entry.category==='trophy')return renderTrophyV2(entry.id);
   if(entry.category==='point_marker')return renderMarkerV2(entry.id);
   if(entry.category==='ambient_effect')return `<span class="v3-landscape-preview">${renderAmbientV2(entry.id)}</span>`;
