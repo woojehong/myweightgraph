@@ -1,4 +1,4 @@
-const CACHE = 'weight-v104-borderless-profile-copy';
+const CACHE = 'weight-v105-portrait-frame-safe-zone';
 const ASSETS = [
   './index.html', './dashboard.html', './input.html', './import.html',
   './achievements.html', './compare.html', './dressroom.html', './shop.html', './guide.html', './visual-lab.html',
