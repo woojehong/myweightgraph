@@ -46,12 +46,7 @@ const specs = Object.freeze({
     ['tr_giant_horn','거인 뿔','epic',1800,'png','거인 사냥의 증표로 남은 뿔'],
     ['tr_cosmic_goblet','우주 고블릿','legendary',3500,'png','별빛과 행성을 담은 황금 고블릿'],
   ],
-  profile_emoji: [
-    ['pe_archive_spirit','기록보관소 정령','uncommon',500,'png','기록을 지키는 푸른 정령'],
-    ['pe_forest_goblin','숲 고블린','rare',1000,'png','모험을 좋아하는 숲의 고블린'],
-    ['pe_dragonblood','용혈 전사','epic',1800,'png','용의 힘을 이어받은 붉은 전사'],
-    ['pe_celestial_oracle','천상의 예언자','legendary',3500,'png','별의 흐름을 읽는 천상의 예언자'],
-  ],
+  profile_emoji: [],
   emoji_border: [],
 });
 
@@ -69,7 +64,7 @@ const SHOWROOM_CATALOG_V3_FALLBACK = Object.freeze(SHOWROOM_CATEGORIES.flatMap(c
 // 코드 네이티브 범주: 이미지 에셋 없이 renderSpec으로 그린다.
 export const CODE_NATIVE_CATEGORIES = Object.freeze(['line_style','ambient_effect']);
 const isCodeNative = category => CODE_NATIVE_CATEGORIES.includes(category);
-const RESETTING_CATEGORIES = Object.freeze(['card_theme','emoji_border']);
+const RESETTING_CATEGORIES = Object.freeze(['card_theme','profile_emoji','emoji_border']);
 // 생성 파일(showroom-catalog-v4.generated.js)은 GPT 스크립트가 덮어쓰므로 건드리지 않고 여기서 병합한다.
 const v4Items=[
   ...(Array.isArray(SHOWROOM_V4_RUNTIME?.items)?SHOWROOM_V4_RUNTIME.items.filter(entry=>entry.category!=='graph_skin'):[]),
@@ -140,6 +135,7 @@ const SHOWROOM_CATALOG_BASE=SHOWROOM_CATEGORIES.flatMap(category=>{
 const SHOWROOM_V5_ADDITIONS=Object.freeze([
   ...COMPANION_ITEMS_V5,
   ...PROFILE_EMOJI_ITEMS_V6,
+  ...CARD_THEME_ITEMS,
 ]);
 const showroomV5Ids=new Set(SHOWROOM_V5_ADDITIONS.map(entry=>entry.id));
 export const SHOWROOM_CATALOG_V2=Object.freeze([
@@ -167,9 +163,10 @@ const activeByCategory = Object.fromEntries(SHOWROOM_CATEGORIES.map(category => 
 ]));
 const activeIds = new Set(Object.values(activeByCategory).flat());
 const aliasPairs=[];
+const NO_LEGACY_ALIAS_CATEGORIES=new Set(['card_theme','profile_emoji','emoji_border']);
 for(const category of SHOWROOM_CATEGORIES){
   const legacy=LEGACY_IDS_BY_CATEGORY[category];
-  if(activeByCategory[category].length===0)continue;
+  if(activeByCategory[category].length===0||NO_LEGACY_ALIAS_CATEGORIES.has(category))continue;
   legacy.forEach((id,index)=>{
     const _n=activeByCategory[category].length;
     const _per=_n>=12&&_n%4===0?_n/4:1;
@@ -225,14 +222,14 @@ export function assertShowroomCatalogV2(catalog=SHOWROOM_CATALOG_V2){
       }
       if(ids.has(entry.id))throw new Error(`duplicate catalog id: ${entry.id}`);ids.add(entry.id);
       if(entry.asset!==null){if(assets.has(entry.asset))throw new Error(`duplicate catalog asset: ${entry.asset}`);assets.add(entry.asset)}
-      const expectedRoot=PORTRAIT_FRAME_ITEMS_V7.some(item=>item.id===entry.id)?'./assets/showroom-v7':PROFILE_EMOJI_ITEMS_V6.some(item=>item.id===entry.id)?'./assets/showroom-v6':showroomV5Ids.has(entry.id)?'./assets/showroom-v5':isV4Tier?'./assets/showroom-v4':'./assets/showroom-v3';
+      const expectedRoot=CARD_THEME_ITEMS.some(item=>item.id===entry.id)?'./assets/showroom-v8':PORTRAIT_FRAME_ITEMS_V7.some(item=>item.id===entry.id)?'./assets/showroom-v7':PROFILE_EMOJI_ITEMS_V6.some(item=>item.id===entry.id)?'./assets/showroom-v6':showroomV5Ids.has(entry.id)?'./assets/showroom-v5':isV4Tier?'./assets/showroom-v4':'./assets/showroom-v3';
       if(isCodeNative(category)&&entry.asset===null){
         if(!entry.renderSpec)throw new Error(`${entry.id}: invalid code-native item`);
       }else if(!entry.asset||!entry.asset.startsWith(`${expectedRoot}/${category}/`))throw new Error(`${entry.id}: invalid asset path`);
     }
   }
   if(catalog===SHOWROOM_CATALOG_V2){
-    if(Object.keys(LEGACY_SHOWROOM_ID_ALIASES).length<158)throw new Error('legacy alias coverage regressed below active-category compatibility ids');
+    if(Object.keys(LEGACY_SHOWROOM_ID_ALIASES).length<98)throw new Error('legacy alias coverage regressed below active-category compatibility ids');
     for(const [legacy,target] of Object.entries(LEGACY_SHOWROOM_ID_ALIASES)){
       const targetItem=catalog.find(entry=>entry.id===target);
       if(!targetItem)throw new Error(`${legacy}: missing alias target ${target}`);

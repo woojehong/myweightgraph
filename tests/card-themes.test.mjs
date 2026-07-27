@@ -5,8 +5,10 @@ import { PORTRAIT_FRAME_ITEMS_V7 } from '../js/showroom-portrait-frames-v7.js';
 import { SHOWROOM_CATALOG_V2 } from '../js/showroom-catalog-v2.js';
 import { applyCardV2 } from '../js/showroom-v2.js';
 
-assert.deepEqual(CARD_THEME_ITEMS, []);
-assert.equal(SHOWROOM_CATALOG_V2.some(item => item.category === 'card_theme'), false);
+assert.equal(CARD_THEME_ITEMS.length,2);
+assert.deepEqual(CARD_THEME_ITEMS.map(item=>item.id),['ct8_legendary_frozen_throne','ct8_legendary_nether_sanctum']);
+assert.equal(SHOWROOM_CATALOG_V2.filter(item => item.category === 'card_theme').length,2);
+for(const item of CARD_THEME_ITEMS){assert.equal(item.testOnly,true);assert.equal(item.purchasable,false);assert.equal(item.persistable,false)}
 assert.equal(PORTRAIT_FRAME_ITEMS_V7.length,20);
 assert.deepEqual(PORTRAIT_FRAME_ITEMS_V7.map(item=>item.rarity),[
   ...Array(5).fill('uncommon'),...Array(5).fill('rare'),...Array(5).fill('epic'),...Array(5).fill('legendary'),
@@ -27,12 +29,13 @@ assert.equal(removed,true,'retired theme art must be stripped from an already-re
 
 const compare = await readFile(new URL('../compare.html',import.meta.url),'utf8');
 const showroom = await readFile(new URL('../dressroom.html',import.meta.url),'utf8');
-for(const token of ['grid-template-columns:repeat(7,34px)','grid-auto-rows:34px','direction:rtl','max-height:72px'])assert.ok((showroom+compare).includes(token),token);
+const css=await readFile(new URL('../css/showroom-card-themes.css',import.meta.url),'utf8');
+for(const token of ['grid-template-columns:repeat(7,30px)','grid-template-rows:repeat(2,30px)','justify-content:end','direction:rtl'])assert.ok(css.includes(token),token);
 for(const token of ['.sr-profile-head[data-card-theme] .sr-profile-markers{display:grid','min-width:100%;justify-self:stretch!important','.cmp-profile[data-card-theme] .cmp-markers{display:grid'])assert.ok((showroom+compare).includes(token),token);
 
 const sw = await readFile(new URL('../sw.js',import.meta.url),'utf8');
-assert.ok(sw.includes('weight-v96-portrait-frames-v7'));
-assert.equal(sw.includes('/card_theme/'),false);
+assert.ok(sw.includes('weight-v97-expanded-card-prototypes'));
+for(const item of CARD_THEME_ITEMS)assert.ok(sw.includes(item.asset),item.id);
 for(const item of PORTRAIT_FRAME_ITEMS_V7)assert.ok(sw.includes(item.asset),item.id);
 
 console.log('retired card theme and V7 portrait frame tests: PASS');

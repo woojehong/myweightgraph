@@ -1,4 +1,4 @@
-const CACHE = 'weight-v96-portrait-frames-v7';
+const CACHE = 'weight-v97-expanded-card-prototypes';
 const ASSETS = [
   './index.html', './dashboard.html', './input.html', './import.html',
   './achievements.html', './compare.html', './dressroom.html', './shop.html', './guide.html', './visual-lab.html',
@@ -79,10 +79,6 @@ const ASSETS = [
   './assets/showroom-v3/trophy/tr_sea_chalice.png',
   './assets/showroom-v3/trophy/tr_giant_horn.png',
   './assets/showroom-v3/trophy/tr_cosmic_goblet.png',
-  './assets/showroom-v3/profile_emoji/pe_archive_spirit.png',
-  './assets/showroom-v3/profile_emoji/pe_forest_goblin.png',
-  './assets/showroom-v3/profile_emoji/pe_dragonblood.png',
-  './assets/showroom-v3/profile_emoji/pe_celestial_oracle.png',
   './assets/showroom-v6/profile_emoji/pe_l_fallen_frost_prince.png',
   './assets/showroom-v6/profile_emoji/pe_l_tideglass_archmage.png',
   './assets/showroom-v6/profile_emoji/pe_l_ironjaw_warchief.png',
@@ -113,6 +109,8 @@ const ASSETS = [
   './assets/showroom-v7/emoji_border/eb_l_sunwell_bloodcrystal.png',
   './assets/showroom-v7/emoji_border/eb_l_storm_lion_gate.png',
   './assets/showroom-v7/emoji_border/eb_l_rediron_warchief.png',
+  './assets/showroom-v8/card_theme/ct8_legendary_frozen_throne.png',
+  './assets/showroom-v8/card_theme/ct8_legendary_nether_sanctum.png',
 ];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
