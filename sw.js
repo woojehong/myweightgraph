@@ -1,4 +1,4 @@
-const CACHE = 'weight-v97-expanded-card-prototypes';
+const CACHE = 'weight-v98-abstract-card-themes';
 const ASSETS = [
   './index.html', './dashboard.html', './input.html', './import.html',
   './achievements.html', './compare.html', './dressroom.html', './shop.html', './guide.html', './visual-lab.html',
