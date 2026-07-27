@@ -1,4 +1,4 @@
-const CACHE = 'weight-v105-portrait-frame-safe-zone';
+const CACHE = 'weight-v106-transparent-profile-portraits';
 const ASSETS = [
   './index.html', './dashboard.html', './input.html', './import.html',
   './achievements.html', './compare.html', './dressroom.html', './shop.html', './guide.html', './visual-lab.html',
@@ -89,6 +89,20 @@ const ASSETS = [
   './assets/showroom-v6/profile_emoji/pe_l_felskull_warlock.png',
   './assets/showroom-v6/profile_emoji/pe_l_red_dragon_lifequeen.png',
   './assets/showroom-v6/profile_emoji/pe_l_cataclysm_black_dragon.png',
+  './assets/showroom-v8/profile_emoji/pe_u_blue_bear_slugger.webp',
+  './assets/showroom-v8/profile_emoji/pe_u_twin_cheer_pair.webp',
+  './assets/showroom-v8/profile_emoji/pe_u_soft_bear_fan.webp',
+  './assets/showroom-v8/profile_emoji/pe_u_red_tiger_pitcher.webp',
+  './assets/showroom-v8/profile_emoji/pe_u_orange_eagle_cheer.webp',
+  './assets/showroom-v8/profile_emoji/pe_r_jade_fan_strategist.webp',
+  './assets/showroom-v8/profile_emoji/pe_r_crimson_flying_general.webp',
+  './assets/showroom-v8/profile_emoji/pe_r_crescent_beard_general.webp',
+  './assets/showroom-v8/profile_emoji/pe_r_roaring_tiger_general.webp',
+  './assets/showroom-v8/profile_emoji/pe_r_silver_spear_dragon.webp',
+  './assets/showroom-v8/profile_emoji/pe_e_crimson_reactor_sentinel.webp',
+  './assets/showroom-v8/profile_emoji/pe_e_storm_prince_guardian.webp',
+  './assets/showroom-v8/profile_emoji/pe_e_dimensional_mystic.webp',
+  './assets/showroom-v8/profile_emoji/pe_e_crimson_chaos_witch.webp',
   './assets/showroom-v7/emoji_border/eb_u_bear_batter.png',
   './assets/showroom-v7/emoji_border/eb_u_twin_stadium.png',
   './assets/showroom-v7/emoji_border/eb_u_tiger_dugout.png',

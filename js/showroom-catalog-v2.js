@@ -222,7 +222,7 @@ export function assertShowroomCatalogV2(catalog=SHOWROOM_CATALOG_V2){
       }
       if(ids.has(entry.id))throw new Error(`duplicate catalog id: ${entry.id}`);ids.add(entry.id);
       if(entry.asset!==null){if(assets.has(entry.asset))throw new Error(`duplicate catalog asset: ${entry.asset}`);assets.add(entry.asset)}
-      const expectedRoot=CARD_THEME_ITEMS.some(item=>item.id===entry.id)?'./assets/showroom-v8':PORTRAIT_FRAME_ITEMS_V7.some(item=>item.id===entry.id)?'./assets/showroom-v7':PROFILE_EMOJI_ITEMS_V6.some(item=>item.id===entry.id)?'./assets/showroom-v6':showroomV5Ids.has(entry.id)?'./assets/showroom-v5':isV4Tier?'./assets/showroom-v4':'./assets/showroom-v3';
+      const expectedRoot=CARD_THEME_ITEMS.some(item=>item.id===entry.id)?'./assets/showroom-v8':PORTRAIT_FRAME_ITEMS_V7.some(item=>item.id===entry.id)?'./assets/showroom-v7':PROFILE_EMOJI_ITEMS_V6.some(item=>item.id===entry.id)?(entry.asset.startsWith('./assets/showroom-v8/')?'./assets/showroom-v8':'./assets/showroom-v6'):showroomV5Ids.has(entry.id)?'./assets/showroom-v5':isV4Tier?'./assets/showroom-v4':'./assets/showroom-v3';
       if(isCodeNative(category)&&entry.asset===null){
         if(!entry.renderSpec)throw new Error(`${entry.id}: invalid code-native item`);
       }else if(!entry.asset||!entry.asset.startsWith(`${expectedRoot}/${category}/`))throw new Error(`${entry.id}: invalid asset path`);

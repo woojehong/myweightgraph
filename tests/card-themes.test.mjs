@@ -36,7 +36,7 @@ for(const token of ['.sr-profile-head[data-card-theme] .sr-profile-markers{displ
 for(const token of ['.v2-profile-compact .v2-profile-art{inset:8%','.v2-profile-showcase .v2-profile-art{inset:12%','transform:scale(.94) translateY(-1%)'])assert.ok(baseCss.includes(token),token);
 
 const sw = await readFile(new URL('../sw.js',import.meta.url),'utf8');
-assert.ok(sw.includes('weight-v105-portrait-frame-safe-zone'));
+assert.ok(sw.includes('weight-v106-transparent-profile-portraits'));
 for(const item of CARD_THEME_ITEMS)assert.ok(sw.includes(item.asset),item.id);
 for(const item of PORTRAIT_FRAME_ITEMS_V7)assert.ok(sw.includes(item.asset),item.id);
 

@@ -4,3 +4,6 @@ _to_delete/
 node_modules/
 assets/avatar-3d/source/
 tools/human-bundle-inventory.json
+assets/showroom-v8/profile_emoji/pe_e_silver_filament_engineer.webp
+assets/showroom-v8/profile_emoji/pe_e_kinetic_alloy_guardian.webp
+tmp/
