@@ -13,7 +13,7 @@ import { weeklyProgress, monthlyProgress, weekStartOf, monthStartOf,
          cappedEarned, WEEKLY_CAP, MONTHLY_CAP }      from "./quests.js";
 import { normalizeMeal, normalizeMealRecord }          from "./meal-status.js";
 import { getCatalogItemV2, normalizeLoadoutV2, persistableLoadoutV2,
-         validateCatalogPurchaseV2, selectedItemIdsV2, ownedItemIdsV2 } from "./showroom-v2.js?v=89";
+         validateCatalogPurchaseV2, selectedItemIdsV2, ownedItemIdsV2 } from "./showroom-v2.js?v=90";
 
 const app  = initializeApp(firebaseConfig);
 const db   = getFirestore(app);

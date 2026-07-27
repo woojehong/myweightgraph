@@ -3,6 +3,7 @@ import { GRAPH_SKIN_ITEMS } from './showroom-graph-skins.js';
 import { CARD_THEME_ITEMS } from './showroom-card-themes.js';
 import { LINE_STYLE_ITEMS, AMBIENT_EFFECT_ITEMS } from './showroom-fx.js';
 import { COMPANION_ITEMS_V5 } from './showroom-companions-v5.js';
+import { PROFILE_EMOJI_ITEMS_V6 } from './showroom-profile-emojis-v6.js';
 
 // Maweg showroom catalog: V4 fully replaces V3 only after a validated 108-item runtime module exists.
 const item = (category, id, name, rarity, price, asset, visual) => Object.freeze({
@@ -145,6 +146,7 @@ const SHOWROOM_CATALOG_BASE=SHOWROOM_CATEGORIES.flatMap(category=>{
 });
 const SHOWROOM_V5_ADDITIONS=Object.freeze([
   ...COMPANION_ITEMS_V5,
+  ...PROFILE_EMOJI_ITEMS_V6,
 ]);
 const showroomV5Ids=new Set(SHOWROOM_V5_ADDITIONS.map(entry=>entry.id));
 export const SHOWROOM_CATALOG_V2=Object.freeze([
@@ -229,7 +231,7 @@ export function assertShowroomCatalogV2(catalog=SHOWROOM_CATALOG_V2){
       }
       if(ids.has(entry.id))throw new Error(`duplicate catalog id: ${entry.id}`);ids.add(entry.id);
       if(entry.asset!==null){if(assets.has(entry.asset))throw new Error(`duplicate catalog asset: ${entry.asset}`);assets.add(entry.asset)}
-      const expectedRoot=showroomV5Ids.has(entry.id)?'./assets/showroom-v5':isV4Tier?'./assets/showroom-v4':'./assets/showroom-v3';
+      const expectedRoot=PROFILE_EMOJI_ITEMS_V6.some(item=>item.id===entry.id)?'./assets/showroom-v6':showroomV5Ids.has(entry.id)?'./assets/showroom-v5':isV4Tier?'./assets/showroom-v4':'./assets/showroom-v3';
       if(isCodeNative(category)&&entry.asset===null){
         if(!entry.renderSpec)throw new Error(`${entry.id}: invalid code-native item`);
       }else if(!entry.asset||!entry.asset.startsWith(`${expectedRoot}/${category}/`))throw new Error(`${entry.id}: invalid asset path`);

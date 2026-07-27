@@ -1,4 +1,4 @@
-const CACHE = 'weight-v89-reward-prices';
+const CACHE = 'weight-v90-legendary-profiles';
 const ASSETS = [
   './index.html', './dashboard.html', './input.html', './import.html',
   './achievements.html', './compare.html', './dressroom.html', './shop.html', './guide.html', './visual-lab.html',
@@ -7,7 +7,7 @@ const ASSETS = [
   './js/chart-render.js', './js/achievements.js', './js/achievements-engine.js',
   './js/quests.js', './js/quest-panel.js', './js/showroom-fx.js',
   './js/util.js', './js/daily-rewards.js', './js/meal-status.js', './js/showroom-v2.js',
-  './js/showroom-catalog-v2.js', './js/showroom-catalog-v4.generated.js', './js/showroom-graph-skins.js', './js/showroom-card-themes.js', './js/showroom-companions-v5.js', './js/titles-catalog-v2.js', './js/achievement-item-rewards-v2.js',
+  './js/showroom-catalog-v2.js', './js/showroom-catalog-v4.generated.js', './js/showroom-graph-skins.js', './js/showroom-card-themes.js', './js/showroom-companions-v5.js', './js/showroom-profile-emojis-v6.js', './js/titles-catalog-v2.js', './js/achievement-item-rewards-v2.js',
   './manifest.json', './favicon.png',
   './register-sw.js',
   './assets/showroom-v4/graph_skin/gs4_uncommon_ironpeak_workshop.webp',
@@ -134,6 +134,16 @@ const ASSETS = [
   './assets/showroom-v3/profile_emoji/pe_forest_goblin.png',
   './assets/showroom-v3/profile_emoji/pe_dragonblood.png',
   './assets/showroom-v3/profile_emoji/pe_celestial_oracle.png',
+  './assets/showroom-v6/profile_emoji/pe_l_fallen_frost_prince.png',
+  './assets/showroom-v6/profile_emoji/pe_l_tideglass_archmage.png',
+  './assets/showroom-v6/profile_emoji/pe_l_ironjaw_warchief.png',
+  './assets/showroom-v6/profile_emoji/pe_l_raven_tower_guardian.png',
+  './assets/showroom-v6/profile_emoji/pe_l_netherblade_betrayer.png',
+  './assets/showroom-v6/profile_emoji/pe_l_dark_ranger_queen.png',
+  './assets/showroom-v6/profile_emoji/pe_l_worldsoul_stormcaller.png',
+  './assets/showroom-v6/profile_emoji/pe_l_felskull_warlock.png',
+  './assets/showroom-v6/profile_emoji/pe_l_red_dragon_lifequeen.png',
+  './assets/showroom-v6/profile_emoji/pe_l_cataclysm_black_dragon.png',
   './assets/showroom-v3/emoji_border/eb_forged_iron.png',
   './assets/showroom-v3/emoji_border/eb_worldroot.png',
   './assets/showroom-v3/emoji_border/eb_giant_hunter.png',
