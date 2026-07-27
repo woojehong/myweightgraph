@@ -246,12 +246,12 @@ assert.ok(Math.abs(fitted.width/fitted.height-16/9)<1e-9,'main plot host must re
 assert.equal(mainPlotDecorator.includes('v2-trophies'),false,'trophies must leave the graph and render in the card header');
 const compareHeaderSource=await readFile(new URL('../compare.html',import.meta.url),'utf8');
 assert.ok(compareHeaderSource.includes('<div class="cmp-trophies">${trophies.map(renderTrophyV2).join(\'\')}</div>'),'trophies must render in the header medal rail');
-for(const token of ['grid-template-columns:repeat(7,34px)','grid-auto-rows:34px','direction:rtl','max-height:72px'])assert.ok(compareHeaderSource.includes(token),token);
+for(const token of ['grid-template-columns:repeat(7,34px)','grid-template-rows:repeat(2,34px)','direction:rtl','justify-content:right','max-height:72px'])assert.ok(compareHeaderSource.includes(token),token);
 assert.equal((visualLab.match(/drawMarker\(ctx,marker,/g)||[]).length,1,'visual lab must show the image marker only at the lowest point');
 assert.equal((visualLab.match(/drawMarker\(ctx,/g)||[]).length-1,1,'visual lab must render exactly one point marker');
 
 const sw=await readFile(new URL('../sw.js',import.meta.url),'utf8');
-assert.ok(sw.includes("weight-v106-transparent-profile-portraits"));assert.equal(sw.includes('c.addAll(ASSETS).catch'),false);
+assert.ok(sw.includes("weight-v107-showroom-effects-profile-fit"));assert.equal(sw.includes('c.addAll(ASSETS).catch'),false);
 for(const entry of SHOWROOM_CATALOG_V2.filter(entry=>entry.asset))assert.ok(sw.includes(`'${entry.asset}'`),`sw:${entry.asset}`);
 
 const showroom=await readFile(new URL('../dressroom.html',import.meta.url),'utf8');
@@ -267,6 +267,7 @@ for(const token of ['showMaxMarker: false','showMinMarker: true','showCurMarker:
 for(const token of ['id="markerSize" type="range" min="20" max="44" step="2" value="32"',"localStorage.getItem('compare_marker_size')",'markerSize=Number(size.value)',"localStorage.setItem('compare_marker_size'",'chartDecorations: { ...getChartDecorationsV2(user?.showroomLoadoutV2), markerSize }','.marker-size-control{grid-column:1/-1'])assert.ok(compare.includes(token),token);
 const db=await readFile(new URL('../js/db.js',import.meta.url),'utf8');
 for(const token of ['purchaseCatalogItemsV2','validateCatalogPurchaseV2(itemIds)','persistableLoadoutV2(rawLoadout)','트로피 외 테스트 아이템은 소유권을 추가하거나 회수할 수 없습니다','runTransaction','adminSetCatalogOwnershipV2','adminGrantedItems',"item.category==='trophy'"])assert.ok(db.includes(token),token);
+assert.ok(db.includes('applyShowroomEffects:false'),'dashboard showroom effects must default to off in user chart settings');
 const purchaseSource=db.slice(db.indexOf('export async function purchaseCatalogItemsV2'),db.indexOf('export const purchaseShowroomItem'));
 assert.ok(purchaseSource.indexOf('validateCatalogPurchaseV2(itemIds)')<purchaseSource.indexOf('runTransaction'),'test-only purchase must fail before Firestore transaction');
 const admin=await readFile(new URL('../admin.html',import.meta.url),'utf8');
@@ -279,6 +280,29 @@ for(const page of ['index.html','input.html','dashboard.html','compare.html','ac
   const withoutImports=moduleBody.replace(/import[\s\S]*?from\s*['"][^'"]+['"];\s*/g,'');
   assert.doesNotThrow(()=>new Function(withoutImports),`${page}: inline module syntax`);
 }
+const dashboard=await readFile(new URL('../dashboard.html',import.meta.url),'utf8');
+for(const token of [
+  'id="tShowroomEffects"', '쇼룸 효과 적용', "bind('tShowroomEffects','applyShowroomEffects')",
+  'data-main-weight-plot="true"', 'decorateMainPlotV2(plot, showroomLoadout || {})',
+  'mainPlotAspectRatio:16/9', 'getChartDecorationsV2(showroomLoadout)',
+])assert.ok(dashboard.includes(token),`dashboard showroom effects: ${token}`);
+const dashboardLoadoutSource=dashboard.slice(
+  dashboard.indexOf('const DASHBOARD_SHOWROOM_CATEGORIES'),
+  dashboard.indexOf('// 일간/주간/월간'),
+);
+for(const category of ['graph_skin','line_style','point_marker','ambient_effect'])assert.ok(dashboardLoadoutSource.includes(`'${category}'`),category);
+for(const forbidden of ['card_theme','profile_emoji','emoji_border','title','trophy','companion'])assert.equal(
+  dashboardLoadoutSource.includes(`'${forbidden}'`),false,`dashboard graph loadout must exclude ${forbidden}`,
+);
+const dashboardShowroomLoadout=new Function(`${dashboardLoadoutSource}\nreturn dashboardShowroomLoadout;`)();
+assert.deepEqual(dashboardShowroomLoadout({
+  graph_skin:'graph',line_style:'line',point_marker:'marker',ambient_effect:'ambient',
+  card_theme:'card',profile_emoji:'profile',emoji_border:'border',title:'title',trophy:['trophy'],companion:'companion',
+}),{graph_skin:'graph',line_style:'line',point_marker:'marker',ambient_effect:'ambient'});
+assert.deepEqual(dashboardShowroomLoadout(null),{
+  graph_skin:null,line_style:null,point_marker:null,ambient_effect:null,
+});
+assert.ok(dashboard.includes("S.applyShowroomEffects===true\n      ? dashboardShowroomLoadout(user?.showroomLoadoutV2)\n      : null"));
 assert.ok((await readFile(new URL('../index.html',import.meta.url),'utf8')).includes('profileVisualForUserV2(u,52)'),'login account card must render each account showroomLoadoutV2 through the common user renderer');
 
 console.log('showroom image catalog tests: PASS');

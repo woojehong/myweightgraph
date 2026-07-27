@@ -1,4 +1,4 @@
-const CACHE = 'weight-v106-transparent-profile-portraits';
+const CACHE = 'weight-v107-showroom-effects-profile-fit';
 const ASSETS = [
   './index.html', './dashboard.html', './input.html', './import.html',
   './achievements.html', './compare.html', './dressroom.html', './shop.html', './guide.html', './visual-lab.html',

@@ -481,6 +481,7 @@ export async function saveTierSettings(data) {
 // ── 앱 설정 ──────────────────────────────────────────────────────────
 export const DEFAULT_SETTINGS = {
   show7dayMA:true, showWeeklyBar:true, showPrediction:false,
+  applyShowroomEffects:false,
   showMaxMarker:true, showMinMarker:true, showCurMarker:true,
   annotOpacity:0.88,
   showStatPeriod:true, showStatStart:true, showStatCurrent:true,

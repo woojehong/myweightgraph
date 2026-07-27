@@ -156,7 +156,7 @@ import { renderChart, calcStats, aggregateRecords, periodLabel } from './js/char
 import { getTierForScore, DEFAULT_TIERS } from './js/achievements.js';
 import { BORDER_NAMES } from './js/borders-data.js';
 import { esc } from './js/util.js';
-import { profileVisualForUserV2, titleInfoV2 } from './js/showroom-v2.js?v=96';
+import { decorateMainPlotV2, getChartDecorationsV2, profileVisualForUserV2, titleInfoV2 } from './js/showroom-v2.js?v=96';
 
 let toastTimer;
 function showToast(message, type = 'ok') {
@@ -192,6 +192,17 @@ function buildNav(uid) {
 }
 
 let S={}, user=null, records=[], stats=null;
+const DASHBOARD_SHOWROOM_CATEGORIES = Object.freeze([
+  'graph_skin', 'line_style', 'point_marker', 'ambient_effect',
+]);
+
+// 내 그래프에는 그래프 전용 슬롯만 전달한다. 카드·프로필·칭호·트로피는 헤더 영역용이다.
+function dashboardShowroomLoadout(raw) {
+  const source = raw && typeof raw === 'object' ? raw : {};
+  return Object.fromEntries(DASHBOARD_SHOWROOM_CATEGORIES.map(category => [
+    category, source[category] ?? null,
+  ]));
+}
 
 // 일간/주간/월간 — 항상 '일간'으로 시작 (새로고침 시 초기화, 저장 안 함)
 let viewMode = 'day';
@@ -292,7 +303,7 @@ async function render() {
   content.innerHTML=`
     ${granRowHtml()}
     <div id="mkRowWrap">${markerRowHtml(records)}</div>
-    <div class="chart-wrap" style="position:relative">
+    <div class="chart-wrap" data-main-weight-plot="true" style="position:relative">
       <canvas id="mainC"></canvas>
       <div style="position:absolute;top:8px;right:8px;display:flex;gap:4px;z-index:10">
         <button onclick="chartZoomIn()" title="확대"
@@ -310,6 +321,10 @@ async function render() {
         <button class="zoom-reset-btn" onclick="resetZoom()">🔍 초기화</button>
       </div>
       <div style="width:100%;height:1px;background:var(--border);margin-bottom:2px"></div>
+
+      <span class="opt-label">쇼룸</span>
+      <label class="opt-item"><input type="checkbox" id="tShowroomEffects" ${S.applyShowroomEffects===true?'checked':''}> 쇼룸 효과 적용</label>
+      <div class="opt-sep"></div>
 
       <span class="opt-label">그래프</span>
       <label class="opt-item"><input type="checkbox" id="t7ma"  ${S.show7dayMA!==false?'checked':''}> 7일평균</label>
@@ -532,7 +547,15 @@ function checkTodayAlert() {
 function doRender() {
   const mainC=document.getElementById('mainC');
   if(mainC) {
-    renderChart(viewRecords(), user, mainC, null, viewOpts());
+    const plot=mainC.closest('[data-main-weight-plot="true"]');
+    const showroomLoadout=S.applyShowroomEffects===true
+      ? dashboardShowroomLoadout(user?.showroomLoadoutV2)
+      : null;
+    if(plot) decorateMainPlotV2(plot, showroomLoadout || {});
+    const showroomOptions=showroomLoadout
+      ? {mainPlotAspectRatio:16/9, chartDecorations:getChartDecorationsV2(showroomLoadout)}
+      : {};
+    renderChart(viewRecords(), user, mainC, null, {...viewOpts(), ...showroomOptions});
   }
 }
 
@@ -577,6 +600,7 @@ function bindToggles() {
   bind('tWkAvg','showWeeklyAvgLine');
   bind('tbar','showWeeklyBar');
   bind('tpred','showPrediction');
+  bind('tShowroomEffects','applyShowroomEffects');
 
   // 서브그래프 토글 (주간막대, 식단, 운동 — 모두 doRender로 재드로우)
   document.getElementById('tDiet')?.addEventListener('change', async e => {

@@ -116,7 +116,7 @@ const escapeProfileText=value=>String(value).replace(/[&<>"']/g,char=>({
 export function renderProfileEmojiV2(id,size=42,fallbackEmoji='🙂'){
   const entry=getCatalogItemV2(id);
   const fallback=typeof fallbackEmoji==='string'&&fallbackEmoji.trim()?fallbackEmoji.trim():'🙂';
-  if(!entry)return `<span class="v3-profile-base" style="font-size:${Math.round(size*.66)}px" aria-label="기본 프로필 이모티콘">${escapeProfileText(fallback)}</span>`;
+  if(!entry)return `<span class="v3-profile-base" style="font-size:${Math.round(size*.52)}px" aria-label="기본 프로필 이모티콘">${escapeProfileText(fallback)}</span>`;
   return `<img class="v3-profile-emoji" src="${entry.asset}" width="${size}" height="${size}" alt="${entry.name}" draggable="false" decoding="async">`;
 }
 export function renderEmojiBorderV2(id,size=52){
