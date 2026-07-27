@@ -6,6 +6,7 @@ import {
   LEGACY_SHOWROOM_ID_ALIASES, GRANDFATHERED_RELEASED_ITEM_IDS, SHOWROOM_V4_ACTIVE_CATEGORIES, resolveShowroomItemIdV2, assertShowroomCatalogV2,
 } from '../js/showroom-catalog-v2.js';
 import { GRAPH_SKIN_PRICE_BY_RARITY, GRAPH_SKIN_SAFE_AREA } from '../js/showroom-graph-skins.js';
+import { POINT_MARKER_ITEMS_V9 } from '../js/showroom-point-markers-v9.js';
 import { TITLES_CATALOG_V2, TITLE_RARITY_COLORS } from '../js/titles-catalog-v2.js';
 import { ACHIEVEMENTS } from '../js/achievements.js';
 import { ACHIEVEMENT_ITEM_REWARDS_V2, normalizeAchievementTrophyRewardsV2, rewardItemsForAchievementsV2 } from '../js/achievement-item-rewards-v2.js';
@@ -22,17 +23,17 @@ import {
 
 assert.equal(assertShowroomCatalogV2(),true);
 assert.deepEqual(SHOWROOM_V4_ACTIVE_CATEGORIES,['graph_skin','line_style','ambient_effect','emoji_border']);
-assert.equal(SHOWROOM_CATALOG_V2.length,196);
+assert.equal(SHOWROOM_CATALOG_V2.length,202);
 assert.equal(TITLES_CATALOG_V2.length,30);
-assert.equal(ALL_CATALOG_V2.length,182);
+assert.equal(ALL_CATALOG_V2.length,188);
 assert.deepEqual(SHOWROOM_CATEGORIES,['graph_skin','line_style','card_theme','point_marker','companion','ambient_effect','trophy','profile_emoji','emoji_border']);
 assert.deepEqual(V2_CATEGORIES,[...SHOWROOM_CATEGORIES.filter(category=>category!=='companion'),'title']);
-assert.equal(new Set(ALL_CATALOG_V2.map(entry=>entry.id)).size,182);
-assert.equal(new Set(SHOWROOM_CATALOG_V2.filter(entry=>entry.asset).map(entry=>entry.asset)).size,128);
+assert.equal(new Set(ALL_CATALOG_V2.map(entry=>entry.id)).size,188);
+assert.equal(new Set(SHOWROOM_CATALOG_V2.filter(entry=>entry.asset).map(entry=>entry.asset)).size,134);
 
 for(const category of SHOWROOM_CATEGORIES){
   const entries=SHOWROOM_CATALOG_V2.filter(entry=>entry.category===category);
-  const expectedCount={graph_skin:12,line_style:32,card_theme:20,companion:44,ambient_effect:36,profile_emoji:24,emoji_border:20}[category]??4;
+  const expectedCount={graph_skin:12,line_style:32,card_theme:20,point_marker:10,companion:44,ambient_effect:36,profile_emoji:24,emoji_border:20}[category]??4;
   assert.equal(entries.length,expectedCount,category);
   const per=['companion','profile_emoji','card_theme'].includes(category)?1:expectedCount>=12?expectedCount/4:1;
   assert.deepEqual(entries.map(entry=>entry.rarity),category==='companion'
@@ -41,6 +42,8 @@ for(const category of SHOWROOM_CATEGORIES){
       ? [...Array(5).fill('uncommon'),...Array(5).fill('rare'),...Array(4).fill('epic'),...Array(10).fill('legendary')]
     : category==='card_theme'
       ? [...Array(5).fill('uncommon'),...Array(5).fill('rare'),...Array(5).fill('epic'),...Array(5).fill('legendary')]
+    : category==='point_marker'
+      ? [...Array(3).fill('uncommon'),'rare','epic',...Array(5).fill('legendary')]
     : expectedCount===0?[]
     : expectedCount>=12?['uncommon','rare','epic','legendary'].flatMap(r=>Array(per).fill(r))
     : ['uncommon','rare','epic','legendary']);
@@ -56,7 +59,7 @@ for(const entry of legendaryProfiles){
   assert.ok(entry.asset.startsWith('./assets/showroom-v6/profile_emoji/'),entry.id);
 }
 for(const entry of SHOWROOM_CATALOG_V2){
-  const staged=(['line_style','ambient_effect'].includes(entry.category)&&!GRANDFATHERED_RELEASED_ITEM_IDS.includes(entry.id))||entry.category==='card_theme';
+  const staged=(['line_style','ambient_effect'].includes(entry.category)&&!GRANDFATHERED_RELEASED_ITEM_IDS.includes(entry.id))||['card_theme','point_marker'].includes(entry.category);
   assert.equal(entry.testOnly,staged,entry.id);
   assert.equal(entry.purchasable,entry.category==='trophy'?false:!staged,entry.id);
 }
@@ -98,7 +101,7 @@ const normalized=normalizeLoadoutV2({
   trophy:['tr_wood_medal','tr_crystal_cup','tr_phoenix_relic','tr_dawn_regalia','bad'],
 });
 assert.equal(normalized.graph_skin,'gs_v4_uncommon_01');
-assert.equal(normalized.point_marker,'pm_phoenix_seal');
+assert.equal(normalized.point_marker,null);
 assert.equal(normalized.title,null);
 assert.deepEqual(normalized.trophy,['tr_summit_compass','tr_sea_chalice','tr_giant_horn','tr_cosmic_goblet']);
 assert.deepEqual(SHOWROOM_DEFAULTS,{graph_skin:null,line_style:null,card_theme:null,point_marker:null,companion:null,ambient_effect:null,trophy:[],profile_emoji:null,emoji_border:null});
@@ -120,7 +123,10 @@ assert.deepEqual([...ownedItemIdsV2({purchasedItemsV2:['ae_mist'],adminGrantedIt
 assert.equal(normalizeLoadoutV2({...SHOWROOM_DEFAULTS,ambient_effect:'ae_mist'}).ambient_effect,'ae_dust','retired loadout id must migrate to the active effect');
 assert.deepEqual(unownedSelectionV2(user,{...SHOWROOM_DEFAULTS,graph_skin:'gs_v4_uncommon_01',card_theme:'ct_alpine_dawn',companion:'cp_sleepy_golem'}).map(entry=>entry.id),[]);
 assert.deepEqual(getChartDecorationsV2(SHOWROOM_DEFAULTS),{});
-assert.equal(getChartDecorationsV2({point_marker:'pm_phoenix_seal'}).markerAsset,'./assets/showroom-v3/point_marker/pm_phoenix_seal.png');
+const pairedMarker=getChartDecorationsV2({point_marker:'pm_l_frozen_runeblade'});
+assert.equal(pairedMarker.markerHighAsset,'./assets/showroom-v9/point_marker/pm_l_frozen_runeblade_high.png');
+assert.equal(pairedMarker.markerLowAsset,'./assets/showroom-v9/point_marker/pm_l_frozen_runeblade_low.png');
+assert.equal(pairedMarker.markerAsset,pairedMarker.markerLowAsset);
 const transactionSnapshot={coins:4200,purchasedItemsV2:['legacy_owned'],achievementRewardItems:['legacy_reward'],adminGrantedItems:[]};
 const transactionBefore=structuredClone(transactionSnapshot);
 assert.deepEqual(validateCatalogPurchaseV2(['gs_v4_uncommon_01']).map(entry=>[entry.id,entry.price]),[['gs_v4_uncommon_01',600]]);
@@ -144,6 +150,14 @@ for(const entry of SHOWROOM_CATALOG_V2.filter(entry=>entry.asset)){
   }else{
     assert.equal(bytes.subarray(0,4).toString(),'RIFF',entry.id);
     assert.equal(bytes.subarray(8,12).toString(),'WEBP',entry.id);
+  }
+}
+for(const entry of POINT_MARKER_ITEMS_V9){
+  assert.deepEqual(Object.keys(entry.markerAssets),['high','low'],entry.id);
+  for(const asset of Object.values(entry.markerAssets)){
+    const bytes=await readFile(new URL(`../${asset.replace(/^\.\//,'')}`,import.meta.url));
+    assert.equal(bytes.subarray(0,8).toString('hex'),'89504e470d0a1a0a',asset);
+    assert.equal(bytes[25],6,`${asset}: paired marker must retain RGBA transparency`);
   }
 }
 function webpDimensions(bytes){
@@ -228,10 +242,11 @@ assert.equal(mainPlotDecorator.includes('v3-card-plot-layer'),false,'card theme 
 assert.ok(renderer.includes('options.mainPlot===true?decorateMainPlotV2(plot,raw):false'),'legacy API must require explicit mainPlot opt-in');
 const chart=await readFile(new URL('../js/chart-render.js',import.meta.url),'utf8');
 assert.equal((chart.match(/dot\(ctx,/g)||[]).length-1,3,'max/min/current marker calls stay explicit');
-assert.equal((chart.match(/dot\(ctx, mix, miy, GREEN, 7, true\)/g)||[]).length,1,'image point marker is rendered exactly once at the lowest point');
-assert.ok(chart.includes('chartDecorations?.markerAsset'));assert.ok(chart.includes('ctx.drawImage(markerImage'));
+assert.equal((chart.match(/dot\(ctx, gx\(mp\.t\), gy\(mp\.w\), RED, 7, 'high'\)/g)||[]).length,1,'paired high marker must render exactly once at the highest point');
+assert.equal((chart.match(/dot\(ctx, mix, miy, GREEN, 7, 'low'\)/g)||[]).length,1,'paired low marker must render exactly once at the lowest point');
+assert.ok(chart.includes('chartDecorations?.markerHighAsset'));assert.ok(chart.includes('chartDecorations?.markerLowAsset'));assert.ok(chart.includes('ctx.drawImage(markerImage'));
 assert.ok(chart.includes('Number(chartDecorations?.markerSize) || 32'));
-assert.ok(chart.includes('Math.max(20, Math.min(44'));
+assert.ok(chart.includes('Math.max(20, Math.min(100'));
 assert.ok(chart.includes('ctx.drawImage(markerImage,px-markerSize/2,py-markerSize/2,markerSize,markerSize)'));
 const datasetSource=chart.slice(chart.indexOf('const datasets = ['),chart.indexOf('const sharedX ='));
 assert.equal(datasetSource.includes('markerSize'),false,'image marker size must not affect ordinary dataset points');
@@ -251,8 +266,9 @@ assert.equal((visualLab.match(/drawMarker\(ctx,marker,/g)||[]).length,1,'visual 
 assert.equal((visualLab.match(/drawMarker\(ctx,/g)||[]).length-1,1,'visual lab must render exactly one point marker');
 
 const sw=await readFile(new URL('../sw.js',import.meta.url),'utf8');
-assert.ok(sw.includes("weight-v107-showroom-effects-profile-fit"));assert.equal(sw.includes('c.addAll(ASSETS).catch'),false);
+assert.ok(sw.includes("weight-v108-paired-point-markers"));assert.equal(sw.includes('c.addAll(ASSETS).catch'),false);
 for(const entry of SHOWROOM_CATALOG_V2.filter(entry=>entry.asset))assert.ok(sw.includes(`'${entry.asset}'`),`sw:${entry.asset}`);
+for(const entry of POINT_MARKER_ITEMS_V9)for(const asset of Object.values(entry.markerAssets))assert.ok(sw.includes(`'${asset}'`),`${asset}: paired marker must be pre-cached`);
 
 const showroom=await readFile(new URL('../dressroom.html',import.meta.url),'utf8');
 for(const token of ['purchaseCatalogItemsV2','saveShowroomLoadoutV2','현재 범주 검색','unownedSelectionV2','decorateMainPlotV2','data-main-weight-plot="true"','data-chart-subgraphs="diet exercise"','mainPlotAspectRatio:16/9','테스트 중 · 구매 불가','item.purchasable!==false&&!item.testOnly','테스트 아이템은 세션 미리보기 전용이며 저장할 수 없습니다','id="trophyOrder"','renderTrophyOrder','data-trophy-move','data-trophy-drag','dragstart','dragover','drop','드래그 또는 화살표로 전시 순서 변경','/14 전시','draft.trophy.length>=14','id="lineControls"','renderLineControls','id="lineColor"','id="lineWidth"','3:1 미만 경고','추천색'])assert.ok(showroom.includes(token),token);
@@ -264,7 +280,7 @@ assert.equal(showroom.includes('id="logoutBtn"'),false,'dressroom header must no
 const compare=await readFile(new URL('../compare.html',import.meta.url),'utf8');
 for(const token of ['decorateMainPlotV2','getChartDecorationsV2','data-main-weight-plot="true"','mainPlotAspectRatio: 16 / 9','id="dietToggle" type="checkbox"','id="exerciseToggle" type="checkbox"','for="dietToggle"','for="exerciseToggle"',"localStorage.getItem('compare_show_diet') === 'true'","localStorage.getItem('compare_show_exercise') === 'true'","persistSubgraphToggle('compare_show_diet'","persistSubgraphToggle('compare_show_exercise'",'showDietGraph,','showExerciseGraph,','renderGrid()'])assert.ok(compare.includes(token),token);
 for(const token of ['showMaxMarker: false','showMinMarker: true','showCurMarker: false'])assert.ok(compare.includes(token),token);
-for(const token of ['id="markerSize" type="range" min="20" max="44" step="2" value="32"',"localStorage.getItem('compare_marker_size')",'markerSize=Number(size.value)',"localStorage.setItem('compare_marker_size'",'chartDecorations: { ...getChartDecorationsV2(user?.showroomLoadoutV2), markerSize }','.marker-size-control{grid-column:1/-1'])assert.ok(compare.includes(token),token);
+for(const token of ['<span>마커 크기</span>','id="markerSize" type="range" min="20" max="100" step="2" value="32"',"localStorage.getItem('compare_marker_size')",'markerSize=Number(size.value)',"localStorage.setItem('compare_marker_size'",'chartDecorations: { ...getChartDecorationsV2(user?.showroomLoadoutV2), markerSize }','.marker-size-control{grid-column:1/-1'])assert.ok(compare.includes(token),token);
 const db=await readFile(new URL('../js/db.js',import.meta.url),'utf8');
 for(const token of ['purchaseCatalogItemsV2','validateCatalogPurchaseV2(itemIds)','persistableLoadoutV2(rawLoadout)','트로피 외 테스트 아이템은 소유권을 추가하거나 회수할 수 없습니다','runTransaction','adminSetCatalogOwnershipV2','adminGrantedItems',"item.category==='trophy'"])assert.ok(db.includes(token),token);
 assert.ok(db.includes('applyShowroomEffects:false'),'dashboard showroom effects must default to off in user chart settings');

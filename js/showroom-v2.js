@@ -104,10 +104,16 @@ const img=(entry,className,attrs='')=>entry?.asset
   ? `<img class="${className}" src="${entry.asset}" alt="" aria-hidden="true" draggable="false" decoding="async" ${attrs}>`
   : '';
 export const markerPathV2=()=>null;
-export const markerAssetV2=id=>{const entry=getCatalogItemV2(id);return entry?.category==='point_marker'?entry.asset:null};
+export const markerAssetV2=(id,role='low')=>{
+  const entry=getCatalogItemV2(id);
+  return entry?.category==='point_marker'?(entry.markerAssets?.[role]||entry.asset):null;
+};
 export const renderCompanionV2=()=> '';
 export const renderTrophyV2=id=>img(getCatalogItemV2(id),'v3-trophy-image');
-export const renderMarkerV2=id=>img(getCatalogItemV2(id),'v3-marker-image');
+export const renderMarkerV2=(id,role='low')=>{
+  const entry=getCatalogItemV2(id),asset=entry?.markerAssets?.[role]||entry?.asset;
+  return asset?`<img class="v3-marker-image" src="${asset}" alt="" aria-hidden="true" draggable="false" decoding="async">`:'';
+};
 export const renderAmbientV2=id=>img(getCatalogItemV2(id),'v3-ambient-preview');
 
 const escapeProfileText=value=>String(value).replace(/[&<>"']/g,char=>({
@@ -164,7 +170,10 @@ export function getChartDecorationsV2(raw){
     lineColor,lineWidth,lineDash:Array.isArray(lineSpec.dash)?lineSpec.dash:undefined,
     lineGlowBlur:lineSpec.glowBlur,lineTension:lineSpec.tension,
     lineContrast:lineColor?lineContrastAdviceV2(lineColor,backgroundColor):null,
-    markerPreset:marker?.id||null, markerAsset:marker?.asset||null,
+    markerPreset:marker?.id||null,
+    markerAsset:marker?.markerAssets?.low||marker?.asset||null,
+    markerHighAsset:marker?.markerAssets?.high||marker?.asset||null,
+    markerLowAsset:marker?.markerAssets?.low||marker?.asset||null,
     // 코드 네이티브 이펙트 id (showroom-fx.js가 해석)
     lineFx:lineSpec.fx||null, ambientFx:ambient?.renderSpec?.fx||null,
   };
@@ -217,7 +226,7 @@ export function renderCatalogPreviewV2(entry){
   if(entry.category==='emoji_border')return `<span class="v2-profile v3-catalog-profile" style="width:68px;height:68px">${renderEmojiBorderV2(entry.id,76)}${renderProfileEmojiV2(SHOWROOM_DEFAULTS.profile_emoji,46)}</span>`;
   if(entry.category==='title')return `<span style="color:${TITLE_RARITY_COLORS[entry.rarity]};font-weight:800">${entry.name}</span>`;
   if(entry.category==='trophy')return renderTrophyV2(entry.id);
-  if(entry.category==='point_marker')return renderMarkerV2(entry.id);
+  if(entry.category==='point_marker')return `<span class="v9-marker-pair" aria-label="최고점과 최저점 마커 세트">${renderMarkerV2(entry.id,'high')}${renderMarkerV2(entry.id,'low')}</span>`;
   if(entry.category==='ambient_effect')return `<span class="v3-landscape-preview">${renderAmbientV2(entry.id)}</span>`;
   if(entry.category==='line_style'){const spec=entry.renderSpec||{};return `<span class="v4-line-preview" aria-hidden="true"><span style="border-color:${spec.color||'#00e5aa'};border-top-width:${spec.width||2}px;border-top-style:${spec.dash?.length?'dashed':'solid'};box-shadow:0 0 ${spec.glowBlur||0}px ${spec.color||'#00e5aa'}"></span></span>`}
   if(entry.category==='card_theme'&&entry.cardAssets?.header)return `<span class="v4-card-theme-preview" data-card-theme="${entry.id}" aria-hidden="true"><img class="v4-card-preview-header" src="${entry.cardAssets.header}" alt=""><span class="v4-card-preview-identity">칭호<br><b>사용자 이름</b></span><span class="v4-card-preview-message">오늘의 한마디</span><span class="v4-card-preview-trophies">◆ ◆ ◆</span><span class="v4-card-preview-stats"><i>최고</i><i>최저</i><i>현재</i></span></span>`;

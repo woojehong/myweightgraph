@@ -1,7 +1,7 @@
 // Permanent V2 item rewards. Keys are stable achievement ids.
 export const ACHIEVEMENT_ITEM_REWARDS_V2 = Object.freeze({
   record_30:['gs_mint_trace'],
-  allgreen_5:['ae_forest_spore'], ex_10:['pm_shield'], ex_50:['tr_hunter_horn'],
+  allgreen_5:['ae_forest_spore'], ex_50:['tr_hunter_horn'],
   weekly_5:['title_campfire_beacon'],
   goal_50pct:['title_stormstring_marksman'], goal_achieved:['title_last_beacon_bearer','tr_crystal_cup'],
   water_goal_10:['ae_bubble'], record_365:['gs_crown_of_dawn'],

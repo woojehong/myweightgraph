@@ -216,7 +216,7 @@
       <label class="subgraph-toggle" for="dietToggle"><input id="dietToggle" type="checkbox">식단 표시</label>
       <label class="subgraph-toggle" for="exerciseToggle"><input id="exerciseToggle" type="checkbox">운동 표시</label>
       <label class="subgraph-toggle" for="graphOnlyToggle"><input id="graphOnlyToggle" type="checkbox">그래프만 표시</label>
-      <label class="marker-size-control" for="markerSize"><span>포인트 크기</span><input id="markerSize" type="range" min="20" max="44" step="2" value="32"><output id="markerSizeValue" for="markerSize">32px</output></label>
+      <label class="marker-size-control" for="markerSize"><span>마커 크기</span><input id="markerSize" type="range" min="20" max="100" step="2" value="32"><output id="markerSizeValue" for="markerSize">32px</output></label>
     </div>
     <div class="picker" id="picker">
       <div class="loading"><div class="spinner"></div></div>
@@ -272,7 +272,7 @@ let showDietGraph = localStorage.getItem('compare_show_diet') === 'true';
 let showExerciseGraph = localStorage.getItem('compare_show_exercise') === 'true';
 let graphOnlyMode = false;
 const storedMarkerSize=Number(localStorage.getItem('compare_marker_size'));
-let markerSize=Number.isFinite(storedMarkerSize)&&storedMarkerSize>=20&&storedMarkerSize<=44?Math.round(storedMarkerSize/2)*2:32;
+let markerSize=Number.isFinite(storedMarkerSize)&&storedMarkerSize>=20&&storedMarkerSize<=100?Math.round(storedMarkerSize/2)*2:32;
 function syncAvatarToggle(){document.getElementById('avToggle')?.classList.toggle('active',showAvatars)}
 window.toggleAvatars=()=>{showAvatars=!showAvatars;try{localStorage.setItem('compare_show_avatars_v2',showAvatars?'1':'0')}catch(e){}syncAvatarToggle();renderGrid()};
 function persistSubgraphToggle(key,enabled){try{enabled?localStorage.setItem(key,'true'):localStorage.removeItem(key)}catch(e){}}

@@ -217,13 +217,18 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
 
   // ── 말풍선 유틸 ──────────────────────────────────────────────────────
   const BP = 5, BLH = 15, BOFF = 100;
-  const markerImage = chartDecorations?.markerAsset ? new Image() : null;
-  const markerSize = Math.max(20, Math.min(44, Number(chartDecorations?.markerSize) || 32));
-  if (markerImage) {
-    markerImage.decoding = 'async';
-    markerImage.onload = () => canvasMain._chartInstance?.draw?.();
-    markerImage.src = chartDecorations.markerAsset;
-  }
+  const markerSize = Math.max(20, Math.min(100, Number(chartDecorations?.markerSize) || 32));
+  const markerImages = Object.fromEntries(['high','low'].map(role => {
+    const asset = role === 'high'
+      ? (chartDecorations?.markerHighAsset || chartDecorations?.markerAsset)
+      : (chartDecorations?.markerLowAsset || chartDecorations?.markerAsset);
+    if (!asset) return [role, null];
+    const image = new Image();
+    image.decoding = 'async';
+    image.onload = () => canvasMain._chartInstance?.draw?.();
+    image.src = asset;
+    return [role, image];
+  }));
   function rrect(ctx, x, y, w, h, r) {
     ctx.beginPath(); ctx.moveTo(x+r, y); ctx.arcTo(x+w, y, x+w, y+h, r); ctx.arcTo(x+w, y+h, x, y+h, r);
     ctx.arcTo(x, y+h, x, y, r); ctx.arcTo(x, y, x+w, y, r); ctx.closePath();
@@ -252,11 +257,12 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
     ctx.restore();
   }
   const markerHits=new Map();
-  function dot(ctx, px, py, color, r, useMarkerImage=false) {
+  function dot(ctx, px, py, color, r, markerRole=null) {
     const key=`${Math.round(px)}:${Math.round(py)}`,hit=markerHits.get(key)||0;markerHits.set(key,hit+1);
     const angle=hit*Math.PI*2/3;px+=hit?Math.cos(angle)*9:0;py+=hit?Math.sin(angle)*9:0;
     ctx.save();
-    if(useMarkerImage&&markerImage?.complete&&markerImage.naturalWidth){
+    const markerImage=markerRole?markerImages[markerRole]:null;
+    if(markerImage?.complete&&markerImage.naturalWidth){
       ctx.shadowColor='rgba(0,0,0,.85)';ctx.shadowBlur=5;
       ctx.drawImage(markerImage,px-markerSize/2,py-markerSize/2,markerSize,markerSize);ctx.restore();return;
     }
@@ -274,7 +280,7 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
 
     if (showMaxMarker) {
       const mp = pts[maxIdx];
-      dot(ctx, gx(mp.t), gy(mp.w), RED, 7);
+      dot(ctx, gx(mp.t), gy(mp.w), RED, 7, 'high');
       // tight(모아보기): 점만 표시, 말풍선·리더선 생략 (값은 프로필 줄 배지로 표시)
       if (!tight)
         drawBox(ctx, gx(mp.t), gy(mp.w), gx(mp.t)+12, gy(mp.w)+Math.round(14*scale), [`최고  ${maxW.toFixed(1)} kg`, lbl(mp.date)], '195,65,42', chart, sBP, sBLH, sFont0, sFont1);
@@ -283,7 +289,7 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
       const drawMinIdx = minIndices;
       if (drawMinIdx.length > 0) {
         const mi = pts[drawMinIdx[drawMinIdx.length-1]], mix = gx(mi.t), miy = gy(mi.w);
-        dot(ctx, mix, miy, GREEN, 7, true);
+        dot(ctx, mix, miy, GREEN, 7, 'low');
         if (!tight) {
           const minLines = [`최저  ${minW.toFixed(1)} kg`, ...drawMinIdx.slice(0, 2).map(i => lbl(pts[i].date))];
           drawBox(ctx, mix, miy, mix+12, miy+Math.round(14*scale), minLines, '34,128,50', chart, sBP, sBLH, sFont0, sFont1);
