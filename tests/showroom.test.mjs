@@ -258,7 +258,7 @@ assert.equal((visualLab.match(/drawMarker\(ctx,marker,/g)||[]).length,1,'visual 
 assert.equal((visualLab.match(/drawMarker\(ctx,/g)||[]).length-1,1,'visual lab must render exactly one point marker');
 
 const sw=await readFile(new URL('../sw.js',import.meta.url),'utf8');
-assert.ok(sw.includes("weight-v92-profile-header-editor"));assert.equal(sw.includes('c.addAll(ASSETS).catch'),false);
+assert.ok(sw.includes("weight-v93-showroom-header-copy"));assert.equal(sw.includes('c.addAll(ASSETS).catch'),false);
 for(const entry of SHOWROOM_CATALOG_V2.filter(entry=>entry.asset))assert.ok(sw.includes(`'${entry.asset}'`),`sw:${entry.asset}`);
 
 const showroom=await readFile(new URL('../dressroom.html',import.meta.url),'utf8');
@@ -279,7 +279,7 @@ const admin=await readFile(new URL('../admin.html',import.meta.url),'utf8');
 for(const token of ['achievementTrophyRewards','data-ach-trophy','saveAchTrophy','트로피 보상 저장됨'])assert.ok(admin.includes(token),token);
 for(const page of ['index.html','input.html','dashboard.html','compare.html','achievements.html','dressroom.html','import.html','admin.html']){
   const html=await readFile(new URL(`../${page}`,import.meta.url),'utf8');
-  assert.ok(html.includes('profileVisualForUserV2'),`${page}: common showroom profile renderer missing`);
+  assert.ok(html.includes(page==='dressroom.html'?'profileShowcaseForUserV2':'profileVisualForUserV2'),`${page}: common showroom profile renderer missing`);
   assert.equal(html.includes('\uFFFD'),false,`${page}: invalid UTF-8 replacement character`);
   const moduleBody=html.match(/<script type="module">([\s\S]*?)<\/script>/)?.[1]||'';
   const withoutImports=moduleBody.replace(/import[\s\S]*?from\s*['"][^'"]+['"];\s*/g,'');
