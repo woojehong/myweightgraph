@@ -89,6 +89,10 @@
 
     /* ── C안: 지난 기록 — 모바일 1열, 데스크탑 3칸씩 ────────── */
     .past-title{font-size:11px;color:var(--muted);margin:14px 0 6px 4px;font-weight:700}
+    .day-points{font-size:11px;font-weight:800;white-space:nowrap}
+    .day-points.incomplete{color:#ef9a9a}
+    .day-points.complete{color:#66bb6a}
+    .day-points.expired{color:#66717d}
     .past-list{display:grid;gap:5px}
     @media(min-width:768px){.past-list{grid-template-columns:repeat(3,1fr);gap:8px}}
     .past-row{display:flex;align-items:center;gap:8px;background:var(--surface);
@@ -288,8 +292,8 @@
 <div class="toast" id="toast"></div>
 
 <script type="module">
-import { getUser, getWeights, setWeight, parseWeight, toDateStr, updateUser, setUserPassword, setDietExercise, getTierSettings, grantDailyReward, getDailyReward } from './js/db.js';
-import { activityDay } from './js/daily-rewards.js';
+import { getUser, getWeights, setWeight, parseWeight, toDateStr, updateUser, setUserPassword, setDietExercise, getTierSettings, grantDailyReward, getDailyReward, getDailyRewards, settlePeriodRewards } from './js/db.js';
+import { activityDay, activityDayAge, rewardMaxForLedger } from './js/daily-rewards.js';
 import { getTierForScore, DEFAULT_TIERS, WATER_GOAL_CUPS } from './js/achievements.js';
 import { syncAchievements, queueAchievementPopups } from './js/achievements-engine.js';
 import { BORDER_NAMES } from './js/borders-data.js';
@@ -309,12 +313,36 @@ const EMOJIS=['⚖️','💪','🔥','👑','🏃','🌟','🎯','🦁','🐯','
 let selEmoji='';
 const DAY_KO=['일','월','화','수','목','금','토'];
 let existingMap={}, allRecords=[], user=null;
+let dailyRewardLedgers={};
+
+function pointBadge(dateStr){
+  const ledger=dailyRewardLedgers[dateStr]||{date:dateStr,points:0};
+  const age=activityDayAge(dateStr);
+  const max=rewardMaxForLedger(dateStr,ledger);
+  const points=Number(ledger.points)||0;
+  const cls=age>2?'expired':(points>=max?'complete':'incomplete');
+  return `<span class="day-points ${cls}" id="points-${dateStr}">${points}/${max}P</span>`;
+}
+
+async function refreshPointLedger(dateStr){
+  dailyRewardLedgers[dateStr]=await getDailyReward(uid,dateStr);
+  const host=document.getElementById(`points-${dateStr}`);
+  if(host){
+    const wrap=document.createElement('span');
+    wrap.innerHTML=pointBadge(dateStr);
+    host.replaceWith(wrap.firstElementChild);
+  }
+}
 
 async function reward(dateStr,event,value=null){
   try{
     const r=await grantDailyReward(uid,dateStr,event,value);
     if(r.granted>0) showToast(`+${r.granted} 포인트`,'ok');
-    updateRewardSummary(r); return r;
+    await refreshPointLedger(dateStr);
+    const period=await settlePeriodRewards(uid,allRecords,dateStr);
+    if(period.granted>0) showToast(`퀘스트 +${period.granted} 포인트`,'ok');
+    if(dateStr===activityDay()) updateRewardSummary(r);
+    return r;
   }catch(e){console.warn('Daily reward failed:',e);return null;}
 }
 // 퀘스트 패널만 다시 그린다
@@ -646,6 +674,10 @@ async function render() {
 
   const today = new Date(activityDay() + 'T12:00:00');
   const labels=['오늘','어제','2일 전','3일 전','4일 전','5일 전'];
+  const visibleDates=Array.from({length:7},(_,i)=>{
+    const d=new Date(today); d.setDate(d.getDate()-i); return toDateStr(d);
+  });
+  dailyRewardLedgers=await getDailyRewards(uid,visibleDates);
   // ── 오늘 카드 (컴팩트) ────────────────────────────────────────────
   let cards='';
   {
@@ -673,6 +705,7 @@ async function render() {
         <div class="tdy-head">
           <span class="tdy-name">오늘</span>
           <span class="tdy-date">${fmtDate(d)} (${DAY_KO[d.getDay()]})</span>
+          ${pointBadge(dateStr)}
         </div>
         <div class="tdy-weigh">
           <input type="number" step="0.1" class="tdy-input${hasSaved?' saved':''}" id="inp-${dateStr}"
@@ -715,6 +748,7 @@ async function render() {
     pastRows += `
       <div class="past-row${done?' done':''}" id="pastrow-${dateStr}">
         <span class="pr-date">${fmtDate(d).slice(5)} <em>${DAY_KO[d.getDay()]}</em></span>
+        ${pointBadge(dateStr)}
         <input type="number" step="0.1" class="pr-w" id="inp-${dateStr}" placeholder="--.-"
           value="${val!=null?val.toFixed(1):''}"
           oninput="onDayInput('${dateStr}')"

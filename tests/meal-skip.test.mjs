@@ -60,8 +60,8 @@ assert.equal(calculateProgress(achievementRecords, {}).meal_entry_10.current, 10
 assert.equal(ACHIEVEMENTS.some(a => /skip|결식/i.test(`${a.id} ${a.name} ${a.desc}`)), false,
   '결식 전용 업적을 추가하지 않는다');
 assert.deepEqual(DAILY_REWARD_POINTS, {
-  ATTENDANCE:10, WEIGHT:10, EACH_MEAL:2, EXERCISE:2,
-  WATER_STEP:1, WATER_MAX_STEPS:6, DAILY_COMPLETE:10,
+  ATTENDANCE:10, WEIGHT:10, EACH_MEAL:2, EXERCISE:4,
+  WATER_ANY:6, DAILY_COMPLETE:14,
 }, '결식 전용 포인트를 추가하지 않는다');
 
 const [input, admin, chart, db, sw] = await Promise.all([

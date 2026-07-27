@@ -4,11 +4,12 @@ export const DAILY_REWARD_POINTS = Object.freeze({
   ATTENDANCE: 10,
   WEIGHT: 10,
   EACH_MEAL: 2,
-  EXERCISE: 2,
-  WATER_STEP: 1,
-  WATER_MAX_STEPS: 6,
-  DAILY_COMPLETE: 10,
+  EXERCISE: 4,
+  WATER_ANY: 6,
+  DAILY_COMPLETE: 14,
 });
+export const DAILY_REWARD_MAX = 50;
+export const RETROACTIVE_REWARD_DAYS = 2;
 
 export function activityDay(now = new Date()) {
   const d = new Date(now);
@@ -18,6 +19,26 @@ export function activityDay(now = new Date()) {
 
 export function isCurrentActivityDay(dateStr, now = new Date()) {
   return dateStr === activityDay(now);
+}
+
+const parseActivityDate = dateStr => new Date(`${dateStr}T12:00:00`);
+
+export function activityDayAge(dateStr, now = new Date()) {
+  const target = parseActivityDate(dateStr);
+  const current = parseActivityDate(activityDay(now));
+  if (Number.isNaN(target.getTime())) return Infinity;
+  return Math.round((current - target) / 86400000);
+}
+
+export function isRewardEligibleDay(dateStr, now = new Date()) {
+  const age = activityDayAge(dateStr, now);
+  return age >= 0 && age <= RETROACTIVE_REWARD_DAYS;
+}
+
+export function rewardMaxForLedger(dateStr, ledger = {}, now = new Date()) {
+  const age = activityDayAge(dateStr, now);
+  if (age === 0 || ledger.attendance || age > RETROACTIVE_REWARD_DAYS) return DAILY_REWARD_MAX;
+  return DAILY_REWARD_MAX - DAILY_REWARD_POINTS.ATTENDANCE;
 }
 
 export function isDailyComplete(record) {

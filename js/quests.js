@@ -19,8 +19,8 @@ export const WATER_GOAL   = WATER_GOAL_DEFAULT;
 /** 사용자가 설정한 목표(users.waterGoal) — 없으면 기본값 */
 export const waterGoalOf = user =>
   Math.max(1, Math.min(20, Number(user?.waterGoal) || WATER_GOAL_DEFAULT));
-export const WEEKLY_CAP   = 200;
-export const MONTHLY_CAP  = 1000;
+export const WEEKLY_CAP   = 150;
+export const MONTHLY_CAP  = 450;
 
 const ds = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 const parseDs = s => new Date(s + 'T12:00:00');
@@ -49,7 +49,7 @@ export const DAILY_QUESTS = Object.freeze([
 ]);
 /** 완주와 무관한 선택 보너스 — 목표 달성 유무로만 판정(부분점수 없음) */
 export const dailyBonusDefs = goal => Object.freeze([
-  { id:'d_water', label:`수분 섭취 목표 (${goal}잔)`, points:6, goal:1, optional:true },
+  { id:'d_water', label:'물 1잔 이상 기록', points:6, goal:1, optional:true },
 ]);
 export const DAILY_BONUS = dailyBonusDefs(WATER_GOAL_DEFAULT);
 
@@ -66,7 +66,7 @@ export function dailyProgress(record){
 /** 선택 보너스(물) — 완주와 무관. 목표 달성 유무만 본다. */
 export function dailyBonusProgress(record, goal = WATER_GOAL_DEFAULT){
   const r = record || {};
-  return buildList(dailyBonusDefs(goal), { d_water: (r.water||0) >= goal ? 1 : 0 });
+  return buildList(dailyBonusDefs(goal), { d_water: (r.water||0) >= 1 ? 1 : 0 });
 }
 
 // ── 주간 퀘스트 (총 배점 > 상한 200P) ───────────────────────────────────────
@@ -117,22 +117,11 @@ export function isWeekCleared(records, weekStartStr){
 
 // ── 월간 퀘스트 (총 배점 > 상한 600P) ───────────────────────────────────────
 export const MONTHLY_QUESTS = Object.freeze([
-  { id:'m_weeks2',    label:'주간 상한 2주 달성',  points:70,  goal:2,  tier:'normal' },
-  { id:'m_weeks3',    label:'주간 상한 3주 달성',  points:130, goal:3,  tier:'hard'   },
-  { id:'m_complete15',label:'15일 완주',           points:55,  goal:15, tier:'easy'   },
-  { id:'m_complete22',label:'22일 완주',           points:105, goal:22, tier:'hard'   },
-  { id:'m_streak7',   label:'7일 연속 완주',       points:48,  goal:7,  tier:'easy'   },
-  { id:'m_streak10',  label:'10일 연속 완주',      points:80,  goal:10, tier:'normal' },
-  { id:'m_streak15',  label:'15일 연속 완주',      points:140, goal:15, tier:'hard'   },
-  { id:'m_buddy5',    label:'친구와 동반 완주 5회',  points:45,  goal:5,  tier:'easy'   },
-  { id:'m_buddy10',   label:'친구와 동반 완주 10회', points:85,  goal:10, tier:'normal' },
-  { id:'m_exercise10',label:'운동 10회 이상',      points:52,  goal:10, tier:'easy'   },
-  { id:'m_exercise16',label:'운동 16회 이상',      points:110, goal:16, tier:'hard'   },
-  { id:'m_allgreen5', label:'올그린 데이 5일',     points:72,  goal:5,  tier:'normal' },
-  { id:'m_allgreen10',label:'올그린 데이 10일',    points:135, goal:10, tier:'hard'   },
-  { id:'m_weekday',   label:'7요일 모두 완주',    points:62,  goal:7,  tier:'normal' },
-  { id:'m_loss',      label:'월간 1kg 감량',       points:85,  goal:1,  tier:'normal' },
-  { id:'m_loss2',     label:'월간 2kg 감량',       points:145, goal:1,  tier:'hard'   },
+  { id:'m_complete15',label:'15일 기록 완료', points:80,  goal:15, tier:'easy'   },
+  { id:'m_complete22',label:'22일 기록 완료', points:120, goal:22, tier:'normal' },
+  { id:'m_complete28',label:'28일 기록 완료', points:150, goal:28, tier:'hard'   },
+  { id:'m_streak14',  label:'14일 연속 기록', points:50,  goal:14, tier:'normal' },
+  { id:'m_streak30',  label:'30일 연속 기록', points:50,  goal:30, tier:'hard'   },
 ]);
 
 export function monthlyProgress(records, refDate = activityDay(), buddyDates = null){
@@ -150,17 +139,9 @@ export function monthlyProgress(records, refDate = activityDay(), buddyDates = n
   const weekdayCover = new Set(completed.map(r => parseDs(r.date).getDay())).size;
 
   return buildList(MONTHLY_QUESTS, {
-    m_weeks2:weeksCleared, m_weeks3:weeksCleared,
     m_complete15:completed.length, m_complete22:completed.length,
-    m_streak7:streak, m_streak10:streak, m_streak15:streak,
-    m_buddy5:buddy, m_buddy10:buddy,
-    m_exercise10:inMonth.filter(exerciseDone).length,
-    m_exercise16:inMonth.filter(exerciseDone).length,
-    m_allgreen5:inMonth.filter(allGreenDay).length,
-    m_allgreen10:inMonth.filter(allGreenDay).length,
-    m_weekday:weekdayCover,
-    m_loss:  delta!=null && delta <= -1 ? 1 : 0,
-    m_loss2: delta!=null && delta <= -2 ? 1 : 0,
+    m_complete28:completed.length,
+    m_streak14:streak, m_streak30:streak,
   });
 }
 

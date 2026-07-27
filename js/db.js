@@ -8,7 +8,9 @@ import { getAuth, signInWithEmailAndPassword, signInAnonymously,
 import { firebaseConfig, DEFAULT_GOAL }               from "./firebase-config.js";
 import { sha256 }                                     from "./auth.js";
 import { DAILY_REWARD_POINTS, activityDay, isCurrentActivityDay,
-         isDailyComplete }                            from "./daily-rewards.js";
+         isRewardEligibleDay, isDailyComplete }       from "./daily-rewards.js";
+import { weeklyProgress, monthlyProgress, weekStartOf, monthStartOf,
+         cappedEarned, WEEKLY_CAP, MONTHLY_CAP }      from "./quests.js";
 import { normalizeMeal, normalizeMealRecord }          from "./meal-status.js";
 import { getCatalogItemV2, normalizeLoadoutV2, persistableLoadoutV2,
          validateCatalogPurchaseV2, selectedItemIdsV2, ownedItemIdsV2 } from "./showroom-v2.js";
@@ -289,10 +291,14 @@ export async function setDietExercise(userId, dateStr, data) {
 export const setDayData = setDietExercise;
 
 // Atomic daily reward ledger. A reward flag is permanent even if the user
-// later edits/deletes the underlying value. Past activity days never reward.
+// later edits/deletes the underlying value. Today and the previous two
+// activity days can reward; attendance itself is only granted on the day.
 export async function grantDailyReward(userId, dateStr, event, value = null) {
   await _ready;
-  if (!isCurrentActivityDay(dateStr)) return { granted: 0, reason: 'not-current-day' };
+  if (!isRewardEligibleDay(dateStr))
+    return { granted: 0, reason: 'outside-reward-window' };
+  if (event === 'attendance' && !isCurrentActivityDay(dateStr))
+    return { granted: 0, reason: 'attendance-current-day-only' };
   const allowed = new Set(['attendance','weight','morning','lunch','dinner','exercise','water']);
   if (!allowed.has(event)) throw new Error(`Unknown daily reward event: ${event}`);
 
@@ -310,11 +316,18 @@ export async function grantDailyReward(userId, dateStr, event, value = null) {
     let granted = 0;
 
     if (event === 'water') {
-      const reached = Math.max(0, Math.min(DAILY_REWARD_POINTS.WATER_MAX_STEPS, Math.floor(Number(value) || 0)));
-      const paid = Math.max(0, Math.floor(Number(ledger.waterSteps) || 0));
-      if (reached > paid) {
-        granted += (reached - paid) * DAILY_REWARD_POINTS.WATER_STEP;
-        updates.waterSteps = reached;
+      if ((Number(value) || 0) >= 1 && !ledger.water) {
+        const legacyPaid = Math.max(0, Math.min(
+          DAILY_REWARD_POINTS.WATER_ANY, Number(ledger.waterSteps) || 0));
+        granted += DAILY_REWARD_POINTS.WATER_ANY - legacyPaid;
+        updates.water = true;
+        updates.waterPoints = DAILY_REWARD_POINTS.WATER_ANY;
+      }
+    } else if (event === 'exercise' && ledger.exercise) {
+      const paid = Number(ledger.exercisePoints) || 2;
+      if (paid < DAILY_REWARD_POINTS.EXERCISE) {
+        granted += DAILY_REWARD_POINTS.EXERCISE - paid;
+        updates.exercisePoints = DAILY_REWARD_POINTS.EXERCISE;
       }
     } else if (!ledger[event]) {
       const points = event === 'attendance' ? DAILY_REWARD_POINTS.ATTENDANCE
@@ -323,12 +336,17 @@ export async function grantDailyReward(userId, dateStr, event, value = null) {
         : DAILY_REWARD_POINTS.EACH_MEAL;
       granted += points;
       updates[event] = true;
+      if (event === 'exercise') updates.exercisePoints = DAILY_REWARD_POINTS.EXERCISE;
     }
 
     const merged = { ...ledger, ...updates };
-    if (!merged.dailyComplete && isDailyComplete(recordSnap.exists() ? recordSnap.data() : null)) {
-      granted += DAILY_REWARD_POINTS.DAILY_COMPLETE;
+    if (isDailyComplete(recordSnap.exists() ? recordSnap.data() : null)) {
+      const paid = merged.dailyComplete
+        ? (Number(ledger.dailyCompletePoints) || 10)
+        : 0;
+      granted += Math.max(0, DAILY_REWARD_POINTS.DAILY_COMPLETE - paid);
       updates.dailyComplete = true;
+      updates.dailyCompletePoints = DAILY_REWARD_POINTS.DAILY_COMPLETE;
     }
 
     if (Object.keys(updates).length > 1 || granted > 0) {
@@ -351,6 +369,46 @@ export async function grantDailyReward(userId, dateStr, event, value = null) {
 export async function getDailyReward(userId, dateStr = activityDay()) {
   const snap = await getDocR(doc(db, 'dailyRewards', userId, 'days', dateStr));
   return snap.exists() ? snap.data() : { date: dateStr, points: 0 };
+}
+
+export async function getDailyRewards(userId, dateStrs) {
+  const rows = await Promise.all((dateStrs || []).map(dateStr => getDailyReward(userId, dateStr)));
+  return Object.fromEntries(rows.map(row => [row.date, row]));
+}
+
+// Settles newly completed weekly/monthly quest points into the wallet exactly
+// once. Recomputing can only move a ledger forward, never duplicate rewards.
+export async function settlePeriodRewards(userId, records, refDate = activityDay()) {
+  await _ready;
+  const weekKey = weekStartOf(refDate);
+  const monthKey = monthStartOf(refDate);
+  const weekTarget = cappedEarned(weeklyProgress(records, refDate), WEEKLY_CAP);
+  const monthTarget = cappedEarned(monthlyProgress(records, refDate), MONTHLY_CAP);
+  const userRef = doc(db, 'users', userId);
+  const weekRef = doc(db, 'questRewards', userId, 'periods', `week_${weekKey}`);
+  const monthRef = doc(db, 'questRewards', userId, 'periods', `month_${monthKey}`);
+
+  return runTransaction(db, async tx => {
+    const [userSnap, weekSnap, monthSnap] = await Promise.all([
+      tx.get(userRef), tx.get(weekRef), tx.get(monthRef),
+    ]);
+    if (!userSnap.exists()) throw new Error('User not found');
+    const weekPaid = Number(weekSnap.data()?.points) || 0;
+    const monthPaid = Number(monthSnap.data()?.points) || 0;
+    const weekGranted = Math.max(0, weekTarget - weekPaid);
+    const monthGranted = Math.max(0, monthTarget - monthPaid);
+    const granted = weekGranted + monthGranted;
+    if (weekGranted > 0)
+      tx.set(weekRef, { type:'week', period:weekKey, points:weekTarget, updatedAt:serverTimestamp() }, { merge:true });
+    if (monthGranted > 0)
+      tx.set(monthRef, { type:'month', period:monthKey, points:monthTarget, updatedAt:serverTimestamp() }, { merge:true });
+    if (granted > 0) {
+      const u = userSnap.data();
+      const walletBase = u.coins == null ? (Number(u.totalScore) || 0) : (Number(u.coins) || 0);
+      tx.update(userRef, { coins:walletBase + granted });
+    }
+    return { granted, weekGranted, monthGranted, weekPoints:weekTarget, monthPoints:monthTarget };
+  });
 }
 export async function batchSetWeights(userId, records) {
   await _ready;

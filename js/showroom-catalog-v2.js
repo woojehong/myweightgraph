@@ -102,11 +102,24 @@ export const CATEGORY_PRICE_WEIGHT = Object.freeze({
 export const RARITY_BASE_PRICE = Object.freeze({
   common:80, uncommon:120, rare:260, epic:550, legendary:1100,
 });
+export const LEGENDARY_CATEGORY_PRICE = Object.freeze({
+  graph_skin:3000,
+  ambient_effect:3000,
+  line_style:2200,
+  card_theme:2200,
+  profile_emoji:1200,
+  point_marker:1100,
+  emoji_border:900,
+  companion:1800,
+});
+export const RARITY_PRICE_RATIO = Object.freeze({
+  common:.1, uncommon:.2, rare:.4, epic:.65, legendary:1,
+});
 export function showroomPriceOf(category, rarity){
-  const w = CATEGORY_PRICE_WEIGHT[category];
-  if (w == null) return null;                       // 트로피 = 비매품
-  const base = RARITY_BASE_PRICE[rarity] ?? 120;
-  return Math.round(base * w / 10) * 10;
+  const legendary = LEGENDARY_CATEGORY_PRICE[category];
+  if (legendary == null) return null;                // 트로피 = 비매품
+  const ratio = RARITY_PRICE_RATIO[rarity] ?? RARITY_PRICE_RATIO.uncommon;
+  return Math.round(legendary * ratio / 10) * 10;
 }
 // 테스트 잠금 해제 + 가격 부여 (생성 파일을 수정하지 않고 조립 시점에 적용)
 const retail = entry => {

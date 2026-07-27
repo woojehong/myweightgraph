@@ -1,0 +1,53 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {
+  dailyProgress, dailyBonusProgress, weeklyProgress, monthlyProgress,
+  weekStartOf, cappedEarned, sumPoints, WEEKLY_CAP, MONTHLY_CAP,
+} from '../js/quests.js';
+import { showroomPriceOf } from '../js/showroom-catalog-v2.js';
+import { calculateEarnedIds, calcTotalScore } from '../js/achievements.js';
+
+const fullDay = (date, water=1) => ({
+  date, weight:80, exercise:false, water,
+  meal:{ morning:'yellow', lunch:'yellow', dinner:'yellow' },
+});
+
+const oneDay = fullDay('2026-07-01');
+assert.equal(sumPoints(dailyProgress(oneDay)) + sumPoints(dailyBonusProgress(oneDay)), 50);
+assert.equal(cappedEarned(dailyProgress(oneDay)), 44);
+assert.equal(cappedEarned(dailyBonusProgress(oneDay)), 6);
+assert.equal(cappedEarned(dailyBonusProgress(fullDay('2026-07-01', 0))), 0);
+
+const week = Array.from({length:7}, (_,i) => fullDay(`2026-07-${String(5+i).padStart(2,'0')}`));
+assert.equal(WEEKLY_CAP, 150);
+assert.equal(cappedEarned(weeklyProgress(week, '2026-07-11'), WEEKLY_CAP), 150);
+
+const month = Array.from({length:30}, (_,i) => fullDay(`2026-07-${String(i+1).padStart(2,'0')}`));
+assert.equal(MONTHLY_CAP, 450);
+assert.equal(cappedEarned(monthlyProgress(month, '2026-07-30'), MONTHLY_CAP), 450);
+const weekStarts = [...new Set(month.map(r => weekStartOf(r.date)))];
+const firstMonthTotal = 30 * 50
+  + weekStarts.reduce((sum, start) => sum + cappedEarned(weeklyProgress(month, start), WEEKLY_CAP), 0)
+  + cappedEarned(monthlyProgress(month, '2026-07-30'), MONTHLY_CAP)
+  + calcTotalScore(calculateEarnedIds(month, {height:178,goal:70,referenceWeight:80}));
+assert.equal(firstMonthTotal, 2992, '30일 성실 기록은 전설 그래프 스킨 가격에 근접해야 한다');
+
+assert.equal(showroomPriceOf('graph_skin','legendary'), 3000);
+assert.equal(showroomPriceOf('card_theme','legendary'), 2200);
+assert.equal(showroomPriceOf('companion','legendary'), 1800);
+assert.equal(showroomPriceOf('profile_emoji','legendary'), 1200);
+assert.equal(showroomPriceOf('emoji_border','legendary'), 900);
+
+const db = fs.readFileSync(new URL('../js/db.js', import.meta.url), 'utf8');
+assert.ok(db.includes('isRewardEligibleDay(dateStr)'));
+assert.ok(db.includes("event === 'attendance' && !isCurrentActivityDay(dateStr)"));
+assert.ok(db.includes('settlePeriodRewards'));
+assert.ok(db.includes('weekTarget - weekPaid'));
+assert.ok(db.includes('monthTarget - monthPaid'));
+
+const input = fs.readFileSync(new URL('../input.html', import.meta.url), 'utf8');
+for (const token of ['getDailyRewards','rewardMaxForLedger','.day-points.incomplete',
+                     '.day-points.complete','.day-points.expired','settlePeriodRewards'])
+  assert.ok(input.includes(token), token);
+
+console.log('reward economy tests: PASS');

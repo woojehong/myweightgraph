@@ -128,7 +128,7 @@ export function questPanelHTML(records, todayRecord, buddyDates, waterGoal){
   const col = collapsedSet();
   return `
     <div class="q-wrap">
-      ${section({key:'d',title:'일간',note:'오전 6시 초기화 · 완주 44P + 보너스 6P',color:'#00e5aa',list:d,cap:null,bonus:db,collapsed:col.has('d')})}
+      ${section({key:'d',title:'일간',note:'오전 6시 초기화 · 하루 최대 50P',color:'#00e5aa',list:d,cap:null,bonus:db,collapsed:col.has('d')})}
       ${section({key:'w',title:'주간',note:`일요일 초기화 · ${daysLeftInWeek()}일 남음`,color:'#4fc3f7',list:w,cap:WEEKLY_CAP,collapsed:col.has('w')})}
       ${section({key:'m',title:'월간',note:`${daysLeftInMonth()}일 남음`,color:'#ffa726',list:m,cap:MONTHLY_CAP,collapsed:col.has('m')})}
     </div>`;
