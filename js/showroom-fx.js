@@ -1178,6 +1178,83 @@ const AMB_FX = {
 // ── 애니메이션 드라이버 ─────────────────────────────────────────────────────
 const liveCharts = new Set();
 let rafId = null, lastTick = 0;
+const v11SpriteCache = new Map();
+const V11_AMBIENT_IDS = new Set([
+  'ae11_u_champion_stadium','ae11_u_ink_battlefield','ae11_r_eight_formation','ae11_r_red_cliff',
+  'ae11_e_storm_dimension','ae11_e_crimson_chaos','ae11_m_frozen_crown','ae11_m_black_sanctuary',
+]);
+const V11_LINE_FX = Object.freeze({
+  ls11_u_champion_stitch:{layers:[
+    {k:'aura',alpha:.2,mult:2.6,period:5200},{k:'segments',alpha:.95,dash:[8,5],period:3600},
+    {k:'glint',count:3,alpha:.7,period:4300},
+  ]},
+  ls11_u_ink_tactics:{layers:[
+    {k:'ribbon',alpha:.32,mult:2.8,period:6100},{k:'segments',alpha:.92,dash:[15,3,2,3],period:7600},
+    {k:'glint',count:2,alpha:.45,period:5700},
+  ]},
+  ls11_r_wolong_feather:{layers:[
+    {k:'aura',color:'#70e1d2',alpha:.18,mult:3.2,period:6200},{k:'sweep',color:'#dffcf8',alpha:.75,period:4600,width:54},
+    {k:'runeMarks',color:'#b8fff3',alpha:.55,count:8,period:7100},
+  ]},
+  ls11_r_red_cliff_fire:{layers:[
+    {k:'aura',color:'#ff5a2b',alpha:.24,mult:3.6,period:5200},{k:'sweep',color:'#ffd166',alpha:.9,period:3400,width:62},
+    {k:'embers',color:'#ff8a3d',alpha:.75,count:11,period:4900},
+  ]},
+  ls11_e_thunder_current:{layers:[
+    {k:'aura',color:'#5aa7ff',alpha:.28,mult:4.2,period:4800},{k:'zigzag',color:'#eaf6ff',alpha:.9,period:2900,amp:4},
+    {k:'race',colors:['#ffffff','#65b8ff','#ffd66b'],alpha:.75,period:3500},{k:'glint',color:'#ffffff',count:5,period:4100},
+  ]},
+  ls11_e_crimson_chaos:{layers:[
+    {k:'echo',color:'#4b0a26',alpha:.34,offset:5,period:5700},{k:'weave',color:'#ff356f',alpha:.78,period:4200,amp:4},
+    {k:'runeMarks',color:'#ff9dbc',alpha:.72,count:10,period:5300},{k:'bloom',color:'#ffffff',alpha:.32,period:7100},
+  ]},
+  ls11_m_frozen_runeblade:{layers:[
+    {k:'aura',color:'#1c6da8',alpha:.3,mult:5.2,period:7200},{k:'parallel',color:'#dff8ff',alpha:.5,offset:3,period:5100},
+    {k:'spikes',color:'#9eeaff',alpha:.68,count:18,period:6700},{k:'runeMarks',color:'#dffcff',alpha:.8,count:12,period:5900},
+    {k:'sweep',color:'#ffffff',alpha:.9,period:4400,width:72},{k:'detach',color:'#6ddcff',alpha:.55,count:10,period:7900},
+  ]},
+  ls11_m_nether_twinblade:{layers:[
+    {k:'echo',color:'#160b22',alpha:.5,offset:7,period:6900},{k:'parallel',color:'#84ff5c',alpha:.72,offset:4,period:4700},
+    {k:'weave',color:'#39d353',alpha:.7,period:5300,amp:5},{k:'runeMarks',color:'#c4ff9a',alpha:.65,count:12,period:6100},
+    {k:'sweep',color:'#edffdf',alpha:.85,period:3900,width:76},{k:'detach',color:'#9c4dff',alpha:.5,count:12,period:8300},
+  ]},
+});
+function v11Sprite(src) {
+  if (v11SpriteCache.has(src)) return v11SpriteCache.get(src);
+  const image = new Image();
+  image.decoding = 'async';
+  image.src = src;
+  v11SpriteCache.set(src, image);
+  return image;
+}
+function drawV11Ambient(ctx, area, id, T, small) {
+  const width=area.right-area.left,height=area.bottom-area.top;
+  const phase=reduceMotion()?0:T/1000;
+  const base=`./assets/showroom-v11/ambient_effect/${id}`;
+  const count=small?4:8;
+  for(let index=0;index<count;index++){
+    const image=v11Sprite(`${base}_${String(index+1).padStart(2,'0')}.png`);
+    if(!image.complete||!image.naturalWidth)continue;
+    const horizontal=index%2===0;
+    const side=index%4;
+    const size=Math.min(width,height)*(small?.13:.18+(index%3)*.018);
+    const drift=Math.sin(phase*(.28+index*.037)+index*1.7);
+    let x,y;
+    if(horizontal){
+      x=area.left+(side<2?.03:.97)*width+(side<2?1:-1)*drift*width*.025;
+      y=area.top+(.12+(index%4)*.25)*height+drift*height*.035;
+    }else{
+      x=area.left+(.12+(index%4)*.25)*width+drift*width*.035;
+      y=area.top+(side<2?.04:.96)*height+(side<2?1:-1)*drift*height*.025;
+    }
+    ctx.save();
+    ctx.globalAlpha=(small?.18:.24)+(index>=6?.08:0)+Math.sin(phase*(.42+index*.021)+index)*.035;
+    ctx.translate(x,y);
+    ctx.rotate(Math.sin(phase*.19+index)*.10+(side>=2?Math.PI:0));
+    ctx.drawImage(image,-size/2,-size/2,size,size);
+    ctx.restore();
+  }
+}
 function loop(ts) {
   rafId = requestAnimationFrame(loop);
   const budget = liveCharts.size >= 4 ? 42 : liveCharts.size >= 2 ? 30 : 20;
@@ -1196,25 +1273,42 @@ const reduceMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)
 // ── Chart.js 플러그인 ───────────────────────────────────────────────────────
 export const showroomFxPlugin = {
   id: 'showroomFx',
+  beforeDatasetsDraw(chart, _a, opts) {
+    const cfg=opts||chart.options?.plugins?.showroomFx||{};
+    if(!V11_AMBIENT_IDS.has(cfg.ambientFx))return;
+    const area=chart.chartArea;
+    if(!area||area.right<=area.left)return;
+    const ctx=chart.ctx,T=reduceMotion()?0:performance.now();
+    ctx.save();
+    ctx.globalCompositeOperation='source-over';
+    ctx.beginPath();ctx.rect(area.left,area.top,area.right-area.left,area.bottom-area.top);ctx.clip();
+    drawV11Ambient(ctx,area,cfg.ambientFx,T,!!cfg.gridCell);
+    ctx.restore();
+  },
   afterDatasetsDraw(chart, _a, opts) {
     const cfg = opts || chart.options?.plugins?.showroomFx || {};
-    const lineSpec = LINE_FX[cfg.lineFx], ambSpec = AMB_FX[cfg.ambientFx];
-    if (!lineSpec && !ambSpec) { liveCharts.delete(chart); return; }
+    const lineSpec = V11_LINE_FX[cfg.lineFx] || LINE_FX[cfg.lineFx], ambSpec = AMB_FX[cfg.ambientFx];
+    const hasV11Ambient=V11_AMBIENT_IDS.has(cfg.ambientFx);
+    if (!lineSpec && !ambSpec && !hasV11Ambient) { liveCharts.delete(chart); return; }
     const ctx = chart.ctx, area = chart.chartArea;
     if (!area || area.right <= area.left) return;
     const T = reduceMotion() ? 0 : performance.now();
     const small = !!cfg.gridCell;
 
     // 공간효과 — 데이터 뒤에 그린다
-    if (ambSpec) {
+    if (ambSpec && !V11_AMBIENT_IDS.has(cfg.ambientFx)) {
       ctx.save();
       ctx.globalCompositeOperation = 'destination-over';
       ctx.beginPath(); ctx.rect(area.left, area.top, area.right - area.left, area.bottom - area.top); ctx.clip();
-      const layers = small ? ambSpec.layers.slice(0, 2) : ambSpec.layers;
-      for (const L of layers) {
-        const fn = AMB_LAYER[L.k]; if (!fn) continue;
-        const scaled = small && L.count ? { ...L, count: Math.max(3, Math.round(L.count * .5)) } : L;
-        try { fn(ctx, area, scaled, T); } catch {}
+      if(V11_AMBIENT_IDS.has(cfg.ambientFx)){
+        drawV11Ambient(ctx,area,cfg.ambientFx,T,small);
+      }else{
+        const layers = small ? ambSpec.layers.slice(0, 2) : ambSpec.layers;
+        for (const L of layers) {
+          const fn = AMB_LAYER[L.k]; if (!fn) continue;
+          const scaled = small && L.count ? { ...L, count: Math.max(3, Math.round(L.count * .5)) } : L;
+          try { fn(ctx, area, scaled, T); } catch {}
+        }
       }
       ctx.restore();
     }
@@ -1247,8 +1341,8 @@ export const showroomFxPlugin = {
   afterDestroy(chart) { liveCharts.delete(chart); },
 };
 
-export const LINE_FX_IDS = Object.freeze(Object.keys(LINE_FX));
-export const AMBIENT_FX_IDS = Object.freeze(Object.keys(AMB_FX));
+export const LINE_FX_IDS = Object.freeze([...Object.keys(LINE_FX),...Object.keys(V11_LINE_FX)]);
+export const AMBIENT_FX_IDS = Object.freeze([...Object.keys(AMB_FX),...V11_AMBIENT_IDS]);
 
 // ── 카탈로그 등록용 아이템 (code-native) ────────────────────────────────────
 const mk = (category, id, name, rarity, visual, renderSpec) => Object.freeze({

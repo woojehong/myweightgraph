@@ -1,7 +1,7 @@
 import { SHOWROOM_V4_RUNTIME } from './showroom-catalog-v4.generated.js';
 import { GRAPH_SKIN_ITEMS } from './showroom-graph-skins.js';
 import { CARD_THEME_ITEMS } from './showroom-card-themes.js';
-import { LINE_STYLE_ITEMS, AMBIENT_EFFECT_ITEMS } from './showroom-fx.js';
+import { LINE_STYLE_ITEMS_V11 as LINE_STYLE_ITEMS, AMBIENT_EFFECT_ITEMS_V11 as AMBIENT_EFFECT_ITEMS } from './showroom-fx-v11.js';
 import { COMPANION_ITEMS_V5 } from './showroom-companions-v5.js';
 import { PROFILE_EMOJI_ITEMS_V6 } from './showroom-profile-emojis-v6.js';
 import { PORTRAIT_FRAME_ITEMS_V7 } from './showroom-portrait-frames-v7.js';
@@ -66,7 +66,7 @@ const SHOWROOM_CATALOG_V3_FALLBACK = Object.freeze(SHOWROOM_CATEGORIES.flatMap(c
 // 코드 네이티브 범주: 이미지 에셋 없이 renderSpec으로 그린다.
 export const CODE_NATIVE_CATEGORIES = Object.freeze(['line_style','ambient_effect']);
 const isCodeNative = category => CODE_NATIVE_CATEGORIES.includes(category);
-const RESETTING_CATEGORIES = Object.freeze(['card_theme','point_marker','profile_emoji','emoji_border','trophy']);
+const RESETTING_CATEGORIES = Object.freeze(['card_theme','point_marker','profile_emoji','emoji_border','trophy','line_style','ambient_effect']);
 // 생성 파일(showroom-catalog-v4.generated.js)은 GPT 스크립트가 덮어쓰므로 건드리지 않고 여기서 병합한다.
 const v4Items=[
   ...(Array.isArray(SHOWROOM_V4_RUNTIME?.items)?SHOWROOM_V4_RUNTIME.items.filter(entry=>entry.category!=='graph_skin'):[]),
@@ -91,7 +91,7 @@ export const CATEGORY_PRICE_WEIGHT = Object.freeze({
   trophy:null,
 });
 export const RARITY_BASE_PRICE = Object.freeze({
-  common:80, uncommon:120, rare:260, epic:550, legendary:1100,
+  common:80, uncommon:120, rare:260, epic:550, mythic:1100,
 });
 export const LEGENDARY_CATEGORY_PRICE = Object.freeze({
   graph_skin:3000,
@@ -104,7 +104,7 @@ export const LEGENDARY_CATEGORY_PRICE = Object.freeze({
   companion:1800,
 });
 export const RARITY_PRICE_RATIO = Object.freeze({
-  common:.1, uncommon:.2, rare:.4, epic:.65, legendary:1,
+  common:.1, uncommon:.2, rare:.4, epic:.65, mythic:1,
 });
 export function showroomPriceOf(category, rarity){
   const legendary = LEGENDARY_CATEGORY_PRICE[category];
@@ -130,14 +130,17 @@ export const GRANDFATHERED_RELEASED_ITEM_IDS = Object.freeze([
 const grandfatheredReleasedIds = new Set(GRANDFATHERED_RELEASED_ITEM_IDS);
 
 const SHOWROOM_CATALOG_BASE=SHOWROOM_CATEGORIES.flatMap(category=>{
-  if(category==='point_marker'||category==='trophy')return [];
+  if(RESETTING_CATEGORIES.includes(category))return [];
   const staged=completeV4Category(category);
   const entries=staged?v4Items.filter(item=>item.category===category):SHOWROOM_CATALOG_V3_FALLBACK.filter(item=>item.category===category);
   return staged?entries.map(entry=>grandfatheredReleasedIds.has(entry.id)?retail(entry):entry):entries.map(retail);
 });
 const SHOWROOM_V5_ADDITIONS=Object.freeze([
+  ...LINE_STYLE_ITEMS,
+  ...AMBIENT_EFFECT_ITEMS,
   ...COMPANION_ITEMS_V5,
   ...PROFILE_EMOJI_ITEMS_V6,
+  ...PORTRAIT_FRAME_ITEMS_V7,
   ...CARD_THEME_ITEMS,
   ...POINT_MARKER_ITEMS_V9,
   ...TROPHY_ITEMS_V10,
@@ -146,9 +149,12 @@ const showroomV5Ids=new Set(SHOWROOM_V5_ADDITIONS.map(entry=>entry.id));
 export const SHOWROOM_CATALOG_V2=Object.freeze([
   ...SHOWROOM_CATALOG_BASE,
   ...SHOWROOM_V5_ADDITIONS,
-].map(entry => entry.purchasable === true
-  ? Object.freeze({ ...entry, price:showroomPriceOf(entry.category, entry.rarity) })
-  : entry));
+].map(entry => {
+  const normalized=entry.rarity==='legendary'?Object.freeze({...entry,rarity:'mythic'}):entry;
+  return normalized.purchasable === true
+    ? Object.freeze({ ...normalized, price:showroomPriceOf(normalized.category, normalized.rarity) })
+    : normalized;
+}));
 
 // Exact V2 ids are retained only as a compatibility index. They are not active catalog entries.
 const LEGACY_IDS_BY_CATEGORY = Object.freeze({
@@ -168,7 +174,7 @@ const activeByCategory = Object.fromEntries(SHOWROOM_CATEGORIES.map(category => 
 ]));
 const activeIds = new Set(Object.values(activeByCategory).flat());
 const aliasPairs=[];
-const NO_LEGACY_ALIAS_CATEGORIES=new Set(['card_theme','point_marker','profile_emoji','emoji_border','trophy']);
+const NO_LEGACY_ALIAS_CATEGORIES=new Set(['card_theme','point_marker','profile_emoji','emoji_border','trophy','line_style','ambient_effect']);
 for(const category of SHOWROOM_CATEGORIES){
   const legacy=LEGACY_IDS_BY_CATEGORY[category];
   if(activeByCategory[category].length===0||NO_LEGACY_ALIAS_CATEGORIES.has(category))continue;
@@ -211,9 +217,10 @@ export function assertShowroomCatalogV2(catalog=SHOWROOM_CATALOG_V2){
     const expectedPerCategory=isV4Tier?baseEntries.length:(isCodeNative(category)||RESETTING_CATEGORIES.includes(category)?0:4);
     if(baseEntries.length!==expectedPerCategory)throw new Error(`${category}: expected ${expectedPerCategory} base items, got ${baseEntries.length}`);
     const perRarity=isV4Tier?baseEntries.length/4:1;
+    const topRarity=catalog===SHOWROOM_CATALOG_V2?'mythic':'legendary';
     const expected=expectedPerCategory===0?[]:isV4Tier
-      ? ['uncommon','rare','epic','legendary'].flatMap(r=>Array(perRarity).fill(r))
-      : category==='companion'?['common','common','common','common']:['uncommon','rare','epic','legendary'];
+      ? ['uncommon','rare','epic',topRarity].flatMap(r=>Array(perRarity).fill(r))
+      : category==='companion'?['common','common','common','common']:['uncommon','rare','epic',topRarity];
     if(baseEntries.map(entry=>entry.rarity).join(',')!==expected.join(','))throw new Error(`${category}: invalid base rarity order`);
     for(const entry of entries){
       for(const key of ['id','category','name','rarity','price','visual','implKey','asset','testOnly','purchasable'])if(entry[key]===undefined||entry[key]==='')throw new Error(`${entry.id}: missing ${key}`);
@@ -236,7 +243,7 @@ export function assertShowroomCatalogV2(catalog=SHOWROOM_CATALOG_V2){
   if(catalog===SHOWROOM_CATALOG_V2){
     // Trophy history is intentionally excluded: retired trophies must disappear,
     // never silently turn into an unrelated new achievement reward.
-    if(Object.keys(LEGACY_SHOWROOM_ID_ALIASES).length<64)throw new Error('legacy alias coverage regressed below active-category compatibility ids');
+    if(Object.keys(LEGACY_SHOWROOM_ID_ALIASES).length<30)throw new Error('legacy alias coverage regressed below active-category compatibility ids');
     for(const [legacy,target] of Object.entries(LEGACY_SHOWROOM_ID_ALIASES)){
       const targetItem=catalog.find(entry=>entry.id===target);
       if(!targetItem)throw new Error(`${legacy}: missing alias target ${target}`);

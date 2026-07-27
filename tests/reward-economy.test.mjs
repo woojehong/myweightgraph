@@ -32,11 +32,11 @@ const firstMonthTotal = 30 * 50
   + calcTotalScore(calculateEarnedIds(month, {height:178,goal:70,referenceWeight:80}));
 assert.equal(firstMonthTotal, 2992, '30일 성실 기록은 전설 그래프 스킨 가격에 근접해야 한다');
 
-assert.equal(showroomPriceOf('graph_skin','legendary'), 3000);
-assert.equal(showroomPriceOf('card_theme','legendary'), 2200);
-assert.equal(showroomPriceOf('companion','legendary'), 1800);
-assert.equal(showroomPriceOf('profile_emoji','legendary'), 1200);
-assert.equal(showroomPriceOf('emoji_border','legendary'), 900);
+assert.equal(showroomPriceOf('graph_skin','mythic'), 3000);
+assert.equal(showroomPriceOf('card_theme','mythic'), 2200);
+assert.equal(showroomPriceOf('companion','mythic'), 1800);
+assert.equal(showroomPriceOf('profile_emoji','mythic'), 1200);
+assert.equal(showroomPriceOf('emoji_border','mythic'), 900);
 for (const item of SHOWROOM_CATALOG_V2.filter(item => item.purchasable === true))
   assert.equal(item.price, showroomPriceOf(item.category, item.rarity),
     `${item.id}의 실제 카탈로그 가격도 경제표와 일치해야 한다`);

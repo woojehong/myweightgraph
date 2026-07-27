@@ -7,7 +7,6 @@ import { TITLES_CATALOG_V2, TITLE_RARITY_COLORS } from './titles-catalog-v2.js';
 export const RARITY_META=Object.freeze({
   common:{label:'일반',color:'#FFFFFF'}, uncommon:{label:'고급',color:'#1EFF00'},
   rare:{label:'희귀',color:'#0070DD'}, epic:{label:'영웅',color:'#A335EE'},
-  legendary:{label:'전설',color:'#FF8000'},
   mythic:{label:'신화',color:'#FF8000'},
   transcendent:{label:'초월',color:'#FF2D2D'},
   artifact:{label:'유물',color:'#E6CC80'},
@@ -23,7 +22,7 @@ export const RETIRED_SHOWROOM_CATEGORIES=Object.freeze(['companion']);
 const retiredCategories=new Set(RETIRED_SHOWROOM_CATEGORIES);
 export const ALL_CATALOG_V2=Object.freeze([
   ...SHOWROOM_CATALOG_V2.filter(entry=>!retiredCategories.has(entry.category)),
-  ...TITLES_CATALOG_V2.map(entry=>Object.freeze({...entry,category:'title',visual:entry.description,implKey:`title:${entry.id}`})),
+  ...TITLES_CATALOG_V2.map(entry=>Object.freeze({...entry,rarity:entry.rarity==='legendary'?'mythic':entry.rarity,category:'title',visual:entry.description,implKey:`title:${entry.id}`})),
 ]);
 const BY_ID=new Map(ALL_CATALOG_V2.map(entry=>[entry.id,entry]));
 const canonicalId=id=>resolveShowroomItemIdV2(id);
@@ -117,7 +116,15 @@ export const renderMarkerV2=(id,role='low')=>{
   const entry=getCatalogItemV2(id),asset=entry?.markerAssets?.[role]||entry?.asset;
   return asset?`<img class="v3-marker-image" src="${asset}" alt="" aria-hidden="true" draggable="false" decoding="async">`:'';
 };
-export const renderAmbientV2=id=>img(getCatalogItemV2(id),'v3-ambient-preview');
+export const renderAmbientV2=id=>{
+  const entry=getCatalogItemV2(id);
+  if(!entry)return '';
+  if(id.startsWith('ae11_')){
+    const base=`./assets/showroom-v11/ambient_effect/${id}`;
+    return `<span class="v11-ambient-preview" data-fx="${id}">${[1,2,3,4].map((n,index)=>`<img src="${base}_${String(n).padStart(2,'0')}.png" alt="" aria-hidden="true" style="--i:${index}">`).join('')}</span>`;
+  }
+  return img(entry,'v3-ambient-preview');
+};
 
 const escapeProfileText=value=>String(value).replace(/[&<>"']/g,char=>({
   '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;',
@@ -166,7 +173,7 @@ export function getChartDecorationsV2(raw){
   const colors=graphColors[skin?.id];
   const lineSpec=line?.renderSpec||{},lineColor=validHex(raw?.lineColor)?raw.lineColor:(lineSpec.color||colors?.[0]);
   const requestedWidth=Number(raw?.lineWidth),lineWidth=Number.isFinite(requestedWidth)?Math.max(1,Math.min(6,requestedWidth)):lineSpec.width;
-  const rarityBackground={uncommon:'#293039',rare:'#17283a',epic:'#211630',legendary:'#2b1d0d'};
+  const rarityBackground={uncommon:'#293039',rare:'#17283a',epic:'#211630',mythic:'#2b1d0d'};
   const backgroundColor=colors?.[3]||rarityBackground[skin?.rarity]||'#070b12';
   return {
     actualColor:lineColor||colors?.[0], maColor:colors?.[1], gridColor:colors?.[2],
@@ -231,7 +238,10 @@ export function renderCatalogPreviewV2(entry){
   if(entry.category==='trophy')return renderTrophyV2(entry.id);
   if(entry.category==='point_marker')return `<span class="v9-marker-pair" aria-label="최고점과 최저점 마커 세트">${renderMarkerV2(entry.id,'high')}${renderMarkerV2(entry.id,'low')}</span>`;
   if(entry.category==='ambient_effect')return `<span class="v3-landscape-preview">${renderAmbientV2(entry.id)}</span>`;
-  if(entry.category==='line_style'){const spec=entry.renderSpec||{};return `<span class="v4-line-preview" aria-hidden="true"><span style="border-color:${spec.color||'#00e5aa'};border-top-width:${spec.width||2}px;border-top-style:${spec.dash?.length?'dashed':'solid'};box-shadow:0 0 ${spec.glowBlur||0}px ${spec.color||'#00e5aa'}"></span></span>`}
+  if(entry.category==='line_style'){
+    const previewColor=entry.id.includes('ink')?'#e6e0d4':entry.id.includes('wolong')?'#8fffe8':entry.id.includes('red_cliff')?'#ff7847':entry.id.includes('thunder')?'#87c8ff':entry.id.includes('crimson')?'#ff477e':entry.id.includes('frozen')?'#9eeaff':entry.id.includes('nether')?'#72ff56':'#f5f5f5';
+    return `<span class="v11-line-preview" data-fx="${entry.id}" style="--line-preview:${previewColor}" aria-hidden="true"><i></i><i></i><i></i></span>`;
+  }
   if(entry.category==='card_theme'&&entry.cardAssets?.header)return `<span class="v4-card-theme-preview" data-card-theme="${entry.id}" aria-hidden="true"><img class="v4-card-preview-header" src="${entry.cardAssets.header}" alt=""><span class="v4-card-preview-identity">칭호<br><b>사용자 이름</b></span><span class="v4-card-preview-message">오늘의 한마디</span><span class="v4-card-preview-trophies">◆ ◆ ◆</span><span class="v4-card-preview-stats"><i>최고</i><i>최저</i><i>현재</i></span></span>`;
   return `<span class="v3-landscape-preview">${img(entry,'v3-catalog-landscape')}</span>`;
 }

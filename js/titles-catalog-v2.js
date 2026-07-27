@@ -3,6 +3,7 @@ export const TITLE_RARITY_COLORS = Object.freeze({
   uncommon: "#1EFF00",
   rare: "#0070DD",
   epic: "#A335EE",
+  mythic: "#FF8000",
   legendary: "#FF8000",
 });
 

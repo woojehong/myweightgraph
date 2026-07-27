@@ -1,11 +1,11 @@
-const CACHE = 'weight-v109-artifact-trophies';
+const CACHE = 'weight-v110-showroom-fx-rebuild';
 const ASSETS = [
   './index.html', './dashboard.html', './input.html', './import.html',
   './achievements.html', './compare.html', './dressroom.html', './shop.html', './guide.html', './visual-lab.html',
   './css/style.css', './css/showroom-card-themes.css',
   './js/firebase-config.js', './js/db.js', './js/auth.js',
   './js/chart-render.js', './js/achievements.js', './js/achievements-engine.js',
-  './js/quests.js', './js/quest-panel.js', './js/showroom-fx.js',
+  './js/quests.js', './js/quest-panel.js', './js/showroom-fx.js', './js/showroom-fx-v11.js',
   './js/util.js', './js/daily-rewards.js', './js/meal-status.js', './js/showroom-v2.js',
   './js/today-message.js',
   './js/showroom-catalog-v2.js', './js/showroom-catalog-v4.generated.js', './js/showroom-graph-skins.js', './js/showroom-card-themes.js', './js/showroom-companions-v5.js', './js/showroom-profile-emojis-v6.js', './js/showroom-portrait-frames-v7.js', './js/showroom-point-markers-v9.js', './js/showroom-trophies-v10.js', './js/titles-catalog-v2.js', './js/achievement-item-rewards-v2.js',
@@ -87,10 +87,6 @@ const ASSETS = [
   './assets/showroom-v5/companion/cp_l08.png',
   './assets/showroom-v5/companion/cp_l09.png',
   './assets/showroom-v5/companion/cp_l10.png',
-  './assets/showroom-v3/ambient_effect/ae_forest_breath.webp',
-  './assets/showroom-v3/ambient_effect/ae_deep_caustics.webp',
-  './assets/showroom-v3/ambient_effect/ae_dimensional_breach.webp',
-  './assets/showroom-v3/ambient_effect/ae_ancient_dragon.webp',
   './assets/showroom-v10/trophy/tr_a_world_series_constellation.png',
   './assets/showroom-v10/trophy/tr_a_big_ears.png',
   './assets/showroom-v10/trophy/tr_a_world_cup_orb.png',
@@ -103,6 +99,7 @@ const ASSETS = [
   './assets/showroom-v10/trophy/tr_a_frostmourne_statue.png',
   './assets/showroom-v10/trophy/tr_a_doomhammer_statue.png',
   './assets/showroom-v10/trophy/tr_a_aegis_shield.png',
+  ...['ae11_u_champion_stadium','ae11_u_ink_battlefield','ae11_r_eight_formation','ae11_r_red_cliff','ae11_e_storm_dimension','ae11_e_crimson_chaos','ae11_m_frozen_crown','ae11_m_black_sanctuary'].flatMap(id=>Array.from({length:8},(_,index)=>`./assets/showroom-v11/ambient_effect/${id}_${String(index+1).padStart(2,'0')}.png`)),
   './assets/showroom-v6/profile_emoji/pe_l_fallen_frost_prince.png',
   './assets/showroom-v6/profile_emoji/pe_l_tideglass_archmage.png',
   './assets/showroom-v6/profile_emoji/pe_l_ironjaw_warchief.png',
