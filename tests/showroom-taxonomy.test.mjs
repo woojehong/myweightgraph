@@ -48,13 +48,17 @@ for(const set of sets){
 
 const showroom=await readFile(new URL('../dressroom.html',import.meta.url),'utf8');
 for(const token of [
-  'id="viewItems"','id="viewSets"','아이템별','세트별',
-  'id="ownershipFilters"','id="rarityFilters"','id="sourceFilters"','id="setFilters"',
+  'id="viewItems"','id="viewSets"','아이템별','세트 장착',
+  'id="ownershipFilters"','id="rarityFilters"','id="sourceFilters"',
   '보유','미보유',"['common','uncommon','rare','epic','mythic','transcendent','legendary','artifact']",
   'SHOWROOM_SOURCE_CATEGORIES','showroomFullSets','renderSetGrid','sr-set-grid',
+  'data-apply-set','세트 전체 미리보기','원클릭 전체 미리보기',
+  "for(const cat of SHOWROOM_FULL_SET_CATEGORIES)","draft[cat]=item.id",
 ])assert.ok(showroom.includes(token),token);
 assert.equal(showroom.includes('id="rarity"'),false,'legacy rarity dropdown must be removed');
 assert.equal(showroom.includes('id="ownership"'),false,'legacy ownership dropdown must be removed');
+assert.equal(showroom.includes('id="setFilters"'),false,'sets must be one-click loadout presets, not filter chips');
+assert.equal(showroom.includes('data-set-item'),false,'set parts must not be applied one by one');
 
 const sw=await readFile(new URL('../sw.js',import.meta.url),'utf8');
 assert.ok(sw.includes("'./js/showroom-taxonomy.js'"));
