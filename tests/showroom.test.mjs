@@ -221,7 +221,8 @@ for(const entry of SHOWROOM_CATALOG_V2.filter(item=>item.category==='ambient_eff
   assert.ok(preview.includes(`${entry.id}_01.png`),entry.id);
 }
 const fxSource=await readFile(new URL('../js/showroom-fx.js',import.meta.url),'utf8');
-for(const token of ['V11_AMBIENT_RENDERERS','v11Bolt','v11Ribbon','v11RuneRing','v11ProtectCenter','ae11_m_frozen_crown(ctx,a,t)','ae11_m_black_sanctuary(ctx,a,t)'])assert.ok(fxSource.includes(token),token);
+for(const token of ['V11_AMBIENT_RENDERERS','v11Bolt','v11RuneRing','v11ProtectCenter','v11ArtCache','v11DrawArt','v11ArtStream','v11ArtOrbit','ae11_m_frozen_crown(ctx,a,t)','ae11_m_black_sanctuary(ctx,a,t)'])assert.ok(fxSource.includes(token),token);
+assert.equal(fxSource.includes('function v11Ribbon'),false,'legacy sine-wave ribbon renderer must stay retired');
 for(const entry of SHOWROOM_CATALOG_V2){
   const html=renderCatalogPreviewV2(entry);
   entry.asset?assert.ok(html.includes(entry.asset),entry.id):assert.ok(html.length>0,entry.id);
@@ -292,7 +293,7 @@ assert.equal((visualLab.match(/drawMarker\(ctx,marker,/g)||[]).length,1,'visual 
 assert.equal((visualLab.match(/drawMarker\(ctx,/g)||[]).length-1,1,'visual lab must render exactly one point marker');
 
 const sw=await readFile(new URL('../sw.js',import.meta.url),'utf8');
-assert.ok(sw.includes("weight-v111-tiered-motion-fx"));assert.equal(sw.includes('c.addAll(ASSETS).catch'),false);
+assert.ok(sw.includes("weight-v112-art-driven-ambient-fx"));assert.equal(sw.includes('c.addAll(ASSETS).catch'),false);
 for(const entry of SHOWROOM_CATALOG_V2.filter(entry=>entry.asset))assert.ok(sw.includes(`'${entry.asset}'`),`sw:${entry.asset}`);
 for(const entry of POINT_MARKER_ITEMS_V9)for(const asset of Object.values(entry.markerAssets))assert.ok(sw.includes(`'${asset}'`),`${asset}: paired marker must be pre-cached`);
 for(const entry of AMBIENT_EFFECT_ITEMS_V11)assert.ok(sw.includes(entry.id),`${entry.id}: V11 sprite family must be pre-cached`);
