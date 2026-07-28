@@ -1,4 +1,4 @@
-const CACHE = 'weight-v121-tidal-archmage';
+const CACHE = 'weight-v122-showroom-taxonomy';
 const ASSETS = [
   './index.html', './dashboard.html', './input.html', './import.html',
   './achievements.html', './compare.html', './dressroom.html', './shop.html', './guide.html', './visual-lab.html',
@@ -8,7 +8,7 @@ const ASSETS = [
   './js/quests.js', './js/quest-panel.js', './js/showroom-fx.js', './js/showroom-fx-v11.js',
   './js/util.js', './js/daily-rewards.js', './js/meal-status.js', './js/showroom-v2.js',
   './js/today-message.js',
-  './js/showroom-catalog-v2.js', './js/showroom-catalog-v4.generated.js', './js/showroom-graph-skins.js', './js/showroom-graph-skins-v12.js', './js/showroom-card-themes.js', './js/showroom-card-themes-v12.js', './js/showroom-companions-v5.js', './js/showroom-profile-emojis-v6.js', './js/showroom-portrait-frames-v7.js', './js/showroom-point-markers-v9.js', './js/showroom-trophies-v10.js', './js/titles-catalog-v2.js', './js/achievement-item-rewards-v2.js',
+  './js/showroom-catalog-v2.js', './js/showroom-catalog-v4.generated.js', './js/showroom-graph-skins.js', './js/showroom-graph-skins-v12.js', './js/showroom-card-themes.js', './js/showroom-card-themes-v12.js', './js/showroom-companions-v5.js', './js/showroom-profile-emojis-v6.js', './js/showroom-portrait-frames-v7.js', './js/showroom-point-markers-v9.js', './js/showroom-trophies-v10.js', './js/showroom-taxonomy.js', './js/titles-catalog-v2.js', './js/achievement-item-rewards-v2.js',
   './manifest.json', './favicon.png',
   './register-sw.js',
   './assets/showroom-v4/graph_skin/gs4_uncommon_ironpeak_workshop.webp',
@@ -146,7 +146,6 @@ const ASSETS = [
   './assets/showroom-v8/profile_emoji/pe_r_jade_fan_strategist.webp',
   './assets/showroom-v8/profile_emoji/pe_r_crimson_flying_general.webp',
   './assets/showroom-v8/profile_emoji/pe_r_crescent_beard_general.webp',
-  './assets/showroom-v8/profile_emoji/pe_r_roaring_tiger_general.webp',
   './assets/showroom-v8/profile_emoji/pe_r_silver_spear_dragon.webp',
   './assets/showroom-v8/profile_emoji/pe_e_crimson_reactor_sentinel.webp',
   './assets/showroom-v8/profile_emoji/pe_e_storm_prince_guardian.webp',

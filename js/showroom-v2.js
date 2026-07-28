@@ -3,12 +3,17 @@ import {
   resolveShowroomItemIdV2,
 } from './showroom-catalog-v2.js?v=96';
 import { TITLES_CATALOG_V2, TITLE_RARITY_COLORS } from './titles-catalog-v2.js';
+import {
+  enrichShowroomItem,
+  RETIRED_SHOWROOM_ITEM_IDS,
+} from './showroom-taxonomy.js';
 
 export const RARITY_META=Object.freeze({
   common:{label:'일반',color:'#FFFFFF'}, uncommon:{label:'고급',color:'#1EFF00'},
   rare:{label:'희귀',color:'#0070DD'}, epic:{label:'영웅',color:'#A335EE'},
   mythic:{label:'신화',color:'#FF8000'},
   transcendent:{label:'초월',color:'#FF2D2D'},
+  legendary:{label:'전설',color:'var(--muted)'},
   artifact:{label:'유물',color:'#E6CC80'},
 });
 export const CATEGORY_META=Object.freeze({
@@ -20,10 +25,11 @@ export const CATEGORY_META=Object.freeze({
 });
 export const RETIRED_SHOWROOM_CATEGORIES=Object.freeze(['companion']);
 const retiredCategories=new Set(RETIRED_SHOWROOM_CATEGORIES);
+const retiredItemIds=new Set(RETIRED_SHOWROOM_ITEM_IDS);
 export const ALL_CATALOG_V2=Object.freeze([
   ...SHOWROOM_CATALOG_V2.filter(entry=>!retiredCategories.has(entry.category)),
   ...TITLES_CATALOG_V2.map(entry=>Object.freeze({...entry,rarity:entry.rarity==='legendary'?'mythic':entry.rarity,category:'title',visual:entry.description,implKey:`title:${entry.id}`})),
-]);
+].filter(entry=>!retiredItemIds.has(entry.id)).map(enrichShowroomItem));
 const BY_ID=new Map(ALL_CATALOG_V2.map(entry=>[entry.id,entry]));
 const canonicalId=id=>resolveShowroomItemIdV2(id);
 export const getCatalogItemV2=id=>BY_ID.get(canonicalId(id))||null;
