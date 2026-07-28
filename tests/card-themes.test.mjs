@@ -36,7 +36,10 @@ const compare = await readFile(new URL('../compare.html',import.meta.url),'utf8'
 const showroom = await readFile(new URL('../dressroom.html',import.meta.url),'utf8');
 const css=await readFile(new URL('../css/showroom-card-themes.css',import.meta.url),'utf8');
 const baseCss=await readFile(new URL('../css/style.css',import.meta.url),'utf8');
-for(const token of ['grid-template-columns:repeat(7,30px)','grid-template-rows:repeat(2,30px)','justify-content:right','direction:rtl'])assert.ok(css.includes(token),token);
+for(const token of ['grid-template-columns:repeat(7,26px)','grid-template-rows:repeat(2,26px)','justify-content:right','direction:rtl','object-fit:cover','aspect-ratio:4.2/1',':empty{display:none!important}','min-height:60px!important'])assert.ok(css.includes(token),token);
+for(const [source,label] of [[showroom,'showroom'],[compare,'compare']]){
+  for(const token of ['aspect-ratio:4.2/1','min-height:160px','max-height:166px'])assert.ok(source.includes(token),`${label} compact header: ${token}`);
+}
 for(const token of ['.sr-profile-head[data-card-theme] .sr-profile-markers{display:grid','min-width:100%;justify-self:stretch!important','.cmp-profile[data-card-theme] .cmp-markers{display:grid'])assert.ok((showroom+compare).includes(token),token);
 for(const token of ['.v2-profile-compact .v2-profile-art{inset:8%','.v2-profile-showcase .v2-profile-art{inset:2%','.v2-profile-showcase .v2-profile-art>.v3-profile-emoji{object-fit:contain;transform:none'])assert.ok(baseCss.includes(token),token);
 for(const token of [
