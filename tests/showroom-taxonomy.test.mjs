@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { ALL_CATALOG_V2 } from '../js/showroom-v2.js';
+import { ALL_CATALOG_V2, RARITY_DISPLAY_ORDER, compareShowroomRarityV2 } from '../js/showroom-v2.js';
 import {
   SHOWROOM_SOURCE_CATEGORIES,
   SHOWROOM_MOTIFS,
@@ -14,6 +14,16 @@ assert.deepEqual(Object.keys(SHOWROOM_SOURCE_CATEGORIES),['wow','marvel','kbo','
 assert.deepEqual(SHOWROOM_FULL_SET_CATEGORIES,[
   'graph_skin','card_theme','ambient_effect','line_style','profile_emoji','emoji_border','point_marker',
 ]);
+assert.deepEqual(RARITY_DISPLAY_ORDER,[
+  'artifact','legendary','transcendent','mythic','epic','rare','uncommon','common',
+]);
+const raritySortFixture=[
+  {id:'u',name:'고급',rarity:'uncommon'},
+  {id:'m',name:'신화',rarity:'mythic'},
+  {id:'a',name:'유물',rarity:'artifact'},
+  {id:'e',name:'영웅',rarity:'epic'},
+].sort(compareShowroomRarityV2);
+assert.deepEqual(raritySortFixture.map(item=>item.rarity),['artifact','mythic','epic','uncommon']);
 
 const expectedNames={
   arthas:'리치 왕',jaina:'대제독',illidan:'배신자',sylvanas:'밴시 여왕',
@@ -57,6 +67,7 @@ for(const token of [
   'SHOWROOM_SOURCE_CATEGORIES','showroomFullSets','renderSetGrid','sr-set-grid',
   'data-apply-set','세트 전체 미리보기','원클릭 전체 미리보기',
   "for(const cat of SHOWROOM_FULL_SET_CATEGORIES)","draft[cat]=item?.id||null",
+  '.sort(compareShowroomRarityV2)',
   "set.categoryMap[cat].length?set.categoryMap[cat].some(item=>draft[cat]===item.id):draft[cat]==null",
 ])assert.ok(showroom.includes(token),token);
 assert.ok(showroom.includes('빈 범주는 기본으로 미리보기'));

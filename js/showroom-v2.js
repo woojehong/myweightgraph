@@ -16,6 +16,17 @@ export const RARITY_META=Object.freeze({
   legendary:{label:'전설',color:'var(--muted)'},
   artifact:{label:'유물',color:'#E6CC80'},
 });
+export const RARITY_DISPLAY_ORDER=Object.freeze([
+  'artifact','legendary','transcendent','mythic','epic','rare','uncommon','common',
+]);
+const RARITY_DISPLAY_RANK=new Map(RARITY_DISPLAY_ORDER.map((rarity,index)=>[rarity,index]));
+export function compareShowroomRarityV2(a,b){
+  const rarityDelta=(RARITY_DISPLAY_RANK.get(a?.rarity)??RARITY_DISPLAY_ORDER.length)
+    -(RARITY_DISPLAY_RANK.get(b?.rarity)??RARITY_DISPLAY_ORDER.length);
+  if(rarityDelta)return rarityDelta;
+  const nameDelta=String(a?.name||'').localeCompare(String(b?.name||''),'ko');
+  return nameDelta||String(a?.id||'').localeCompare(String(b?.id||''));
+}
 export const CATEGORY_META=Object.freeze({
   graph_skin:{name:'그래프 스킨',icon:'📈'}, line_style:{name:'그래프 선',icon:'〰️'}, card_theme:{name:'카드 테마',icon:'🖼️'},
   point_marker:{name:'포인트 마커',icon:'📍'}, companion:{name:'동반자',icon:'🐾'},

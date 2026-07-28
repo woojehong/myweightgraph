@@ -1,4 +1,4 @@
-const CACHE = 'weight-v123-fullsets';
+const CACHE = 'weight-v124-rarity-sort';
 const ASSETS = [
   './index.html', './dashboard.html', './input.html', './import.html',
   './achievements.html', './compare.html', './dressroom.html', './shop.html', './guide.html', './visual-lab.html',
