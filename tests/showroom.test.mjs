@@ -320,7 +320,7 @@ assert.equal((visualLab.match(/drawMarker\(ctx,marker,/g)||[]).length,1,'visual 
 assert.equal((visualLab.match(/drawMarker\(ctx,/g)||[]).length-1,1,'visual lab must render exactly one point marker');
 
 const sw=await readFile(new URL('../sw.js',import.meta.url),'utf8');
-assert.ok(sw.includes("weight-v119-marker-preview"));assert.equal(sw.includes('c.addAll(ASSETS).catch'),false);
+assert.ok(sw.includes("weight-v120-paired-marker-preview"));assert.equal(sw.includes('c.addAll(ASSETS).catch'),false);
 for(const entry of SHOWROOM_CATALOG_V2.filter(entry=>entry.asset))assert.ok(sw.includes(`'${entry.asset}'`),`sw:${entry.asset}`);
 for(const entry of POINT_MARKER_ITEMS_V9)for(const asset of Object.values(entry.markerAssets))assert.ok(sw.includes(`'${asset}'`),`${asset}: paired marker must be pre-cached`);
 for(const entry of AMBIENT_EFFECT_ITEMS_V11)assert.ok(sw.includes(entry.id),`${entry.id}: V11 sprite family must be pre-cached`);
@@ -336,7 +336,7 @@ const compare=await readFile(new URL('../compare.html',import.meta.url),'utf8');
 for(const token of ['decorateMainPlotV2','getChartDecorationsV2','data-main-weight-plot="true"','mainPlotAspectRatio: 16 / 9','id="dietToggle" type="checkbox"','id="exerciseToggle" type="checkbox"','for="dietToggle"','for="exerciseToggle"',"localStorage.getItem('compare_show_diet') === 'true'","localStorage.getItem('compare_show_exercise') === 'true'","persistSubgraphToggle('compare_show_diet'","persistSubgraphToggle('compare_show_exercise'",'showDietGraph,','showExerciseGraph,','renderGrid()'])assert.ok(compare.includes(token),token);
 for(const token of ['showMaxMarker: false','showMinMarker: true','showCurMarker: false'])assert.ok(compare.includes(token),token);
 for(const token of ['<span>마커 크기</span>','id="markerSize" type="range" min="20" max="100" step="2" value="32"',"localStorage.getItem('compare_marker_size')",'markerSize=Number(size.value)',"localStorage.setItem('compare_marker_size'",'chartDecorations: { ...getChartDecorationsV2(user?.showroomLoadoutV2), markerSize }','.marker-size-control{grid-column:1/-1'])assert.ok(compare.includes(token),token);
-for(const token of ['renderMarkerV2','showMaxMarker:false','showMinMarker:true','showCurMarker:false','markerSize:56','sr-marker-empty-preview'])assert.ok(showroom.includes(token),token);
+for(const token of ['renderMarkerV2',"renderMarkerV2(draft.point_marker,'high')","renderMarkerV2(draft.point_marker,'low')",'showMaxMarker:true','showMinMarker:true','showCurMarker:false','markerSize:56','sr-marker-empty-preview','sr-marker-empty-pair'])assert.ok(showroom.includes(token),token);
 const db=await readFile(new URL('../js/db.js',import.meta.url),'utf8');
 for(const token of ['purchaseCatalogItemsV2','validateCatalogPurchaseV2(itemIds)','persistableLoadoutV2(rawLoadout)','트로피 외 테스트 아이템은 소유권을 추가하거나 회수할 수 없습니다','runTransaction','adminSetCatalogOwnershipV2','adminGrantedItems',"item.category==='trophy'"])assert.ok(db.includes(token),token);
 assert.ok(db.includes('applyShowroomEffects:false'),'dashboard showroom effects must default to off in user chart settings');
