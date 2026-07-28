@@ -1,4 +1,4 @@
-const CACHE = 'weight-v112-art-driven-ambient-fx';
+const CACHE = 'weight-v113-expanded-ambient-fx';
 const ASSETS = [
   './index.html', './dashboard.html', './input.html', './import.html',
   './achievements.html', './compare.html', './dressroom.html', './shop.html', './guide.html', './visual-lab.html',
@@ -99,7 +99,7 @@ const ASSETS = [
   './assets/showroom-v10/trophy/tr_a_frostmourne_statue.png',
   './assets/showroom-v10/trophy/tr_a_doomhammer_statue.png',
   './assets/showroom-v10/trophy/tr_a_aegis_shield.png',
-  ...['ae11_u_champion_stadium','ae11_u_ink_battlefield','ae11_r_eight_formation','ae11_r_red_cliff','ae11_e_storm_dimension','ae11_e_crimson_chaos','ae11_m_frozen_crown','ae11_m_black_sanctuary'].flatMap(id=>Array.from({length:8},(_,index)=>`./assets/showroom-v11/ambient_effect/${id}_${String(index+1).padStart(2,'0')}.png`)),
+  ...['ae11_u_champion_stadium','ae11_u_ink_battlefield','ae11_u_navy_bear_victory','ae11_u_twin_night_game','ae11_u_tiger_homerun','ae11_r_eight_formation','ae11_r_red_cliff','ae11_r_crescent_dragon','ae11_r_imperial_jade_seal','ae11_r_moon_archive','ae11_e_storm_dimension','ae11_e_crimson_chaos','ae11_e_starforged_reactor','ae11_e_spider_rift','ae11_e_vibranium_guard','ae11_m_frozen_crown','ae11_m_black_sanctuary','ae11_m_banshee_dirge','ae11_m_iron_warchief','ae11_m_raven_arcane'].flatMap(id=>Array.from({length:8},(_,index)=>`./assets/showroom-v11/ambient_effect/${id}_${String(index+1).padStart(2,'0')}.png`)),
   './assets/showroom-v6/profile_emoji/pe_l_fallen_frost_prince.png',
   './assets/showroom-v6/profile_emoji/pe_l_tideglass_archmage.png',
   './assets/showroom-v6/profile_emoji/pe_l_ironjaw_warchief.png',

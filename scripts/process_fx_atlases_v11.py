@@ -15,6 +15,18 @@ ATLASES = {
     "ae11_e_crimson_chaos": Path(r"C:\Users\moonh\.codex\generated_images\019f7e8c-44f2-7d21-84af-21382fa0116b\call_2BLsDBKVqUeHuwqo8dJRegw9.png"),
     "ae11_m_frozen_crown": Path(r"C:\Users\moonh\.codex\generated_images\019f7e8c-44f2-7d21-84af-21382fa0116b\call_wl3UfpN747hHRpXIhOlXH0Pb.png"),
     "ae11_m_black_sanctuary": Path(r"C:\Users\moonh\.codex\generated_images\019f7e8c-44f2-7d21-84af-21382fa0116b\call_ZRZ4ZC8braKn5FfMuC0Wt81q.png"),
+    "ae11_u_navy_bear_victory": ROOT / "assets" / "showroom-v11" / "ambient_effect_sources" / "ae11_u_navy_bear_victory.png",
+    "ae11_u_twin_night_game": ROOT / "assets" / "showroom-v11" / "ambient_effect_sources" / "ae11_u_twin_night_game.png",
+    "ae11_u_tiger_homerun": ROOT / "assets" / "showroom-v11" / "ambient_effect_sources" / "ae11_u_tiger_homerun.png",
+    "ae11_r_crescent_dragon": ROOT / "assets" / "showroom-v11" / "ambient_effect_sources" / "ae11_r_crescent_dragon.png",
+    "ae11_r_imperial_jade_seal": ROOT / "assets" / "showroom-v11" / "ambient_effect_sources" / "ae11_r_imperial_jade_seal.png",
+    "ae11_r_moon_archive": ROOT / "assets" / "showroom-v11" / "ambient_effect_sources" / "ae11_r_moon_archive.png",
+    "ae11_e_starforged_reactor": ROOT / "assets" / "showroom-v11" / "ambient_effect_sources" / "ae11_e_starforged_reactor.png",
+    "ae11_e_spider_rift": ROOT / "assets" / "showroom-v11" / "ambient_effect_sources" / "ae11_e_spider_rift.png",
+    "ae11_e_vibranium_guard": ROOT / "assets" / "showroom-v11" / "ambient_effect_sources" / "ae11_e_vibranium_guard.png",
+    "ae11_m_banshee_dirge": ROOT / "assets" / "showroom-v11" / "ambient_effect_sources" / "ae11_m_banshee_dirge.png",
+    "ae11_m_iron_warchief": ROOT / "assets" / "showroom-v11" / "ambient_effect_sources" / "ae11_m_iron_warchief.png",
+    "ae11_m_raven_arcane": ROOT / "assets" / "showroom-v11" / "ambient_effect_sources" / "ae11_m_raven_arcane.png",
 }
 
 
@@ -25,13 +37,13 @@ def remove_magenta(image: Image.Image) -> Image.Image:
         for x in range(image.width):
             r, g, b, _ = pixels[x, y]
             distance = ((255 - r) ** 2 + g**2 + (255 - b) ** 2) ** 0.5
-            if distance <= 18:
+            if distance <= 45:
                 alpha = 0
-            elif distance >= 100:
+            elif distance >= 165:
                 alpha = 255
             else:
-                alpha = round((distance - 18) / 82 * 255)
-            if alpha < 58:
+                alpha = round(((distance - 45) / 120) ** 1.6 * 255)
+            if alpha < 90:
                 alpha = 0
             elif alpha < 255:
                 blend = alpha / 255
@@ -59,6 +71,27 @@ def normalize(image: Image.Image, size: int = 384) -> Image.Image:
     return canvas
 
 
+def enforce_deep_navy(image: Image.Image) -> Image.Image:
+    pixels = image.load()
+    for y in range(image.height):
+        for x in range(image.width):
+            r, g, b, alpha = pixels[x, y]
+            if not alpha:
+                continue
+            saturation = max(r, g, b) - min(r, g, b)
+            if saturation < 32 and max(r, g, b) > 155:
+                continue
+            if b > g * 1.08 or (r > 95 and b > 95 and g < min(r, b) * 0.82):
+                light = max(r, g, b) / 255
+                pixels[x, y] = (
+                    round(16 + 58 * light),
+                    round(27 + 72 * light),
+                    round(54 + 105 * light),
+                    alpha,
+                )
+    return image
+
+
 def split_atlas(item_id: str, source: Path) -> None:
     image = Image.open(source).convert("RGB")
     cell_width, cell_height = image.width / 4, image.height / 2
@@ -72,6 +105,8 @@ def split_atlas(item_id: str, source: Path) -> None:
             round((row + 1) * cell_height) - margin,
         )
         sprite = normalize(remove_magenta(image.crop(box)))
+        if item_id == "ae11_u_navy_bear_victory":
+            sprite = enforce_deep_navy(sprite)
         sprite.save(OUT / f"{item_id}_{index + 1:02d}.png", optimize=True)
 
 
