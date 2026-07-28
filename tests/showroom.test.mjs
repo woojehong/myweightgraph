@@ -59,6 +59,10 @@ assert.equal(LINE_STYLE_ITEMS_V11.length,8);
 assert.equal(AMBIENT_EFFECT_ITEMS_V11.length,8);
 assert.deepEqual(LINE_STYLE_ITEMS_V11.map(entry=>entry.rarity),['uncommon','uncommon','rare','rare','epic','epic','mythic','mythic']);
 assert.deepEqual(AMBIENT_EFFECT_ITEMS_V11.map(entry=>entry.rarity),['uncommon','uncommon','rare','rare','epic','epic','mythic','mythic']);
+assert.deepEqual(LINE_STYLE_ITEMS_V11.map(entry=>entry.renderSpec.colorMode),['custom','custom','custom','fixed','fixed','fixed','fixed','fixed']);
+assert.deepEqual(AMBIENT_EFFECT_ITEMS_V11.map(entry=>entry.renderSpec.motionTier),['static','static','subtle','subtle','heroic','heroic','mythic','mythic']);
+assert.equal(getChartDecorationsV2({line_style:'ls11_u_champion_stitch',lineColor:'#ff00ff'}).lineColor,'#ff00ff','custom line colors must be accepted');
+assert.equal(getChartDecorationsV2({line_style:'ls11_e_thunder_current',lineColor:'#ff00ff'}).lineColor,'#9ddcff','fixed heroic line colors must ignore manual overrides');
 assert.ok(SHOWROOM_CATALOG_V2.filter(entry=>entry.category==='line_style').every(entry=>entry.id.startsWith('ls11_')),'old line styles must be fully retired');
 assert.ok(SHOWROOM_CATALOG_V2.filter(entry=>entry.category==='ambient_effect').every(entry=>entry.id.startsWith('ae11_')),'old ambient effects must be fully retired');
 const legendaryProfiles=SHOWROOM_CATALOG_V2.filter(entry=>entry.category==='profile_emoji'&&entry.rarity==='mythic'&&entry.id.startsWith('pe_l_'));
@@ -216,6 +220,8 @@ for(const entry of SHOWROOM_CATALOG_V2.filter(item=>item.category==='ambient_eff
   assert.ok(preview.includes('v11-ambient-preview'),entry.id);
   assert.ok(preview.includes(`${entry.id}_01.png`),entry.id);
 }
+const fxSource=await readFile(new URL('../js/showroom-fx.js',import.meta.url),'utf8');
+for(const token of ['V11_AMBIENT_RENDERERS','v11Bolt','v11Ribbon','v11RuneRing','v11ProtectCenter','ae11_m_frozen_crown(ctx,a,t)','ae11_m_black_sanctuary(ctx,a,t)'])assert.ok(fxSource.includes(token),token);
 for(const entry of SHOWROOM_CATALOG_V2){
   const html=renderCatalogPreviewV2(entry);
   entry.asset?assert.ok(html.includes(entry.asset),entry.id):assert.ok(html.length>0,entry.id);
@@ -286,7 +292,7 @@ assert.equal((visualLab.match(/drawMarker\(ctx,marker,/g)||[]).length,1,'visual 
 assert.equal((visualLab.match(/drawMarker\(ctx,/g)||[]).length-1,1,'visual lab must render exactly one point marker');
 
 const sw=await readFile(new URL('../sw.js',import.meta.url),'utf8');
-assert.ok(sw.includes("weight-v110-showroom-fx-rebuild"));assert.equal(sw.includes('c.addAll(ASSETS).catch'),false);
+assert.ok(sw.includes("weight-v111-tiered-motion-fx"));assert.equal(sw.includes('c.addAll(ASSETS).catch'),false);
 for(const entry of SHOWROOM_CATALOG_V2.filter(entry=>entry.asset))assert.ok(sw.includes(`'${entry.asset}'`),`sw:${entry.asset}`);
 for(const entry of POINT_MARKER_ITEMS_V9)for(const asset of Object.values(entry.markerAssets))assert.ok(sw.includes(`'${asset}'`),`${asset}: paired marker must be pre-cached`);
 for(const entry of AMBIENT_EFFECT_ITEMS_V11)assert.ok(sw.includes(entry.id),`${entry.id}: V11 sprite family must be pre-cached`);

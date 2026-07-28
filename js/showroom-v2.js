@@ -171,13 +171,15 @@ export function getChartDecorationsV2(raw){
   const ambient=getCatalogItemV2(loadout.ambient_effect);
   if(!skin&&!marker&&!line&&!ambient)return {};
   const colors=graphColors[skin?.id];
-  const lineSpec=line?.renderSpec||{},lineColor=validHex(raw?.lineColor)?raw.lineColor:(lineSpec.color||colors?.[0]);
+  const lineSpec=line?.renderSpec||{},customColor=lineSpec.colorMode==='custom';
+  const lineColor=customColor&&validHex(raw?.lineColor)?raw.lineColor:(lineSpec.color||colors?.[0]);
   const requestedWidth=Number(raw?.lineWidth),lineWidth=Number.isFinite(requestedWidth)?Math.max(1,Math.min(6,requestedWidth)):lineSpec.width;
   const rarityBackground={uncommon:'#293039',rare:'#17283a',epic:'#211630',mythic:'#2b1d0d'};
   const backgroundColor=colors?.[3]||rarityBackground[skin?.rarity]||'#070b12';
   return {
     actualColor:lineColor||colors?.[0], maColor:colors?.[1], gridColor:colors?.[2],
     lineColor,lineWidth,lineDash:Array.isArray(lineSpec.dash)?lineSpec.dash:undefined,
+    lineColorMode:lineSpec.colorMode||'fixed',
     lineGlowBlur:lineSpec.glowBlur,lineTension:lineSpec.tension,
     lineContrast:lineColor?lineContrastAdviceV2(lineColor,backgroundColor):null,
     markerPreset:marker?.id||null,

@@ -1,4 +1,4 @@
-const CACHE = 'weight-v110-showroom-fx-rebuild';
+const CACHE = 'weight-v111-tiered-motion-fx';
 const ASSETS = [
   './index.html', './dashboard.html', './input.html', './import.html',
   './achievements.html', './compare.html', './dressroom.html', './shop.html', './guide.html', './visual-lab.html',

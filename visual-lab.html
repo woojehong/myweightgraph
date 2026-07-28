@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>쇼룸 이미지 랩 | 마웨그</title>
   <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
   <style>
     body{margin:0;background:#070b12;color:#eef5ff;font-family:system-ui,sans-serif}.lab{max-width:1180px;margin:auto;padding:26px 16px 60px}.lab h1{margin:0}.lab-lead{color:#9aacbf;margin:7px 0 20px}.lab-demo{border:1px solid #2a3b50;border-radius:18px;padding:12px;background:#0c131e}.lab-card{min-height:300px;border:1px solid #ffffff24;border-radius:14px;padding:10px;overflow:hidden}.lab-profile{display:flex;align-items:center;gap:10px;min-height:58px;padding:0 8px 7px;font-weight:800}.lab-chart{position:relative;aspect-ratio:16/9;min-height:220px;border-radius:10px 10px 0 0;overflow:hidden}.lab-chart canvas{width:100%;height:100%}.lab-subgraphs{display:grid;grid-template-columns:3fr 1fr;gap:1px;background:#26364a;border-radius:0 0 10px 10px;overflow:hidden}.lab-subgraph{min-height:28px;display:flex;align-items:center;padding:0 10px;background:#0a111b;color:#8fa2b5;font-size:10px}.lab-subgraph i{display:block;height:8px;margin-left:10px;border-radius:4px;background:linear-gradient(90deg,#66bb6a 0 35%,#ffd166 35% 70%,#ef5350 70%);flex:1}.lab-subgraph.exercise i{background:linear-gradient(90deg,#66bb6a 0 65%,#ef5350 65%)}.lab-status{display:flex;justify-content:space-between;gap:10px;margin:8px 2px 0;color:#8ca0b6;font-size:11px}.lab-head{display:flex;justify-content:space-between;align-items:end;margin:26px 0 10px}.lab-head h2{margin:0;font-size:17px}.lab-count{font-size:11px;color:#00e5aa}.lab-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.lab-item{min-width:0;border:1px solid #27394d;border-radius:13px;padding:9px;background:#0e1723;color:#eaf2fc;text-align:left;cursor:pointer}.lab-item.active{border-color:#00e5aa;box-shadow:inset 0 0 0 1px #00e5aa55}.lab-visual{height:105px;display:grid;place-items:center;overflow:hidden;border-radius:8px;background:#070b12}.lab-visual .v3-landscape-preview{height:100%;aspect-ratio:auto}.lab-visual>.v3-companion-image,.lab-visual>.v3-trophy-image{width:86px;height:86px;object-fit:contain}.lab-item b,.lab-item small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.lab-item b{font-size:12px;margin-top:7px}.lab-item small{font-size:9px;color:#8195aa;margin-top:2px}@media(max-width:760px){.lab-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.lab-chart{min-height:180px}}@media(max-width:380px){.lab{padding-inline:9px}.lab-grid{gap:7px}.lab-visual{height:90px}}
   </style>
@@ -25,7 +27,8 @@
   </main>
   <script type="module">
     import{SHOWROOM_CATALOG_V2,SHOWROOM_CATEGORIES,SHOWROOM_DEFAULTS}from'./js/showroom-catalog-v2.js';
-    import{CATEGORY_META,RARITY_META,applyCardV2,decorateMainPlotV2,getChartDecorationsV2,profileVisualV2,renderCatalogPreviewV2}from'./js/showroom-v2.js?v=96';
+    import{CATEGORY_META,RARITY_META,applyCardV2,decorateMainPlotV2,getChartDecorationsV2,profileVisualV2,renderCatalogPreviewV2}from'./js/showroom-v2.js?v=111';
+    import{renderChart}from'./js/chart-render.js';
     const byCategory=category=>SHOWROOM_CATALOG_V2.filter(entry=>entry.category===category);
     const loadout={...SHOWROOM_DEFAULTS,trophy:[]};
     for(const category of SHOWROOM_CATEGORIES){const first=byCategory(category)[0];if(first)loadout[category]=category==='trophy'?[first.id]:first.id}
@@ -43,6 +46,19 @@
       const marker=imageFor(decoration.markerAsset);drawMarker(ctx,marker,points[0][0],points[0][1],line);
       ctx.fillStyle='rgba(255,255,255,.7)';ctx.textAlign='center';['1주','2주','3주','4주'].forEach((label,index)=>ctx.fillText(label,L+(R-L)*index/3,H-10));ctx.restore();
     }
+    const demoRecords=[
+      {date:'2026-01-04',weight:86},{date:'2026-01-18',weight:84.7},{date:'2026-02-02',weight:83.2},
+      {date:'2026-02-20',weight:81.6},{date:'2026-03-09',weight:80.4},{date:'2026-03-27',weight:78.9},
+      {date:'2026-04-16',weight:77.2},{date:'2026-05-05',weight:75.8},{date:'2026-05-25',weight:74.1},
+      {date:'2026-06-14',weight:72.9},{date:'2026-07-04',weight:71.8},{date:'2026-07-24',weight:70.9},
+    ];
+    drawChart=function(){
+      renderChart(demoRecords,{goal:69},canvas,null,{
+        show7dayMA:false,showWeeklyBar:false,showPrediction:false,showDietGraph:false,showExerciseGraph:false,
+        showMaxMarker:false,showMinMarker:false,showCurMarker:false,gridCell:false,labelMode:'month',
+        mainPlotAspectRatio:16/9,chartDecorations:getChartDecorationsV2(loadout),
+      });
+    };
     function renderDemo(){
       document.getElementById('demoProfile').innerHTML=`${profileVisualV2(loadout,48)}<span>마웨그 탐험가</span>`;applyCardV2(card,loadout);decorateMainPlotV2(plot,loadout);drawChart();document.querySelectorAll('[data-item]').forEach(button=>button.classList.toggle('active',Object.values(loadout).flat().includes(button.dataset.item)));
     }
