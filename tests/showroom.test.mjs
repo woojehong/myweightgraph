@@ -93,9 +93,9 @@ for(const entry of legendaryProfiles){
   assert.ok(entry.asset.startsWith('./assets/showroom-v6/profile_emoji/'),entry.id);
 }
 for(const entry of SHOWROOM_CATALOG_V2){
-  const staged=entry.id.startsWith('gs12_')||(['line_style','ambient_effect'].includes(entry.category)&&!GRANDFATHERED_RELEASED_ITEM_IDS.includes(entry.id))||['card_theme','point_marker'].includes(entry.category);
-  assert.equal(entry.testOnly,staged,entry.id);
-  assert.equal(entry.purchasable,entry.category==='trophy'?false:!staged,entry.id);
+  assert.equal(entry.testOnly,false,entry.id);
+  assert.equal(entry.purchasable,entry.category!=='trophy',entry.id);
+  assert.equal(entry.persistable,true,entry.id);
 }
 const releasedGraphSkins=SHOWROOM_CATALOG_V2.filter(entry=>entry.category==='graph_skin');
 assert.deepEqual(GRAPH_SKIN_PRICE_BY_RARITY,{uncommon:600,rare:1200,epic:1950,legendary:3000});
@@ -109,8 +109,8 @@ for(const entry of releasedGraphSkins.slice(0,12)){
   assert.deepEqual(entry.safeArea,GRAPH_SKIN_SAFE_AREA,entry.id);
 }
 for(const entry of releasedGraphSkins.slice(12)){
-  assert.equal(entry.testOnly,true,entry.id);assert.equal(entry.purchasable,false,entry.id);assert.equal(entry.persistable,false,entry.id);
-  assert.equal(entry.price,null,entry.id);
+  assert.equal(entry.testOnly,false,entry.id);assert.equal(entry.purchasable,true,entry.id);assert.equal(entry.persistable,true,entry.id);
+  assert.equal(entry.price,GRAPH_SKIN_PRICE_BY_RARITY[entry.rarity==='mythic'?'legendary':entry.rarity],entry.id);
   assert.equal(entry.plannedPrice,GRAPH_SKIN_PRICE_BY_RARITY[entry.rarity==='mythic'?'legendary':entry.rarity],entry.id);
   assert.ok(entry.asset.startsWith('./assets/showroom-v12/graph_skin/'),entry.id);
   assert.deepEqual(entry.safeArea,GRAPH_SKIN_SAFE_AREA,entry.id);
@@ -320,7 +320,7 @@ assert.equal((visualLab.match(/drawMarker\(ctx,marker,/g)||[]).length,1,'visual 
 assert.equal((visualLab.match(/drawMarker\(ctx,/g)||[]).length-1,1,'visual lab must render exactly one point marker');
 
 const sw=await readFile(new URL('../sw.js',import.meta.url),'utf8');
-assert.ok(sw.includes("weight-v117-card-theme-repair"));assert.equal(sw.includes('c.addAll(ASSETS).catch'),false);
+assert.ok(sw.includes("weight-v118-release-showroom-items"));assert.equal(sw.includes('c.addAll(ASSETS).catch'),false);
 for(const entry of SHOWROOM_CATALOG_V2.filter(entry=>entry.asset))assert.ok(sw.includes(`'${entry.asset}'`),`sw:${entry.asset}`);
 for(const entry of POINT_MARKER_ITEMS_V9)for(const asset of Object.values(entry.markerAssets))assert.ok(sw.includes(`'${asset}'`),`${asset}: paired marker must be pre-cached`);
 for(const entry of AMBIENT_EFFECT_ITEMS_V11)assert.ok(sw.includes(entry.id),`${entry.id}: V11 sprite family must be pre-cached`);

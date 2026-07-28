@@ -1,4 +1,4 @@
-const CACHE = 'weight-v117-card-theme-repair';
+const CACHE = 'weight-v118-release-showroom-items';
 const ASSETS = [
   './index.html', './dashboard.html', './input.html', './import.html',
   './achievements.html', './compare.html', './dressroom.html', './shop.html', './guide.html', './visual-lab.html',

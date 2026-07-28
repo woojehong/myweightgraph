@@ -11,7 +11,9 @@ assert.deepEqual(CARD_THEME_ITEMS.map(item=>item.rarity),[
   'rare','epic',...Array(6).fill('legendary'),
 ]);
 assert.equal(SHOWROOM_CATALOG_V2.filter(item => item.category === 'card_theme').length,28);
-for(const item of CARD_THEME_ITEMS){assert.equal(item.testOnly,true);assert.equal(item.purchasable,false);assert.equal(item.persistable,false)}
+for(const item of SHOWROOM_CATALOG_V2.filter(item=>item.category==='card_theme')){
+  assert.equal(item.testOnly,false);assert.equal(item.purchasable,true);assert.equal(item.persistable,true);assert.ok(item.price>0);
+}
 assert.equal(PORTRAIT_FRAME_ITEMS_V7.length,20);
 assert.deepEqual(PORTRAIT_FRAME_ITEMS_V7.map(item=>item.rarity),[
   ...Array(5).fill('uncommon'),...Array(5).fill('rare'),...Array(5).fill('epic'),...Array(5).fill('legendary'),
@@ -39,7 +41,7 @@ for(const token of ['.sr-profile-head[data-card-theme] .sr-profile-markers{displ
 for(const token of ['.v2-profile-compact .v2-profile-art{inset:8%','.v2-profile-showcase .v2-profile-art{inset:2%','.v2-profile-showcase .v2-profile-art>.v3-profile-emoji{object-fit:contain;transform:none'])assert.ok(baseCss.includes(token),token);
 
 const sw = await readFile(new URL('../sw.js',import.meta.url),'utf8');
-assert.ok(sw.includes('weight-v117-card-theme-repair'));
+assert.ok(sw.includes('weight-v118-release-showroom-items'));
 for(const item of CARD_THEME_ITEMS)assert.ok(sw.includes(item.asset),item.id);
 for(const item of PORTRAIT_FRAME_ITEMS_V7)assert.ok(sw.includes(item.asset),item.id);
 

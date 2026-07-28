@@ -11,7 +11,7 @@
 - 트로피는 별도 배경 칸 없이 우측 상단에 정렬하며, 테마별 글로우만 적용한다.
 - 외곽 장식은 헤더 경계 안에 완전히 들어가야 하며 상단 돌출, 하단 잘림, 마젠타 가이드 잔여를 허용하지 않는다.
 - 신규 항목은 기존 항목을 대체하지 않고 추가한다.
-- 승인 전 신규 항목은 `testOnly: true`, `purchasable: false`, `persistable: false`를 유지한다.
+- 2026-07-28 승인에 따라 신규 항목도 구매·저장 가능한 정식 수집품으로 전환했다.
 
 ## V12 신규 8종
 
@@ -32,4 +32,4 @@
 - 영웅: 1,430 포인트
 - 신화: 2,200 포인트
 
-승인 후에만 `testOnly: false`, `purchasable: true`, `persistable: true`로 전환한다.
+유효 카탈로그에서는 `testOnly: false`, `purchasable: true`, `persistable: true`로 제공한다.

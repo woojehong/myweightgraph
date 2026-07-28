@@ -156,9 +156,9 @@ export const SHOWROOM_CATALOG_V2=Object.freeze([
   ...SHOWROOM_V5_ADDITIONS,
 ].map(entry => {
   const normalized=entry.rarity==='legendary'?Object.freeze({...entry,rarity:'mythic'}):entry;
-  return normalized.purchasable === true
-    ? Object.freeze({ ...normalized, price:showroomPriceOf(normalized.category, normalized.rarity) })
-    : normalized;
+  // All completed showroom collections are released through the effective
+  // catalog. Trophy ownership remains achievement-only via retail().
+  return retail(normalized);
 }));
 
 // Exact V2 ids are retained only as a compatibility index. They are not active catalog entries.
