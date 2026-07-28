@@ -1,4 +1,4 @@
-const CACHE = 'weight-v113-expanded-ambient-fx';
+const CACHE = 'weight-v114-line-style-foundation';
 const ASSETS = [
   './index.html', './dashboard.html', './input.html', './import.html',
   './achievements.html', './compare.html', './dressroom.html', './shop.html', './guide.html', './visual-lab.html',

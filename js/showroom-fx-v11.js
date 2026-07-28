@@ -6,14 +6,26 @@ const item = (category, id, name, rarity, visual, renderSpec) => Object.freeze({
 });
 
 export const LINE_STYLE_ITEMS_V11 = Object.freeze([
-  item('line_style','ls11_u_champion_stitch','챔피언 실밥선','uncommon','직접 고른 색으로 표현되는 짧은 실밥 점선. 움직임 없는 기본형',{fx:'ls11_u_champion_stitch',width:2.4,tension:.12,dash:[9,5],color:'#f5f7fa',colorMode:'custom'}),
-  item('line_style','ls11_u_ink_tactics','묵향 병법선','uncommon','직접 고른 색으로 표현되는 붓질형 일점쇄선. 움직임 없는 기본형',{fx:'ls11_u_ink_tactics',width:2.6,tension:.08,dash:[16,4,2,4],color:'#d6e0e8',colorMode:'custom'}),
-  item('line_style','ls11_r_wolong_feather','와룡 깃털선','rare','직접 고른 색의 이중 깃결과 고정된 책략 각인이 겹치는 정적 선',{fx:'ls11_r_wolong_feather',width:2.7,tension:.16,color:'#8ce8df',colorMode:'custom'}),
-  item('line_style','ls11_r_red_cliff_fire','적벽 화공선','rare','적벽의 숯결과 불씨 마디를 고정 문양으로 새긴 정적 테마선',{fx:'ls11_r_red_cliff_fire',width:2.8,tension:.12,color:'#ff7a3d',colorMode:'fixed'}),
-  item('line_style','ls11_e_thunder_current','천둥신 전류선','epic','고정된 청백 금속선 위를 전류와 황금 스파크가 질주하는 영웅 연출',{fx:'ls11_e_thunder_current',width:2.9,tension:.12,color:'#9ddcff',colorMode:'fixed'}),
-  item('line_style','ls11_e_crimson_chaos','진홍 혼돈선','epic','진홍 본선을 따라 혼돈 리본과 룬 파편이 교차해 흐르는 영웅 연출',{fx:'ls11_e_crimson_chaos',width:2.9,tension:.18,color:'#ff477e',colorMode:'fixed'}),
-  item('line_style','ls11_m_frozen_runeblade','빙혼 룬검선','mythic','빙철 검날·룬 점등·서리 결정·영혼광이 연속 전개되는 신화 연출',{fx:'ls11_m_frozen_runeblade',width:3.2,tension:.14,color:'#bdefff',colorMode:'fixed'}),
-  item('line_style','ls11_m_nether_twinblade','황천 쌍날선','mythic','황천 쌍날의 두 궤적과 균열광·지옥불이 순환하는 신화 연출',{fx:'ls11_m_nether_twinblade',width:3.2,tension:.16,color:'#8cff68',colorMode:'fixed'}),
+  item('line_style','ls11_u_champion_stitch','챔피언 실밥선','uncommon','야구공 실밥처럼 좌우로 교차하는 매듭선. 선택 색상 적용',{fx:'ls11_u_champion_stitch',width:2.4,tension:.12,color:'#f5f7fa',colorMode:'custom',motionTier:'gentle'}),
+  item('line_style','ls11_u_ink_tactics','묵향 병법선','uncommon','먹의 농담·갈필·섬유 끝이 살아 있는 마른 붓선. 선택 색상 적용',{fx:'ls11_u_ink_tactics',width:2.6,tension:.08,color:'#d6e0e8',colorMode:'custom',motionTier:'gentle'}),
+  item('line_style','ls12_u_pace_tape','러너의 페이스 테이프','uncommon','접힌 구간과 무광 면이 교차하는 러닝 페이스 테이프. 선택 색상 적용',{fx:'ls12_u_pace_tape',width:2.6,tension:.06,color:'#f5f7fa',colorMode:'custom',motionTier:'gentle'}),
+  item('line_style','ls12_u_measure_cable','톱니 측정 케이블','uncommon','금속 커플러와 눈금 슬리브가 체결된 측정 케이블. 선택 색상 적용',{fx:'ls12_u_measure_cable',width:2.6,tension:.1,color:'#f5f7fa',colorMode:'custom',motionTier:'gentle'}),
+  item('line_style','ls12_u_dawn_reflector','새벽 러닝 궤적','uncommon','반사 테이프 조각에 새벽빛이 천천히 훑는 러닝선. 선택 색상 적용',{fx:'ls12_u_dawn_reflector',width:2.5,tension:.12,color:'#f5f7fa',colorMode:'custom',motionTier:'gentle'}),
+  item('line_style','ls11_r_wolong_feather','와룡의 백우선','rare','중앙 깃대와 비대칭 깃결이 포개지는 백우선 궤적. 선택 색상 적용',{fx:'ls11_r_wolong_feather',width:2.7,tension:.16,color:'#8ce8df',colorMode:'custom',motionTier:'subtle'}),
+  item('line_style','ls11_r_red_cliff_fire','적벽의 화공선','rare','탄화된 먹선 안에서 붉은 불씨가 간헐적으로 살아나는 화공 궤적',{fx:'ls11_r_red_cliff_fire',width:2.8,tension:.12,color:'#ff7a3d',colorMode:'fixed',motionTier:'subtle'}),
+  item('line_style','ls12_r_moon_bronze','월광 청동각인','rare','산화 청동 홈과 황동 리벳을 정교하게 새긴 고대 측량선',{fx:'ls12_r_moon_bronze',width:2.8,tension:.1,color:'#65d6c7',colorMode:'fixed',motionTier:'subtle'}),
+  item('line_style','ls12_r_glasshouse_vein','유리온실의 잎맥','rare','투명한 줄기에서 잎맥과 이슬이 번갈아 자라는 생장선. 선택 색상 적용',{fx:'ls12_r_glasshouse_vein',width:2.7,tension:.18,color:'#7fe6a2',colorMode:'custom',motionTier:'subtle'}),
+  item('line_style','ls12_r_constellation_chart','별자리 항해도','rare','행성·별·항법 눈금이 서로 다른 간격으로 이어지는 천문 항해선. 선택 색상 적용',{fx:'ls12_r_constellation_chart',width:2.6,tension:.12,color:'#a8d8ff',colorMode:'custom',motionTier:'subtle'}),
+  item('line_style','ls11_e_thunder_current','천둥왕자의 전류선','epic','청백 전류와 황금 낙뢰가 서로 다른 속도로 질주하는 영웅 연출',{fx:'ls11_e_thunder_current',width:2.9,tension:.12,color:'#9ddcff',colorMode:'fixed',motionTier:'heroic'}),
+  item('line_style','ls12_e_spider_tension','거미차원의 장력선','epic','적청 차원실과 거미줄 장력 마디가 수축·이완하는 영웅 연출',{fx:'ls12_e_spider_tension',width:2.9,tension:.16,color:'#75baff',colorMode:'fixed',motionTier:'heroic'}),
+  item('line_style','ls11_e_crimson_chaos','진홍 마녀의 확률선','epic','확률 분기와 진홍 룬 파편이 갈라졌다 재결합하는 영웅 연출',{fx:'ls11_e_crimson_chaos',width:2.9,tension:.18,color:'#ff477e',colorMode:'fixed',motionTier:'heroic'}),
+  item('line_style','ls12_e_starforged_nano','별벼림 나노회로','epic','금속 장갑판과 나노 입자·반응로 펄스가 조립되는 영웅 연출',{fx:'ls12_e_starforged_nano',width:3,tension:.1,color:'#ffb347',colorMode:'fixed',motionTier:'heroic'}),
+  item('line_style','ls12_e_arcane_seam','비전 차원봉합선','epic','비전 고리와 봉합 스티치가 공간 균열을 연속해서 닫는 영웅 연출',{fx:'ls12_e_arcane_seam',width:2.9,tension:.16,color:'#b996ff',colorMode:'fixed',motionTier:'heroic'}),
+  item('line_style','ls11_m_frozen_runeblade','얼어붙은 왕의 영혼수확','mythic','서리 폭풍·파멸 지대·영혼 수확이 단계적으로 폭발하는 신화 연출',{fx:'ls11_m_frozen_runeblade',width:3.2,tension:.14,color:'#bdefff',colorMode:'fixed',motionTier:'mythic'}),
+  item('line_style','ls11_m_nether_twinblade','배신자의 안광 궤적','mythic','쌍월도 궤적·안광·지옥불이 교차하며 악마 형상으로 점화되는 신화 연출',{fx:'ls11_m_nether_twinblade',width:3.2,tension:.16,color:'#8cff68',colorMode:'fixed',motionTier:'mythic'}),
+  item('line_style','ls12_m_domination_chain','밴시 여왕의 지배사슬','mythic','지배의 사슬과 통곡의 화살·밴시 잔영이 연속 전개되는 신화 연출',{fx:'ls12_m_domination_chain',width:3.2,tension:.15,color:'#d7c2ff',colorMode:'fixed',motionTier:'mythic'}),
+  item('line_style','ls12_m_corrupted_ironstar','대족장의 타락한 강철별','mythic','강철별 충격과 타락한 소용돌이·모독의 균열이 충돌하는 신화 연출',{fx:'ls12_m_corrupted_ironstar',width:3.3,tension:.1,color:'#ff6a32',colorMode:'fixed',motionTier:'mythic'}),
+  item('line_style','ls12_m_flamewreath_paradox','메디브의 화염고리 역설','mythic','화염 고리·냉기 구속·비전 탄막이 시간 역행과 함께 순환하는 신화 연출',{fx:'ls12_m_flamewreath_paradox',width:3.2,tension:.17,color:'#d8a8ff',colorMode:'fixed',motionTier:'mythic'}),
 ].sort((a,b)=>({uncommon:0,rare:1,epic:2,mythic:3}[a.rarity]-({uncommon:0,rare:1,epic:2,mythic:3}[b.rarity]))));
 
 export const AMBIENT_EFFECT_ITEMS_V11 = Object.freeze([
