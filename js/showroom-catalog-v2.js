@@ -76,7 +76,12 @@ const v4Items=[
   ...LINE_STYLE_ITEMS, ...AMBIENT_EFFECT_ITEMS,
 ].filter((item,i,arr)=>arr.findIndex(x=>x.id===item.id)===i);
 // v4 승격 조건: 12개 이상 & 4등급 균등(4의 배수)
-const completeV4Category=category=>{const entries=v4Items.filter(item=>item.category===category);return entries.length>=12&&entries.length%4===0&&entries.every(item=>(isCodeNative(category)?item.asset===null&&item.renderSpec:category==='emoji_border'?item.asset?.startsWith('./assets/showroom-v7/emoji_border/'):item.asset?.startsWith(`./assets/showroom-v4/${category}/`)))};
+const validAssetRoot=(category,item)=>category==='graph_skin'
+  ? ['./assets/showroom-v4/graph_skin/','./assets/showroom-v12/graph_skin/'].some(root=>item.asset?.startsWith(root))
+  : category==='emoji_border'
+    ? item.asset?.startsWith('./assets/showroom-v7/emoji_border/')
+    : item.asset?.startsWith(`./assets/showroom-v4/${category}/`);
+const completeV4Category=category=>{const entries=v4Items.filter(item=>item.category===category);return entries.length>=12&&entries.length%4===0&&entries.every(item=>(isCodeNative(category)?item.asset===null&&item.renderSpec:validAssetRoot(category,item)))};
 export const SHOWROOM_V4_ACTIVE_CATEGORIES=Object.freeze(SHOWROOM_CATEGORIES.filter(completeV4Category));
 export const SHOWROOM_CATALOG_VERSION=SHOWROOM_V4_ACTIVE_CATEGORIES.length?`v4-mixed:${SHOWROOM_V4_ACTIVE_CATEGORIES.join(',')}`:'v3-fallback';
 // ── 가격 정책 ────────────────────────────────────────────────────────────
@@ -179,6 +184,12 @@ for(const category of SHOWROOM_CATEGORIES){
   const legacy=LEGACY_IDS_BY_CATEGORY[category];
   if(activeByCategory[category].length===0||NO_LEGACY_ALIAS_CATEGORIES.has(category))continue;
   legacy.forEach((id,index)=>{
+    if(category==='graph_skin'){
+      const historicalTargets=['gs_v4_uncommon_01','gs_v4_rare_01','gs_v4_epic_01','gs_v4_legendary_01'];
+      const band=index<15?0:index<21?1:index<26?2:3;
+      aliasPairs.push([id,activeIds.has(id)?id:historicalTargets[band]]);
+      return;
+    }
     const _n=activeByCategory[category].length;
     const _per=_n>=12&&_n%4===0?_n/4:1;
     const rarityOffsets=[0,_per,_per*2,_per*3];
@@ -213,12 +224,16 @@ export function assertShowroomCatalogV2(catalog=SHOWROOM_CATALOG_V2){
       ? SHOWROOM_V5_ADDITIONS.filter(entry=>entry.category===category)
       : additions;
     if(additions.length!==expectedAdditions.length)throw new Error(`${category}: missing V5 additions`);
-    const isV4Tier=baseEntries.length>=12&&baseEntries.length%4===0;
-    const expectedPerCategory=isV4Tier?baseEntries.length:(isCodeNative(category)||RESETTING_CATEGORIES.includes(category)?0:4);
+    const expandedGraphSkins=category==='graph_skin'&&baseEntries.length===32;
+    const isV4Tier=!expandedGraphSkins&&baseEntries.length>=12&&baseEntries.length%4===0;
+    const expectedPerCategory=expandedGraphSkins?32:isV4Tier?baseEntries.length:(isCodeNative(category)||RESETTING_CATEGORIES.includes(category)?0:4);
     if(baseEntries.length!==expectedPerCategory)throw new Error(`${category}: expected ${expectedPerCategory} base items, got ${baseEntries.length}`);
     const perRarity=isV4Tier?baseEntries.length/4:1;
     const topRarity=catalog===SHOWROOM_CATALOG_V2?'mythic':'legendary';
-    const expected=expectedPerCategory===0?[]:isV4Tier
+    const expected=expandedGraphSkins
+      ? [...Array(3).fill('uncommon'),'rare','mythic','rare','mythic','epic','mythic',...Array(3).fill('mythic'),
+         ...Array(5).fill('uncommon'),...Array(5).fill('rare'),...Array(5).fill('epic'),...Array(5).fill('mythic')]
+      : expectedPerCategory===0?[]:isV4Tier
       ? ['uncommon','rare','epic',topRarity].flatMap(r=>Array(perRarity).fill(r))
       : category==='companion'?['common','common','common','common']:['uncommon','rare','epic',topRarity];
     if(baseEntries.map(entry=>entry.rarity).join(',')!==expected.join(','))throw new Error(`${category}: invalid base rarity order`);
@@ -234,7 +249,7 @@ export function assertShowroomCatalogV2(catalog=SHOWROOM_CATALOG_V2){
       }
       if(ids.has(entry.id))throw new Error(`duplicate catalog id: ${entry.id}`);ids.add(entry.id);
       if(entry.asset!==null){if(assets.has(entry.asset))throw new Error(`duplicate catalog asset: ${entry.asset}`);assets.add(entry.asset)}
-      const expectedRoot=TROPHY_ITEMS_V10.some(item=>item.id===entry.id)?'./assets/showroom-v10':POINT_MARKER_ITEMS_V9.some(item=>item.id===entry.id)?'./assets/showroom-v9':CARD_THEME_ITEMS.some(item=>item.id===entry.id)?'./assets/showroom-v8':PORTRAIT_FRAME_ITEMS_V7.some(item=>item.id===entry.id)?'./assets/showroom-v7':PROFILE_EMOJI_ITEMS_V6.some(item=>item.id===entry.id)?(entry.asset.startsWith('./assets/showroom-v8/')?'./assets/showroom-v8':'./assets/showroom-v6'):showroomV5Ids.has(entry.id)?'./assets/showroom-v5':isV4Tier?'./assets/showroom-v4':'./assets/showroom-v3';
+      const expectedRoot=entry.id.startsWith('gs12_')?'./assets/showroom-v12':TROPHY_ITEMS_V10.some(item=>item.id===entry.id)?'./assets/showroom-v10':POINT_MARKER_ITEMS_V9.some(item=>item.id===entry.id)?'./assets/showroom-v9':CARD_THEME_ITEMS.some(item=>item.id===entry.id)?(entry.asset.startsWith('./assets/showroom-v12/')?'./assets/showroom-v12':'./assets/showroom-v8'):PORTRAIT_FRAME_ITEMS_V7.some(item=>item.id===entry.id)?'./assets/showroom-v7':PROFILE_EMOJI_ITEMS_V6.some(item=>item.id===entry.id)?(entry.asset.startsWith('./assets/showroom-v8/')?'./assets/showroom-v8':'./assets/showroom-v6'):showroomV5Ids.has(entry.id)?'./assets/showroom-v5':(isV4Tier||expandedGraphSkins)?'./assets/showroom-v4':'./assets/showroom-v3';
       if(isCodeNative(category)&&entry.asset===null){
         if(!entry.renderSpec)throw new Error(`${entry.id}: invalid code-native item`);
       }else if(!entry.asset||!entry.asset.startsWith(`${expectedRoot}/${category}/`))throw new Error(`${entry.id}: invalid asset path`);

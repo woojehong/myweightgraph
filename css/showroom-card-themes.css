@@ -25,6 +25,14 @@
 [data-card-theme="ct8_l_sun_crystal_regalia"]{--ct-frame:url("../assets/showroom-v8/card_theme/ct8_l_sun_crystal_regalia.webp")}
 [data-card-theme="ct8_l_raven_arcane"]{--ct-frame:url("../assets/showroom-v8/card_theme/ct8_l_raven_arcane.webp")}
 [data-card-theme="ct8_l_dark_ranger_requiem"]{--ct-frame:url("../assets/showroom-v8/card_theme/ct8_l_dark_ranger_requiem.webp")}
+[data-card-theme="ct12_r_rediron_warchief_hall"]{--ct-accent:#e8b38b;--ct-panel:rgba(27,18,13,.78);--ct-edge:#b76b453b;--ct-shadow:#9f2c1f55;--ct-frame:url("../assets/showroom-v12/card_theme/ct12_r_rediron_warchief_hall.webp")}
+[data-card-theme="ct12_e_starforged_observatory"]{--ct-accent:#9ddcff;--ct-panel:rgba(7,18,34,.82);--ct-edge:#d2aa6647;--ct-shadow:#4f9fff55;--ct-frame:url("../assets/showroom-v12/card_theme/ct12_e_starforged_observatory.webp")}
+[data-card-theme="ct12_m_deepsea_coral_court"]{--ct-accent:#9ff5ee;--ct-panel:rgba(4,29,36,.8);--ct-edge:#f0d69b50;--ct-shadow:#50e4d55c;--ct-frame:url("../assets/showroom-v12/card_theme/ct12_m_deepsea_coral_court.webp")}
+[data-card-theme="ct12_m_storm_lion_hall"]{--ct-accent:#f5d68d;--ct-panel:rgba(15,27,63,.8);--ct-edge:#e9c97552;--ct-shadow:#578bd35c;--ct-frame:url("../assets/showroom-v12/card_theme/ct12_m_storm_lion_hall.webp")}
+[data-card-theme="ct12_m_iron_warchief_command"]{--ct-accent:#ff9b67;--ct-panel:rgba(25,17,15,.84);--ct-edge:#8b3b2c55;--ct-shadow:#ff4a244d;--ct-frame:url("../assets/showroom-v12/card_theme/ct12_m_iron_warchief_command.webp")}
+[data-card-theme="ct12_m_tide_admiral_cabin"]{--ct-accent:#a9e7ff;--ct-panel:rgba(8,25,43,.82);--ct-edge:#b8d9e852;--ct-shadow:#66cfff55;--ct-frame:url("../assets/showroom-v12/card_theme/ct12_m_tide_admiral_cabin.webp")}
+[data-card-theme="ct12_m_moon_priestess_altar"]{--ct-accent:#d8c8ff;--ct-panel:rgba(15,20,50,.8);--ct-edge:#b89cff58;--ct-shadow:#9d77ff55;--ct-frame:url("../assets/showroom-v12/card_theme/ct12_m_moon_priestess_altar.webp")}
+[data-card-theme="ct12_m_dragonfire_council"]{--ct-accent:#ffc06a;--ct-panel:rgba(23,15,14,.84);--ct-edge:#e76b3154;--ct-shadow:#ff5b2455;--ct-frame:url("../assets/showroom-v12/card_theme/ct12_m_dragonfire_council.webp")}
 .cmp-profile[data-card-theme] .cmp-info,.cmp-profile[data-card-theme] .cmp-message-panel,.sr-profile-head[data-card-theme] .sr-profile-copy,.sr-profile-head[data-card-theme] .sr-message-preview{background:transparent!important;border:0!important;border-image:none!important;box-shadow:none!important;border-radius:0!important}
 .cmp-profile[data-card-theme] .cmp-info,.sr-profile-head[data-card-theme] .sr-profile-copy{padding:7px 0!important;align-self:start!important;margin-top:6px!important}
 .cmp-profile[data-card-theme] .cmp-message-panel,.sr-profile-head[data-card-theme] .sr-message-preview{padding:9px 0!important;color:rgba(255,255,255,.82);text-shadow:0 1px 3px #000,0 0 6px #000}

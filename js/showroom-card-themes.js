@@ -1,3 +1,5 @@
+import { CARD_THEME_ITEMS_V12 } from './showroom-card-themes-v12.js';
+
 const ROOT='./assets/showroom-v8/card_theme';
 const theme=(id,name,rarity,asset,visual)=>Object.freeze({
   id,category:'card_theme',name,rarity,price:null,suggestedPrice:{uncommon:440,rare:880,epic:1430,legendary:2200}[rarity],
@@ -5,7 +7,7 @@ const theme=(id,name,rarity,asset,visual)=>Object.freeze({
   visual,typography:{effect:'restrained'},implKey:`card_theme:${id}`,
   testOnly:true,purchasable:false,persistable:false,
 });
-export const CARD_THEME_ITEMS=Object.freeze([
+const CARD_THEME_ITEMS_V8=Object.freeze([
   theme('ct8_u_bear_dugout','곰의 더그아웃','uncommon','ct8_u_bear_dugout.webp','남색 가죽과 은빛 곰발 장식'),
   theme('ct8_u_twin_stadium','쌍별 스타디움','uncommon','ct8_u_twin_stadium.webp','쌍별 기하 장식의 현대 구장 테마'),
   theme('ct8_u_tiger_clubhouse','호랑이 클럽하우스','uncommon','ct8_u_tiger_clubhouse.webp','검정·적색 봉제와 황금 줄무늬'),
@@ -27,5 +29,7 @@ export const CARD_THEME_ITEMS=Object.freeze([
   theme('ct8_l_raven_arcane','까마귀 비전수호','legendary','ct8_l_raven_arcane.webp','심야 비단과 보랏빛 비전유리'),
   theme('ct8_l_dark_ranger_requiem','어둠순찰자의 장송곡','legendary','ct8_l_dark_ranger_requiem.webp','흑은과 유령빛 장송 장식'),
 ]);
+
+export const CARD_THEME_ITEMS=Object.freeze([...CARD_THEME_ITEMS_V8,...CARD_THEME_ITEMS_V12]);
 
 export default CARD_THEME_ITEMS;
