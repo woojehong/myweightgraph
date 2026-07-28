@@ -81,7 +81,7 @@ const validAssetRoot=(category,item)=>category==='graph_skin'
   : category==='emoji_border'
     ? item.asset?.startsWith('./assets/showroom-v7/emoji_border/')
     : item.asset?.startsWith(`./assets/showroom-v4/${category}/`);
-const completeV4Category=category=>{const entries=v4Items.filter(item=>item.category===category);return entries.length>=12&&entries.length%4===0&&entries.every(item=>(isCodeNative(category)?item.asset===null&&item.renderSpec:validAssetRoot(category,item)))};
+const completeV4Category=category=>{const entries=v4Items.filter(item=>item.category===category);return entries.length>=12&&(isCodeNative(category)||entries.length%4===0)&&entries.every(item=>(isCodeNative(category)?item.asset===null&&item.renderSpec:validAssetRoot(category,item)))};
 export const SHOWROOM_V4_ACTIVE_CATEGORIES=Object.freeze(SHOWROOM_CATEGORIES.filter(completeV4Category));
 export const SHOWROOM_CATALOG_VERSION=SHOWROOM_V4_ACTIVE_CATEGORIES.length?`v4-mixed:${SHOWROOM_V4_ACTIVE_CATEGORIES.join(',')}`:'v3-fallback';
 // ── 가격 정책 ────────────────────────────────────────────────────────────

@@ -119,6 +119,7 @@ export const renderMarkerV2=(id,role='low')=>{
 export const renderAmbientV2=id=>{
   const entry=getCatalogItemV2(id);
   if(!entry)return '';
+  if(id==='ae12_m_tidal_archmage_blizzard')return `<span class="v11-ambient-preview v12-blizzard-preview" data-fx="${id}" aria-hidden="true">${Array.from({length:18},(_,i)=>`<i style="--i:${i};--x:${(i*37)%100}%;--y:${(i*53)%86}%;--s:${8+(i%4)*3}px;--a:${.32+(i%5)*.11};--d:${2.2+(i%5)*.35}s">❄</i>`).join('')}</span>`;
   if(id.startsWith('ae11_')){
     const base=`./assets/showroom-v11/ambient_effect/${id}`;
     return `<span class="v11-ambient-preview" data-fx="${id}">${[1,2,3,4].map((n,index)=>`<img src="${base}_${String(n).padStart(2,'0')}.png" alt="" aria-hidden="true" style="--i:${index}">`).join('')}</span>`;
@@ -241,7 +242,7 @@ export function renderCatalogPreviewV2(entry){
   if(entry.category==='point_marker')return `<span class="v9-marker-pair" aria-label="최고점과 최저점 마커 세트">${renderMarkerV2(entry.id,'high')}${renderMarkerV2(entry.id,'low')}</span>`;
   if(entry.category==='ambient_effect')return `<span class="v3-landscape-preview">${renderAmbientV2(entry.id)}</span>`;
   if(entry.category==='line_style'){
-    const previewColor=entry.id.includes('ink')?'#e6e0d4':entry.id.includes('wolong')?'#8fffe8':entry.id.includes('red_cliff')?'#ff7847':entry.id.includes('thunder')?'#87c8ff':entry.id.includes('crimson')?'#ff477e':entry.id.includes('frozen')?'#9eeaff':entry.id.includes('nether')?'#72ff56':'#f5f5f5';
+    const previewColor=entry.id.includes('ink')?'#e6e0d4':entry.id.includes('wolong')?'#8fffe8':entry.id.includes('red_cliff')?'#ff7847':entry.id.includes('thunder')?'#87c8ff':entry.id.includes('crimson')?'#ff477e':entry.id.includes('frozen')||entry.id.includes('tidal_archmage')?'#9eeaff':entry.id.includes('nether')?'#72ff56':'#f5f5f5';
     return `<span class="v11-line-preview" data-fx="${entry.id}" style="--line-preview:${previewColor}" aria-hidden="true"><i></i><i></i><i></i></span>`;
   }
   if(entry.category==='card_theme'&&entry.cardAssets?.header)return `<span class="v4-card-theme-preview" data-card-theme="${entry.id}" aria-hidden="true"><img class="v4-card-preview-header" src="${entry.cardAssets.header}" alt=""><span class="v4-card-preview-identity">칭호<br><b>사용자 이름</b></span><span class="v4-card-preview-message">오늘의 한마디</span><span class="v4-card-preview-trophies">◆ ◆ ◆</span><span class="v4-card-preview-stats"><i>최고</i><i>최저</i><i>현재</i></span></span>`;

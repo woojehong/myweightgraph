@@ -543,6 +543,9 @@ input  { font-family: inherit; outline: none; }
 .v3-profile-base,.v3-profile-emoji{position:relative;z-index:1;display:block;object-fit:contain;filter:drop-shadow(0 2px 3px #0009)}
 .v9-marker-pair{display:flex;align-items:center;justify-content:center;gap:2px;width:74px;height:48px}
 .v9-marker-pair .v3-marker-image{width:36px;height:36px;object-fit:contain;filter:drop-shadow(0 2px 3px #000a)}
+.v12-blizzard-preview{position:relative;display:block;width:100%;height:72px;overflow:hidden;border-radius:8px;background:radial-gradient(circle at 72% 34%,#8eeaff38,transparent 24%),linear-gradient(145deg,#071321,#123d5e 56%,#d9f8ff22)}
+.v12-blizzard-preview i{position:absolute;left:var(--x);top:var(--y);color:#e8fbff;font-style:normal;font-size:var(--s);opacity:var(--a);filter:drop-shadow(0 0 4px #8deaff);animation:v12-preview-snow var(--d) linear infinite;animation-delay:calc(var(--i)*-.17s)}
+@keyframes v12-preview-snow{from{transform:translate(-18px,-8px) rotate(0)}to{transform:translate(32px,72px) rotate(240deg)}}
 .sr-marker-empty-preview{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;margin:14px auto 0;color:var(--muted);font-size:11px}
 .sr-marker-empty-pair{display:flex;align-items:center;justify-content:center;gap:12px}
 .sr-marker-empty-preview .v3-marker-image{width:56px;height:56px;object-fit:contain;animation:sr-marker-preview-pulse 1.8s ease-in-out infinite;filter:drop-shadow(0 3px 5px #000c)}

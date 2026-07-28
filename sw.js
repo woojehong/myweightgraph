@@ -1,4 +1,4 @@
-const CACHE = 'weight-v120-paired-marker-preview';
+const CACHE = 'weight-v121-tidal-archmage';
 const ASSETS = [
   './index.html', './dashboard.html', './input.html', './import.html',
   './achievements.html', './compare.html', './dressroom.html', './shop.html', './guide.html', './visual-lab.html',

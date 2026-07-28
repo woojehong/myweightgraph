@@ -26,6 +26,7 @@ export const LINE_STYLE_ITEMS_V11 = Object.freeze([
   item('line_style','ls12_m_domination_chain','밴시 여왕의 지배사슬','mythic','지배의 사슬과 통곡의 화살·밴시 잔영이 연속 전개되는 신화 연출',{fx:'ls12_m_domination_chain',width:3.2,tension:.15,color:'#d7c2ff',colorMode:'fixed',motionTier:'mythic'}),
   item('line_style','ls12_m_corrupted_ironstar','대족장의 타락한 강철별','mythic','강철별 충격과 타락한 소용돌이·모독의 균열이 충돌하는 신화 연출',{fx:'ls12_m_corrupted_ironstar',width:3.3,tension:.1,color:'#ff6a32',colorMode:'fixed',motionTier:'mythic'}),
   item('line_style','ls12_m_flamewreath_paradox','메디브의 화염고리 역설','mythic','화염 고리·냉기 구속·비전 탄막이 시간 역행과 함께 순환하는 신화 연출',{fx:'ls12_m_flamewreath_paradox',width:3.2,tension:.17,color:'#d8a8ff',colorMode:'fixed',motionTier:'mythic'}),
+  item('line_style','ls12_m_tidal_archmage_frost','대제독의 빙결해일','mythic','청백색 비전 냉기가 물결처럼 흐르고 변곡점마다 눈꽃 결정이 피어나는 신화 연출',{fx:'ls12_m_tidal_archmage_frost',width:3.15,tension:.2,color:'#8fe9ff',colorMode:'fixed',motionTier:'mythic'}),
 ].sort((a,b)=>({uncommon:0,rare:1,epic:2,mythic:3}[a.rarity]-({uncommon:0,rare:1,epic:2,mythic:3}[b.rarity]))));
 
 export const AMBIENT_EFFECT_ITEMS_V11 = Object.freeze([
@@ -49,4 +50,5 @@ export const AMBIENT_EFFECT_ITEMS_V11 = Object.freeze([
   item('ambient_effect','ae11_e_crimson_chaos','진홍 혼돈장','epic','혼돈 리본·마법진·수정 파편이 다층 흐름장을 이루는 영웅 연출',{fx:'ae11_e_crimson_chaos',motionTier:'heroic'}),
   item('ambient_effect','ae11_m_frozen_crown','얼음왕관 눈보라','mythic','전후경 눈보라·냉기 안개·룬진·영혼불이 연속 전개되는 신화 연출',{fx:'ae11_m_frozen_crown',motionTier:'mythic'}),
   item('ambient_effect','ae11_m_black_sanctuary','검은 성소의 균열','mythic','황천 균열·지옥 유성·에너지 파도·흑요 파편이 폭발하는 신화 연출',{fx:'ae11_m_black_sanctuary',motionTier:'mythic'}),
+  item('ambient_effect','ae12_m_tidal_archmage_blizzard','대제독의 비전 눈보라','mythic','육각 눈꽃과 얼음 결정, 청백색 비전 바람과 냉기 안개가 층층이 휘몰아치는 신화 연출',{fx:'ae12_m_tidal_archmage_blizzard',motionTier:'mythic'}),
 ].sort((a,b)=>({uncommon:0,rare:1,epic:2,mythic:3}[a.rarity]-({uncommon:0,rare:1,epic:2,mythic:3}[b.rarity]))));
