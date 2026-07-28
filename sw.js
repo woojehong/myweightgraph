@@ -1,4 +1,4 @@
-const CACHE = 'weight-v122-showroom-taxonomy';
+const CACHE = 'weight-v123-fullsets';
 const ASSETS = [
   './index.html', './dashboard.html', './input.html', './import.html',
   './achievements.html', './compare.html', './dressroom.html', './shop.html', './guide.html', './visual-lab.html',
@@ -8,7 +8,7 @@ const ASSETS = [
   './js/quests.js', './js/quest-panel.js', './js/showroom-fx.js', './js/showroom-fx-v11.js',
   './js/util.js', './js/daily-rewards.js', './js/meal-status.js', './js/showroom-v2.js',
   './js/today-message.js',
-  './js/showroom-catalog-v2.js', './js/showroom-catalog-v4.generated.js', './js/showroom-graph-skins.js', './js/showroom-graph-skins-v12.js', './js/showroom-card-themes.js', './js/showroom-card-themes-v12.js', './js/showroom-companions-v5.js', './js/showroom-profile-emojis-v6.js', './js/showroom-portrait-frames-v7.js', './js/showroom-point-markers-v9.js', './js/showroom-trophies-v10.js', './js/showroom-taxonomy.js', './js/titles-catalog-v2.js', './js/achievement-item-rewards-v2.js',
+  './js/showroom-catalog-v2.js', './js/showroom-catalog-v4.generated.js', './js/showroom-graph-skins.js', './js/showroom-graph-skins-v12.js', './js/showroom-card-themes.js', './js/showroom-card-themes-v12.js', './js/showroom-companions-v5.js', './js/showroom-profile-emojis-v6.js', './js/showroom-portrait-frames-v7.js', './js/showroom-point-markers-v9.js', './js/showroom-trophies-v10.js', './js/showroom-taxonomy.js', './js/showroom-fullsets-v13.js', './js/titles-catalog-v2.js', './js/achievement-item-rewards-v2.js',
   './manifest.json', './favicon.png',
   './register-sw.js',
   './assets/showroom-v4/graph_skin/gs4_uncommon_ironpeak_workshop.webp',
@@ -193,6 +193,11 @@ const ASSETS = [
   './assets/showroom-v8/card_theme/ct8_l_sun_crystal_regalia.webp',
   './assets/showroom-v8/card_theme/ct8_l_raven_arcane.webp',
   './assets/showroom-v8/card_theme/ct8_l_dark_ranger_requiem.webp',
+  ...['gs13_e_arc_reactor_hangar','gs13_e_star_shield_command','gs13_u_softbear_ballpark','gs13_u_loopy_twins_party'].map(id=>`./assets/showroom-v13/graph_skin/${id}.webp`),
+  ...['ct13_e_crimson_hex_chamber','ct13_e_star_shield_bastion','ct13_u_softbear_dugout','ct13_u_loopy_cheer_lounge'].map(id=>`./assets/showroom-v13/card_theme/${id}.webp`),
+  ...['pe13_m_tideborn_queen','pe13_m_sunwell_prince','pe13_e_star_shield_captain','pe13_u_loopy_cheer'].map(id=>`./assets/showroom-v13/profile_emoji/${id}.webp`),
+  ...['eb13_m_tide_admiral','eb13_m_banshee_valkyr','eb13_m_raven_timegate','eb13_m_azshara_coral','eb13_e_crimson_hex','eb13_e_star_shield','eb13_u_softbear','eb13_u_loopy'].map(id=>`./assets/showroom-v13/emoji_border/${id}.webp`),
+  ...['pm13_m_banshee_arrow','pm13_m_azshara_tiara','pm13_m_sunwell_orb','pm13_e_arc_reactor','pm13_e_crimson_hex','pm13_e_star_shield','pm13_u_loopy_cheer'].flatMap(id=>['high','low'].map(role=>`./assets/showroom-v13/point_marker/${id}_${role}.webp`)),
 ];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));

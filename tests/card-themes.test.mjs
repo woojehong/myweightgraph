@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { CARD_THEME_ITEMS } from '../js/showroom-card-themes.js';
 import { PORTRAIT_FRAME_ITEMS_V7 } from '../js/showroom-portrait-frames-v7.js';
 import { SHOWROOM_CATALOG_V2 } from '../js/showroom-catalog-v2.js';
+import { CARD_THEME_ITEMS_V13, PORTRAIT_FRAME_ITEMS_V13 } from '../js/showroom-fullsets-v13.js';
 import { applyCardV2 } from '../js/showroom-v2.js';
 
 assert.equal(CARD_THEME_ITEMS.length,28);
@@ -10,7 +11,7 @@ assert.deepEqual(CARD_THEME_ITEMS.map(item=>item.rarity),[
   ...Array(5).fill('uncommon'),...Array(5).fill('rare'),...Array(5).fill('epic'),...Array(5).fill('legendary'),
   'rare','epic',...Array(6).fill('legendary'),
 ]);
-assert.equal(SHOWROOM_CATALOG_V2.filter(item => item.category === 'card_theme').length,28);
+assert.equal(SHOWROOM_CATALOG_V2.filter(item => item.category === 'card_theme').length,32);
 for(const item of SHOWROOM_CATALOG_V2.filter(item=>item.category==='card_theme')){
   assert.equal(item.testOnly,false);assert.equal(item.purchasable,true);assert.equal(item.persistable,true);assert.ok(item.price>0);
 }
@@ -52,8 +53,9 @@ for(const token of [
 ])assert.ok(compare.includes(token),`responsive compare layout: ${token}`);
 
 const sw = await readFile(new URL('../sw.js',import.meta.url),'utf8');
-assert.ok(sw.includes('weight-v122-showroom-taxonomy'));
+assert.ok(sw.includes('weight-v123-fullsets'));
 for(const item of CARD_THEME_ITEMS)assert.ok(sw.includes(item.asset),item.id);
 for(const item of PORTRAIT_FRAME_ITEMS_V7)assert.ok(sw.includes(item.asset),item.id);
+for(const item of [...CARD_THEME_ITEMS_V13,...PORTRAIT_FRAME_ITEMS_V13])assert.ok(sw.includes(item.id),item.id);
 
 console.log('retired card theme and V7 portrait frame tests: PASS');

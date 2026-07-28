@@ -8,6 +8,7 @@ import {
   RETIRED_SHOWROOM_ITEM_IDS,
   showroomFullSets,
 } from '../js/showroom-taxonomy.js';
+import { SHOWROOM_FULLSET_ITEMS_V13 } from '../js/showroom-fullsets-v13.js';
 
 assert.deepEqual(Object.keys(SHOWROOM_SOURCE_CATEGORIES),['wow','marvel','kbo','three_kingdoms','other']);
 assert.deepEqual(SHOWROOM_FULL_SET_CATEGORIES,[
@@ -40,8 +41,10 @@ for(const item of ALL_CATALOG_V2){
 
 const sets=showroomFullSets(ALL_CATALOG_V2);
 assert.equal(sets.length,16);
+assert.equal(SHOWROOM_FULLSET_ITEMS_V13.length,38,'the approved full-set completion pack must remain intact');
 for(const set of sets){
   assert.equal(set.total,7,set.id);
+  assert.equal(set.filled,7,`${set.id}: every approved preset category must now have an item`);
   assert.deepEqual(Object.keys(set.categoryMap),SHOWROOM_FULL_SET_CATEGORIES,set.id);
   assert.ok(set.items.every(item=>item.setId===set.setId),set.id);
 }
@@ -53,8 +56,12 @@ for(const token of [
   '보유','미보유',"['common','uncommon','rare','epic','mythic','transcendent','legendary','artifact']",
   'SHOWROOM_SOURCE_CATEGORIES','showroomFullSets','renderSetGrid','sr-set-grid',
   'data-apply-set','세트 전체 미리보기','원클릭 전체 미리보기',
-  "for(const cat of SHOWROOM_FULL_SET_CATEGORIES)","draft[cat]=item.id",
+  "for(const cat of SHOWROOM_FULL_SET_CATEGORIES)","draft[cat]=item?.id||null",
+  "set.categoryMap[cat].length?set.categoryMap[cat].some(item=>draft[cat]===item.id):draft[cat]==null",
 ])assert.ok(showroom.includes(token),token);
+assert.ok(showroom.includes('빈 범주는 기본으로 미리보기'));
+assert.ok(showroom.includes('세트 미리보기 · 기본'));
+assert.equal(showroom.includes('data-apply-set="${set.setId}" disabled'),false,'incomplete sets must remain clickable');
 assert.equal(showroom.includes('id="rarity"'),false,'legacy rarity dropdown must be removed');
 assert.equal(showroom.includes('id="ownership"'),false,'legacy ownership dropdown must be removed');
 assert.equal(showroom.includes('id="setFilters"'),false,'sets must be one-click loadout presets, not filter chips');

@@ -126,6 +126,7 @@ export const renderAmbientV2=id=>{
   const entry=getCatalogItemV2(id);
   if(!entry)return '';
   if(id==='ae12_m_tidal_archmage_blizzard')return `<span class="v11-ambient-preview v12-blizzard-preview" data-fx="${id}" aria-hidden="true">${Array.from({length:18},(_,i)=>`<i style="--i:${i};--x:${(i*37)%100}%;--y:${(i*53)%86}%;--s:${8+(i%4)*3}px;--a:${.32+(i%5)*.11};--d:${2.2+(i%5)*.35}s">❄</i>`).join('')}</span>`;
+  if(id.startsWith('ae13_'))return `<span class="v11-ambient-preview v13-ambient-preview" data-fx="${id}" aria-hidden="true">${Array.from({length:20},(_,i)=>`<i style="--i:${i};--x:${(i*37)%96+2}%;--y:${(i*53)%88+4}%;--s:${4+(i%5)*2}px;--a:${.28+(i%4)*.12};--d:${2.4+(i%6)*.42}s"></i>`).join('')}</span>`;
   if(id.startsWith('ae11_')){
     const base=`./assets/showroom-v11/ambient_effect/${id}`;
     return `<span class="v11-ambient-preview" data-fx="${id}">${[1,2,3,4].map((n,index)=>`<img src="${base}_${String(n).padStart(2,'0')}.png" alt="" aria-hidden="true" style="--i:${index}">`).join('')}</span>`;
