@@ -39,6 +39,14 @@ const baseCss=await readFile(new URL('../css/style.css',import.meta.url),'utf8')
 for(const token of ['grid-template-columns:repeat(7,30px)','grid-template-rows:repeat(2,30px)','justify-content:right','direction:rtl'])assert.ok(css.includes(token),token);
 for(const token of ['.sr-profile-head[data-card-theme] .sr-profile-markers{display:grid','min-width:100%;justify-self:stretch!important','.cmp-profile[data-card-theme] .cmp-markers{display:grid'])assert.ok((showroom+compare).includes(token),token);
 for(const token of ['.v2-profile-compact .v2-profile-art{inset:8%','.v2-profile-showcase .v2-profile-art{inset:2%','.v2-profile-showcase .v2-profile-art>.v3-profile-emoji{object-fit:contain;transform:none'])assert.ok(baseCss.includes(token),token);
+for(const token of [
+  '@media(max-width:1180px)',
+  '@media(min-width:768px) and (max-width:1024px)',
+  '@media(min-width:1025px) and (max-width:1180px)',
+  "window.matchMedia('(min-width:1181px)')",
+  'grid-template-columns:repeat(5,minmax(0,1fr))',
+  'env(safe-area-inset-bottom,0px)',
+])assert.ok(compare.includes(token),`responsive compare layout: ${token}`);
 
 const sw = await readFile(new URL('../sw.js',import.meta.url),'utf8');
 assert.ok(sw.includes('weight-v121-tidal-archmage'));

@@ -183,6 +183,311 @@
         display:inline-block !important;
       }
     }
+
+    /*
+     * Unified mobile layout
+     * Phones, foldables and tablets share one composition. The available
+     * width only changes spacing and type scale; it never falls back to the
+     * desktop three-column header.
+     */
+    @media(max-width:1180px){
+      body.compare{
+        --mobile-page-gutter:clamp(10px,2.2vw,24px);
+        --mobile-profile-size:clamp(88px,13vw,128px);
+      }
+      body.compare .top-bar{
+        display:flex!important;
+        flex-direction:row!important;
+        align-items:center!important;
+        justify-content:space-between!important;
+        min-height:54px;
+        padding:8px var(--mobile-page-gutter)!important;
+        gap:10px;
+      }
+      body.compare .top-bar #todayAlert,
+      body.compare .top-bar #userChip{display:none!important}
+      body.compare .top-bar .mweg-header-wrap{
+        order:0!important;
+        flex:1;
+        align-items:flex-start!important;
+        justify-self:unset!important;
+      }
+      body.compare .top-bar .mweg-title{font-size:clamp(20px,3vw,25px)}
+      body.compare .top-bar .mweg-subtitle{display:none}
+      body.compare .top-bar>div:last-child{
+        order:0!important;
+        width:auto!important;
+        justify-content:flex-end!important;
+      }
+      body.compare #logoutBtn{
+        position:static!important;
+        display:inline-flex!important;
+        min-height:34px;
+        padding:6px 12px!important;
+        font-size:11px!important;
+      }
+      body.compare .page{
+        width:100%;
+        max-width:100%!important;
+        padding:10px var(--mobile-page-gutter) calc(var(--nav-h) + env(safe-area-inset-bottom,0px) + 18px)!important;
+      }
+      body.compare .compare-bar{
+        position:relative;
+        top:auto;
+        padding:8px 0 10px;
+        background:var(--bg);
+      }
+      body.compare .gran-row{
+        display:grid;
+        grid-template-columns:repeat(3,minmax(0,1fr));
+        gap:7px;
+        margin:0 0 8px;
+      }
+      body.compare #avToggle{display:none!important}
+      body.compare .gran-btn{
+        width:100%;
+        min-height:38px;
+        padding:7px 10px;
+        border-radius:10px;
+        font-size:12px;
+      }
+      body.compare .subgraph-toggles{
+        display:grid;
+        grid-template-columns:repeat(3,minmax(0,1fr));
+        gap:7px;
+        margin:0;
+      }
+      body.compare .subgraph-toggle{
+        justify-content:center;
+        min-width:0;
+        min-height:42px;
+        padding:7px 8px;
+        font-size:11px;
+        white-space:nowrap;
+      }
+      body.compare .marker-size-control{
+        grid-column:1/-1;
+        justify-content:center;
+        min-height:42px;
+        padding:7px 12px;
+      }
+      body.compare .marker-size-control input{
+        width:min(52vw,360px);
+        max-width:100%;
+      }
+      body.compare .picker{
+        display:grid;
+        grid-template-columns:repeat(5,minmax(0,1fr));
+        gap:6px;
+        overflow:visible;
+        padding:16px 0 8px;
+        scroll-padding:0;
+      }
+      body.compare .pick-chip{
+        width:100%;
+        min-width:0;
+        padding:4px 2px;
+      }
+      body.compare .pick-chip .pick-name{
+        width:100%;
+        max-width:none;
+        font-size:10px;
+      }
+      body.compare .pick-avatar{width:44px;height:44px}
+      body.compare .pick-num{right:calc(50% - 28px)}
+      body.compare .compare-grid{
+        gap:10px;
+        margin-top:10px;
+        margin-left:auto;
+        margin-right:auto;
+      }
+      body.compare .cmp-cell{
+        border-radius:12px;
+        padding:8px 3px 4px;
+      }
+      body.compare .cmp-profile,
+      body.compare .cmp-profile[data-card-theme]{
+        display:grid;
+        grid-template-columns:var(--mobile-profile-size) minmax(0,1fr);
+        grid-template-rows:auto minmax(62px,auto) auto auto;
+        column-gap:clamp(10px,2vw,18px);
+        row-gap:7px;
+        min-height:0;
+        margin-bottom:7px;
+        padding:clamp(12px,2vw,18px)!important;
+        overflow:hidden;
+      }
+      body.compare .cmp-avatar{
+        width:var(--mobile-profile-size);
+        height:var(--mobile-profile-size);
+        grid-column:1;
+        grid-row:1/3;
+        align-self:start;
+      }
+      body.compare .cmp-info,
+      body.compare .cmp-profile[data-card-theme] .cmp-info{
+        grid-column:2!important;
+        grid-row:1!important;
+        align-self:start!important;
+        gap:3px;
+        margin:0!important;
+        padding:2px 0 0!important;
+      }
+      body.compare .cmp-title{font-size:clamp(9px,1.25vw,12px)}
+      body.compare .cmp-name{font-size:clamp(14px,2vw,19px)}
+      body.compare .cmp-message-panel,
+      body.compare .cmp-profile[data-card-theme] .cmp-message-panel{
+        grid-column:2!important;
+        grid-row:2!important;
+        align-self:stretch!important;
+        min-height:0;
+        margin:0!important;
+        padding:5px 0 0!important;
+        gap:5px;
+      }
+      body.compare .cmp-message,
+      body.compare .cmp-message-input{
+        font-size:clamp(9px,1.2vw,11px);
+        line-height:1.45;
+      }
+      body.compare .cmp-message-input{
+        min-height:38px;
+        padding:3px 0;
+        border-bottom:1px solid rgba(255,255,255,.13);
+      }
+      body.compare .cmp-message-input:focus{
+        border-bottom-color:var(--teal);
+      }
+      body.compare .cmp-message-actions{
+        justify-content:flex-start;
+        margin-top:0;
+      }
+      body.compare .cmp-message-actions button{
+        min-height:28px;
+        padding:4px 10px;
+        font-size:9px;
+      }
+      body.compare .cmp-trophies,
+      body.compare .cmp-profile[data-card-theme] .cmp-trophies{
+        grid-column:1/-1!important;
+        grid-row:3!important;
+        width:100%;
+        height:auto;
+        min-height:0;
+        max-height:68px;
+        grid-template-columns:repeat(7,30px);
+        grid-template-rows:repeat(2,30px);
+        justify-content:end;
+        align-content:start;
+        gap:4px;
+        padding:0!important;
+      }
+      body.compare .cmp-trophies:empty{display:none!important}
+      body.compare .cmp-profile[data-card-theme] .cmp-trophies .v3-trophy-image{
+        width:30px!important;
+        height:30px!important;
+      }
+      body.compare .cmp-markers,
+      body.compare .cmp-profile[data-card-theme] .cmp-markers{
+        grid-column:1/-1!important;
+        grid-row:4!important;
+        grid-template-columns:repeat(3,minmax(0,1fr))!important;
+        width:100%;
+        min-width:0;
+        align-items:stretch;
+        gap:clamp(5px,1.3vw,10px)!important;
+      }
+      body.compare .cmp-profile[data-card-theme] .cmp-markers .mk,
+      body.compare .cmp-markers .mk{
+        width:100%;
+        min-width:0!important;
+        min-height:clamp(58px,9vw,82px)!important;
+        padding:7px 6px!important;
+      }
+      body.compare .mk b{font-size:clamp(10px,1.45vw,14px)}
+      body.compare .mk b em,
+      body.compare .mk span{font-size:clamp(7px,1vw,10px)}
+      body.compare .cmp-content{grid-template-columns:minmax(0,1fr)}
+      body.compare .cmp-chart{
+        width:100%;
+        min-width:0;
+        overflow:hidden;
+      }
+      body.compare .bottom-nav{
+        height:calc(var(--nav-h) + env(safe-area-inset-bottom,0px));
+        padding-bottom:env(safe-area-inset-bottom,0px);
+      }
+    }
+
+    @media(min-width:768px) and (max-width:1024px){
+      body.compare{
+        --mobile-page-gutter:clamp(16px,2.4vw,24px);
+        --mobile-profile-size:clamp(106px,13vw,126px);
+      }
+      body.compare .compare-bar{padding-top:10px}
+      body.compare .picker{padding-top:18px}
+      body.compare .cmp-profile,
+      body.compare .cmp-profile[data-card-theme]{
+        column-gap:18px;
+        row-gap:8px;
+      }
+      body.compare .cmp-message-input{min-height:44px}
+    }
+
+    @media(min-width:1025px) and (max-width:1180px){
+      body.compare{
+        --mobile-page-gutter:24px;
+        --mobile-profile-size:128px;
+      }
+      body.compare .gran-row,
+      body.compare .subgraph-toggles{
+        max-width:920px;
+        margin-left:auto;
+        margin-right:auto;
+      }
+      body.compare .picker{
+        max-width:920px;
+        margin-inline:auto;
+      }
+      body.compare .cmp-profile,
+      body.compare .cmp-profile[data-card-theme]{
+        padding:18px 20px!important;
+        column-gap:20px;
+      }
+      body.compare .compare-grid{max-width:1080px}
+      body.compare .cmp-title{font-size:12px}
+      body.compare .cmp-name{font-size:19px}
+      body.compare .cmp-message,
+      body.compare .cmp-message-input{font-size:11px}
+    }
+
+    @media(max-width:560px){
+      body.compare{
+        --mobile-page-gutter:8px;
+        --mobile-profile-size:82px;
+      }
+      body.compare .subgraph-toggles{grid-template-columns:repeat(2,minmax(0,1fr))}
+      body.compare .subgraph-toggle:has(#graphOnlyToggle){grid-column:1/-1}
+      body.compare .picker{gap:2px;padding-top:12px}
+      body.compare .pick-avatar{width:38px;height:38px}
+      body.compare .pick-num{right:calc(50% - 24px)}
+      body.compare .cmp-profile,
+      body.compare .cmp-profile[data-card-theme]{
+        column-gap:12px;
+        padding:10px!important;
+      }
+      body.compare .cmp-message-actions button{min-height:26px}
+      body.compare .cmp-trophies,
+      body.compare .cmp-profile[data-card-theme] .cmp-trophies{
+        grid-template-columns:repeat(7,24px);
+        grid-template-rows:repeat(2,24px);
+        max-height:54px;
+      }
+      body.compare .cmp-profile[data-card-theme] .cmp-trophies .v3-trophy-image{
+        width:24px!important;
+        height:24px!important;
+      }
+    }
   </style>
 </head>
 <body class="compare">
@@ -333,7 +638,7 @@ function chartOpts(user) {
 
 // 열 개수: 모바일은 항상 1열(1명씩 세로), 데스크탑은 한 줄에 최대 2명.
 function gridCols(n) {
-  const desktop = window.matchMedia('(min-width:768px)').matches;
+  const desktop = window.matchMedia('(min-width:1181px)').matches;
   return desktop ? (n <= 1 ? 1 : 2) : 1;
 }
 
