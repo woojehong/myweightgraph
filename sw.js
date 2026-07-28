@@ -1,4 +1,4 @@
-const CACHE = 'weight-v116-coupled-card-themes';
+const CACHE = 'weight-v117-card-theme-repair';
 const ASSETS = [
   './index.html', './dashboard.html', './input.html', './import.html',
   './achievements.html', './compare.html', './dressroom.html', './shop.html', './guide.html', './visual-lab.html',
