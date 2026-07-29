@@ -63,6 +63,28 @@ export const SHOWROOM_FULL_SET_CATEGORIES = Object.freeze([
   'point_marker',
 ]);
 
+// A preset must be deterministic even when a motif gains alternate items in the
+// same category. These are the approved "one-click set" members, not whichever
+// catalog item happens to be declared first.
+export const SHOWROOM_CANONICAL_SET_ITEMS = Object.freeze({
+  arthas:Object.freeze(['gs_v4_legendary_01','ct8_legendary_frozen_throne','ae11_m_frozen_crown','ls11_m_frozen_runeblade','pe_l_fallen_frost_prince','eb_l_frozen_oath','pm_l_frozen_runeblade']),
+  jaina:Object.freeze(['gs12_m_tide_sage_fortress','ct12_m_tide_admiral_cabin','ae12_m_tidal_archmage_blizzard','ls12_m_tidal_archmage_frost','pe_l_tideglass_archmage','eb13_m_tide_admiral','pm_l_tidal_archmage']),
+  illidan:Object.freeze(['gs_v4_legendary_02','ct8_legendary_nether_sanctum','ae11_m_black_sanctuary','ls11_m_nether_twinblade','pe_l_netherblade_betrayer','eb_l_nether_twinblade','pm_l_fel_twinblade']),
+  sylvanas:Object.freeze(['gs12_m_banshee_black_wall','ct8_l_dark_ranger_requiem','ae11_m_banshee_dirge','ls12_m_domination_chain','pe_l_dark_ranger_queen','eb13_m_banshee_valkyr','pm13_m_banshee_arrow']),
+  garrosh:Object.freeze(['gs12_m_iron_warchief_siege','ct12_m_iron_warchief_command','ae11_m_iron_warchief','ls12_m_corrupted_ironstar','pe_l_ironjaw_warchief','eb_l_rediron_warchief','pm_l_iron_warchief']),
+  medivh:Object.freeze(['gs12_m_raven_time_corridor','ct8_l_raven_arcane','ae11_m_raven_arcane','ls12_m_flamewreath_paradox','pe_l_raven_tower_guardian','eb13_m_raven_timegate','pm_l_raven_tower']),
+  azshara:Object.freeze(['gs_v4_epic_03','ct12_m_deepsea_coral_court','ae13_m_azshara_maelstrom','ls13_m_azshara_tide','pe13_m_tideborn_queen','eb13_m_azshara_coral','pm13_m_azshara_tiara']),
+  kaelthas:Object.freeze(['gs_v4_epic_01','ct8_l_sun_crystal_regalia','ae13_m_sunwell_phoenix','ls13_m_sunwell_phoenix','pe13_m_sunwell_prince','eb_l_sunwell_bloodcrystal','pm13_m_sunwell_orb']),
+  iron_man:Object.freeze(['gs13_e_arc_reactor_hangar','ct8_e_crimson_reactor','ae11_e_starforged_reactor','ls12_e_starforged_nano','pe_e_crimson_reactor_sentinel','eb_e_crimson_core','pm13_e_arc_reactor']),
+  thor:Object.freeze(['gs12_e_thunder_astral_bridge','ct8_e_storm_guardian','ae11_e_storm_dimension','ls11_e_thunder_current','pe_e_storm_prince_guardian','eb_e_thunder_guard','pm_e_thunder_hammer']),
+  scarlet_witch:Object.freeze(['gs12_e_crimson_reality_garden','ct13_e_crimson_hex_chamber','ae11_e_crimson_chaos','ls11_e_crimson_chaos','pe_e_crimson_chaos_witch','eb13_e_crimson_hex','pm13_e_crimson_hex']),
+  captain_america:Object.freeze(['gs13_e_star_shield_command','ct13_e_star_shield_bastion','ae13_e_star_shield_salute','ls13_e_star_shield_rally','pe13_e_star_shield_captain','eb13_e_star_shield','pm13_e_star_shield']),
+  doosan_main:Object.freeze(['gs12_u_navy_bear_dugout','ct8_u_bear_dugout','ae11_u_navy_bear_victory','ls11_u_champion_stitch','pe_u_blue_bear_slugger','eb_u_bear_batter','pm_u_bears_signature']),
+  doosan_sub:Object.freeze(['gs13_u_softbear_ballpark','ct13_u_softbear_dugout','ae13_u_softbear_cheer','ls13_u_softbear_stitch','pe_u_soft_bear_fan','eb13_u_softbear','pm_u_softbear_signature']),
+  lg_main:Object.freeze(['gs12_u_twin_night_stadium','ct8_u_twin_stadium','ae11_u_twin_night_game','ls13_u_twins_pinstripe','pe_u_twin_cheer_pair','eb_u_twin_stadium','pm_u_twins_signature']),
+  lg_sub:Object.freeze(['gs13_u_loopy_twins_party','ct13_u_loopy_cheer_lounge','ae13_u_loopy_party','ls13_u_loopy_bounce','pe13_u_loopy_cheer','eb13_u_loopy','pm13_u_loopy_cheer']),
+});
+
 const ids = (motifId, values) => values.map(id => [id, motifId]);
 const ITEM_MOTIF_PAIRS = [
   ...ids('arthas', ['gs_v4_legendary_01','ct8_legendary_frozen_throne','ae11_m_frozen_crown','ls11_m_frozen_runeblade','pe_l_fallen_frost_prince','eb_l_frozen_oath','pm_l_frozen_runeblade']),
@@ -131,6 +153,11 @@ export function showroomFullSets(catalog) {
         items.filter(item => item.category === category),
       ]));
       const filled = SHOWROOM_FULL_SET_CATEGORIES.filter(category => categoryMap[category].length > 0).length;
-      return Object.freeze({ ...entry, items:Object.freeze(items), categoryMap:Object.freeze(categoryMap), filled, total:SHOWROOM_FULL_SET_CATEGORIES.length });
+      const approved=SHOWROOM_CANONICAL_SET_ITEMS[entry.id]||[];
+      const presetMap=Object.fromEntries(SHOWROOM_FULL_SET_CATEGORIES.map((category,index)=>{
+        const expectedId=approved[index];
+        return [category,categoryMap[category].find(item=>item.id===expectedId)||categoryMap[category][0]||null];
+      }));
+      return Object.freeze({ ...entry, items:Object.freeze(items), categoryMap:Object.freeze(categoryMap), presetMap:Object.freeze(presetMap), filled, total:SHOWROOM_FULL_SET_CATEGORIES.length });
     });
 }

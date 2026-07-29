@@ -29,7 +29,7 @@ const V8 = './assets/showroom-v8/profile_emoji';
 const V6 = './assets/showroom-v6/profile_emoji';
 
 export const PROFILE_EMOJI_ITEMS_V6 = Object.freeze([
-  portrait('pe_u_blue_bear_slugger','푸른 곰 강타자','uncommon',`${V8}/pe_u_blue_bear_slugger.webp`,'푸른 곰 타자가 힘차게 방망이를 휘두르는 야구 마스코트 초상화'),
+  portrait('pe_u_blue_bear_slugger','철웅이 강타자','uncommon',`${V8}/pe_u_blue_bear_slugger.webp`,'남색 유니폼의 강인한 곰 타자가 힘차게 방망이를 휘두르는 대표 야구 마스코트 초상화'),
   portrait('pe_u_twin_cheer_pair','쌍둥이 응원단','uncommon',`${V8}/pe_u_twin_cheer_pair.webp`,'공과 글러브를 든 남녀 쌍둥이 응원 캐릭터 초상화'),
   portrait('pe_u_soft_bear_fan','말랑곰 승리요정','uncommon',`${V8}/pe_u_soft_bear_fan.webp`,'말랑한 크림색 곰이 응원 도구를 흔드는 초상화'),
   portrait('pe_u_red_tiger_pitcher','붉은 호랑이 투수','uncommon',`${V8}/pe_u_red_tiger_pitcher.webp`,'붉은 유니폼을 입은 호랑이 투수 마스코트 초상화'),

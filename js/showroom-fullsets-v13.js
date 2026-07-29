@@ -16,8 +16,8 @@ const graphItem=(id,name,rarity,visual)=>imageItem('graph_skin',id,name,rarity,'
 const fxItem=(category,id,name,rarity,visual,renderSpec)=>assetItem(
   category,id,name,rarity,null,visual,{renderSpec:Object.freeze(renderSpec)},
 );
-const marker=(id,name,rarity,visual)=>imageItem(
-  'point_marker',id,name,rarity,'webp',visual,{
+const marker=(id,name,rarity,visual)=>assetItem(
+  'point_marker',id,name,rarity,`${ROOT}/point_marker/${id}_high.webp`,visual,{
     markerAssets:Object.freeze({
       high:`${ROOT}/point_marker/${id}_high.webp`,
       low:`${ROOT}/point_marker/${id}_low.webp`,

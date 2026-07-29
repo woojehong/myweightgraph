@@ -25,28 +25,28 @@ import {
 
 assert.equal(assertShowroomCatalogV2(),true);
 assert.deepEqual(SHOWROOM_V4_ACTIVE_CATEGORIES,['graph_skin','line_style','ambient_effect','emoji_border']);
-assert.equal(SHOWROOM_CATALOG_V2.length,250);
+assert.equal(SHOWROOM_CATALOG_V2.length,205);
 assert.equal(TITLES_CATALOG_V2.length,30);
 assert.equal(ALL_CATALOG_V2.length,235);
 assert.deepEqual(SHOWROOM_CATEGORIES,['graph_skin','line_style','card_theme','point_marker','companion','ambient_effect','trophy','profile_emoji','emoji_border']);
 assert.deepEqual(V2_CATEGORIES,[...SHOWROOM_CATEGORIES.filter(category=>category!=='companion'),'title']);
 assert.equal(new Set(ALL_CATALOG_V2.map(entry=>entry.id)).size,235);
-assert.equal(new Set(SHOWROOM_CATALOG_V2.filter(entry=>entry.asset).map(entry=>entry.asset)).size,197);
+assert.equal(new Set(SHOWROOM_CATALOG_V2.filter(entry=>entry.asset).map(entry=>entry.asset)).size,152);
 
 const expectedRarityCounts={
   graph_skin:{uncommon:10,rare:7,epic:8,mythic:11},
   line_style:{uncommon:8,rare:5,epic:6,mythic:8},
   card_theme:{uncommon:7,rare:6,epic:8,mythic:11},
   point_marker:{uncommon:4,rare:1,epic:4,mythic:8},
-  companion:{common:4,uncommon:10,rare:10,epic:10,mythic:10},
+  companion:{},
   ambient_effect:{uncommon:7,rare:5,epic:6,mythic:8},
   trophy:{artifact:12},
-  profile_emoji:{uncommon:6,rare:5,epic:5,mythic:12},
+  profile_emoji:{uncommon:6,rare:4,epic:5,mythic:12},
   emoji_border:{uncommon:7,rare:5,epic:7,mythic:9},
 };
 for(const category of SHOWROOM_CATEGORIES){
   const entries=SHOWROOM_CATALOG_V2.filter(entry=>entry.category===category);
-  const expectedCount={graph_skin:36,line_style:27,card_theme:32,point_marker:17,companion:44,ambient_effect:26,trophy:12,profile_emoji:28,emoji_border:28}[category]??4;
+  const expectedCount={graph_skin:36,line_style:27,card_theme:32,point_marker:17,companion:0,ambient_effect:26,trophy:12,profile_emoji:27,emoji_border:28}[category]??4;
   assert.equal(entries.length,expectedCount,category);
   const rarityCounts=Object.fromEntries([...new Set(entries.map(entry=>entry.rarity))].map(rarity=>[rarity,entries.filter(entry=>entry.rarity===rarity).length]));
   assert.deepEqual(rarityCounts,expectedRarityCounts[category],`${category} rarity distribution`);
@@ -321,7 +321,7 @@ assert.equal((visualLab.match(/drawMarker\(ctx,marker,/g)||[]).length,1,'visual 
 assert.equal((visualLab.match(/drawMarker\(ctx,/g)||[]).length-1,1,'visual lab must render exactly one point marker');
 
 const sw=await readFile(new URL('../sw.js',import.meta.url),'utf8');
-assert.ok(sw.includes("weight-v126-balanced-card-header"));assert.equal(sw.includes('c.addAll(ASSETS).catch'),false);
+assert.ok(sw.includes("weight-v127-collection-and-lazy-assets"));assert.ok(sw.includes("c.addAll(CORE_ASSETS)"));assert.equal(sw.includes('c.addAll(ASSETS)'),false);
 for(const entry of SHOWROOM_CATALOG_V2.filter(entry=>entry.asset&&entry.id!=='pe_r_roaring_tiger_general')){
   const cached=entry.asset.includes('/showroom-v13/')
     ?sw.includes(`'${entry.id}'`)
@@ -345,7 +345,7 @@ for(const token of ['<span>마커 크기</span>','id="markerSize" type="range" m
 for(const token of ['renderMarkerV2',"renderMarkerV2(draft.point_marker,'high')","renderMarkerV2(draft.point_marker,'low')",'showMaxMarker:true','showMinMarker:true','showCurMarker:false','markerSize:56','sr-marker-empty-preview','sr-marker-empty-pair'])assert.ok(showroom.includes(token),token);
 for(const token of ['updateUser','normalizeTodayMessage','todayMessageDayKey','data-today-message','data-message-reset','data-message-save','saveShowroomMessage','오늘의 한마디를 입력해보세요'])assert.ok(showroom.includes(token),token);
 const db=await readFile(new URL('../js/db.js',import.meta.url),'utf8');
-for(const token of ['purchaseCatalogItemsV2','validateCatalogPurchaseV2(itemIds)','persistableLoadoutV2(rawLoadout)','트로피 외 테스트 아이템은 소유권을 추가하거나 회수할 수 없습니다','runTransaction','adminSetCatalogOwnershipV2','adminGrantedItems',"item.category==='trophy'"])assert.ok(db.includes(token),token);
+for(const token of ['purchaseCatalogItemsV2','validateCatalogPurchaseV2(itemIds)','persistableLoadoutV2(rawLoadout)','트로피 외 테스트 아이템은 소유권을 추가하거나 회수할 수 없습니다','runTransaction','adminSetCatalogOwnershipV2','adminRefundCatalogPurchasesV2','catalogPurchaseLedgerV2','catalogRefundLogV2','adminGrantedItems',"item.category==='trophy'"])assert.ok(db.includes(token),token);
 assert.ok(db.includes('applyShowroomEffects:false'),'dashboard showroom effects must default to off in user chart settings');
 const purchaseSource=db.slice(db.indexOf('export async function purchaseCatalogItemsV2'),db.indexOf('export const purchaseShowroomItem'));
 assert.ok(purchaseSource.indexOf('validateCatalogPurchaseV2(itemIds)')<purchaseSource.indexOf('runTransaction'),'test-only purchase must fail before Firestore transaction');

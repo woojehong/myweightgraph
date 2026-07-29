@@ -112,7 +112,8 @@ import { onAuthChange, adminSignOut, ADMIN_UID,
          setUserPassword, parseWeight,
          getEarnedAchievements,
          getTierSettings, saveTierSettings,
-         saveAdminOverride, adminSetCatalogOwnershipV2 } from './js/db.js';
+         saveAdminOverride, adminSetCatalogOwnershipV2,
+         adminRefundCatalogPurchasesV2 } from './js/db.js';
 import { ACHIEVEMENTS, ACHIEVEMENT_CATEGORIES, DEFAULT_TIERS } from './js/achievements.js';
 import { computeAchievementState, syncAchievements } from './js/achievements-engine.js';
 import { ALL_CATALOG_V2, V2_CATEGORIES, CATEGORY_META, RARITY_META, ownedItemIdsV2, profileVisualForUserV2, titleInfoV2 } from './js/showroom-v2.js?v=96';
@@ -373,6 +374,42 @@ function renderDetail(user, records, systemEarned=new Set()) {
 window.renderAdminSkinGrid=()=>{const host=document.getElementById('admSkinGrid'),u=window._adminCatalogUser;if(!host||!u)return;const q=(document.getElementById('admSkinSearch')?.value||'').toLowerCase(),cat=document.getElementById('admSkinCategory')?.value||'',rar=document.getElementById('admSkinRarity')?.value||'',own=document.getElementById('admSkinOwn')?.value||'',owned=ownedItemIdsV2(u),granted=new Set(u.adminGrantedItems||[]),purchased=new Set(u.purchasedItemsV2||[]),earned=new Set(u.achievementRewardItems||[]);host.innerHTML=ALL_CATALOG_V2.filter(item=>(!q||`${item.id} ${item.name} ${item.visual||''} ${item.implKey||''}`.toLowerCase().includes(q))&&(!cat||item.category===cat)&&(!rar||item.rarity===rar)&&(!own||(own==='owned')===owned.has(item.id))).map(item=>{const sources=[purchased.has(item.id)&&'구매',earned.has(item.id)&&'업적',granted.has(item.id)&&'관리자 지급'].filter(Boolean).join(' · ')||'미보유',grantable=!item.testOnly||item.category==='trophy';return`<label class="adm-skin-row"><input type="checkbox" data-admin-skin="${item.id}" ${grantable?'':'disabled'}><span><b style="color:${RARITY_META[item.rarity].color}">${item.name}</b><small style="display:block;color:var(--muted)">${CATEGORY_META[item.category].name} · ${item.id}<br>출처: ${sources}</small></span>${grantable?`<button type="button" class="${granted.has(item.id)?'btn-danger':'btn-primary'}" onclick="event.preventDefault();adminToggleSkin('${item.id}',${!granted.has(item.id)})">${granted.has(item.id)?'관리자 지급분 회수':'관리자 지급'}</button>`:'<small style="color:var(--muted)">테스트 전용</small>'}</label>`}).join('')};
 window.adminToggleSkin=async(id,grant)=>{try{await adminSetCatalogOwnershipV2(selectedUid,[id],grant);showToast(grant?'관리자 지급 완료':'관리자 지급분 회수 완료');await selectUser(selectedUid)}catch(e){showToast(e.message,'err')}};
 window.adminBulkSkin=async grant=>{const ids=[...document.querySelectorAll('[data-admin-skin]:checked')].map(el=>el.dataset.adminSkin);if(!ids.length){showToast('선택된 스킨이 없습니다.','err');return}try{await adminSetCatalogOwnershipV2(selectedUid,ids,grant);showToast(`${ids.length}종 ${grant?'지급':'회수'} 완료`);await selectUser(selectedUid)}catch(e){showToast(e.message,'err')}};
+
+const _renderAdminSkinGridWithRefund=window.renderAdminSkinGrid;
+window.renderAdminSkinGrid=()=>{
+  _renderAdminSkinGridWithRefund();
+  const purchased=new Set(window._adminCatalogUser?.purchasedItemsV2||[]);
+  document.querySelectorAll('[data-admin-skin]').forEach(input=>{
+    if(!purchased.has(input.dataset.adminSkin))return;
+    const button=document.createElement('button');
+    button.type='button';
+    button.className='btn-danger';
+    button.textContent='구매 환불';
+    button.onclick=event=>{event.preventDefault();event.stopPropagation();adminRefundSkin([input.dataset.adminSkin])};
+    input.closest('.adm-skin-row')?.append(button);
+  });
+  const bulk=document.querySelector('.adm-bulk');
+  if(bulk&&!bulk.querySelector('[data-bulk-refund]')){
+    const button=document.createElement('button');
+    button.type='button';
+    button.className='btn btn-danger btn-sm';
+    button.dataset.bulkRefund='';
+    button.textContent='선택 구매분 환불';
+    button.onclick=()=>adminRefundSkin([...document.querySelectorAll('[data-admin-skin]:checked')].map(el=>el.dataset.adminSkin));
+    bulk.append(button);
+  }
+};
+window.adminRefundSkin=async ids=>{
+  if(!ids.length){showToast('선택된 아이템이 없습니다.','err');return}
+  const reason=prompt('환불 사유를 입력하세요.','관리자 환불');
+  if(reason===null)return;
+  if(!confirm(`구매한 ${ids.length}종을 회수하고 구매 포인트를 복구할까요?`))return;
+  try{
+    const result=await adminRefundCatalogPurchasesV2(selectedUid,ids,reason);
+    showToast(`${result.refunded.length}종 환불 · ${result.amount.toLocaleString('ko-KR')}포인트 복구`);
+    await selectUser(selectedUid);
+  }catch(error){showToast(error.message,'err')}
+};
 
 function buildRecordsAccordion(uid, records) {
   const recMap = {};

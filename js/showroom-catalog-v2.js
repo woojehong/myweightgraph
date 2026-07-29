@@ -2,7 +2,6 @@ import { SHOWROOM_V4_RUNTIME } from './showroom-catalog-v4.generated.js';
 import { GRAPH_SKIN_ITEMS } from './showroom-graph-skins.js';
 import { CARD_THEME_ITEMS } from './showroom-card-themes.js';
 import { LINE_STYLE_ITEMS_V11 as LINE_STYLE_ITEMS, AMBIENT_EFFECT_ITEMS_V11 as AMBIENT_EFFECT_ITEMS } from './showroom-fx-v11.js';
-import { COMPANION_ITEMS_V5 } from './showroom-companions-v5.js';
 import { PROFILE_EMOJI_ITEMS_V6 } from './showroom-profile-emojis-v6.js';
 import { PORTRAIT_FRAME_ITEMS_V7 } from './showroom-portrait-frames-v7.js';
 import { POINT_MARKER_ITEMS_V9 } from './showroom-point-markers-v9.js';
@@ -144,7 +143,6 @@ const SHOWROOM_CATALOG_BASE=SHOWROOM_CATEGORIES.flatMap(category=>{
 const SHOWROOM_V5_ADDITIONS=Object.freeze([
   ...LINE_STYLE_ITEMS,
   ...AMBIENT_EFFECT_ITEMS,
-  ...COMPANION_ITEMS_V5,
   ...PROFILE_EMOJI_ITEMS_V6,
   ...PORTRAIT_FRAME_ITEMS_V7,
   ...CARD_THEME_ITEMS,
@@ -152,11 +150,17 @@ const SHOWROOM_V5_ADDITIONS=Object.freeze([
   ...TROPHY_ITEMS_V10,
   ...SHOWROOM_FULLSET_ITEMS_V13,
 ]);
+// Retired content stays in its source module for historical data inspection, but
+// must never re-enter purchase, ownership, admin-grant, or preset flows.
+export const RETIRED_ACTIVE_CATALOG_IDS=Object.freeze([
+  'pe_r_roaring_tiger_general',
+]);
+const retiredActiveCatalogIds=new Set(RETIRED_ACTIVE_CATALOG_IDS);
 const showroomV5Ids=new Set(SHOWROOM_V5_ADDITIONS.map(entry=>entry.id));
 export const SHOWROOM_CATALOG_V2=Object.freeze([
   ...SHOWROOM_CATALOG_BASE,
   ...SHOWROOM_V5_ADDITIONS,
-].map(entry => {
+].filter(entry=>entry.category!=='companion'&&!retiredActiveCatalogIds.has(entry.id)).map(entry => {
   const normalized=entry.rarity==='legendary'?Object.freeze({...entry,rarity:'mythic'}):entry;
   // All completed showroom collections are released through the effective
   // catalog. Trophy ownership remains achievement-only via retail().
@@ -220,10 +224,16 @@ export function assertShowroomCatalogV2(catalog=SHOWROOM_CATALOG_V2){
   const ids=new Set(),assets=new Set();
   for(const category of SHOWROOM_CATEGORIES){
     const entries=catalog.filter(entry=>entry.category===category);
+    if(category==='companion'){
+      if(catalog===SHOWROOM_CATALOG_V2){
+        if(entries.length)throw new Error('companion: retired category must not enter the active catalog');
+        continue;
+      }
+    }
     const additions=entries.filter(entry=>showroomV5Ids.has(entry.id));
     const baseEntries=entries.filter(entry=>!showroomV5Ids.has(entry.id));
     const expectedAdditions=catalog===SHOWROOM_CATALOG_V2
-      ? SHOWROOM_V5_ADDITIONS.filter(entry=>entry.category===category)
+      ? SHOWROOM_V5_ADDITIONS.filter(entry=>entry.category===category&&!retiredActiveCatalogIds.has(entry.id))
       : additions;
     if(additions.length!==expectedAdditions.length)throw new Error(`${category}: missing V5 additions`);
     const expandedGraphSkins=category==='graph_skin'&&baseEntries.length===32;

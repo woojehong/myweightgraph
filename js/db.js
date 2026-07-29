@@ -230,7 +230,12 @@ export async function purchaseCatalogItemsV2(userId, itemIds) {
     const cost=buy.reduce((sum,item)=>sum+item.price,0);
     if(balance<cost)throw new Error('코인이 부족해요.');
     const coins=balance-cost;
-    if(buy.length)tx.update(userRef,{coins,purchasedItemsV2:[...new Set([...purchased,...buy.map(item=>item.id)])]});
+    if(buy.length){
+      const ledger={...(user.catalogPurchaseLedgerV2||{})};
+      const purchasedAt=new Date().toISOString();
+      buy.forEach(item=>{ledger[item.id]={price:item.price,purchasedAt}});
+      tx.update(userRef,{coins,purchasedItemsV2:[...new Set([...purchased,...buy.map(item=>item.id)])],catalogPurchaseLedgerV2:ledger});
+    }
     return {purchased:buy.map(item=>item.id),coins,cost};
   });
 }
@@ -248,6 +253,54 @@ export async function adminSetCatalogOwnershipV2(userId,itemIds,grant=true){
   const ids=requested.filter(id=>{const item=getCatalogItemV2(id);return item&&(item.category==='trophy'||item.purchasable!==false)}),userRef=doc(db,'users',userId);
   return runTransaction(db,async tx=>{const snap=await tx.get(userRef);if(!snap.exists())throw new Error('사용자를 찾을 수 없습니다.');const user=snap.data(),current=new Set(user.adminGrantedItems||[]);ids.forEach(id=>grant?current.add(id):current.delete(id));const nextUser={...user,adminGrantedItems:[...current]},owned=ownedItemIdsV2(nextUser),loadout=normalizeLoadoutV2(user.showroomLoadoutV2);for(const category of Object.keys(loadout)){if(Array.isArray(loadout[category]))loadout[category]=loadout[category].filter(id=>owned.has(id));else if(loadout[category]&&!owned.has(loadout[category]))loadout[category]=normalizeLoadoutV2({})[category]}tx.update(userRef,{adminGrantedItems:[...current],showroomLoadoutV2:loadout});return {adminGrantedItems:[...current],showroomLoadoutV2:loadout}});
 }
+// Refunds retail purchases only. Achievement and admin-granted ownership stay
+// intact. Purchases made before the ledger existed use the current item price.
+export async function adminRefundCatalogPurchasesV2(userId,itemIds,reason=''){
+  const requested=[...new Set(Array.isArray(itemIds)?itemIds:[itemIds])];
+  await _ready;
+  if(auth.currentUser?.uid!==ADMIN_UID)throw new Error('슈퍼관리자 권한이 필요합니다.');
+  const userRef=doc(db,'users',userId);
+  return runTransaction(db,async tx=>{
+    const snap=await tx.get(userRef);
+    if(!snap.exists())throw new Error('사용자를 찾을 수 없습니다.');
+    const user=snap.data();
+    const purchased=new Set(user.purchasedItemsV2||[]);
+    const ledger={...(user.catalogPurchaseLedgerV2||{})};
+    const refundable=requested.map(getCatalogItemV2).filter(item=>item&&purchased.has(item.id)&&item.category!=='trophy');
+    if(!refundable.length)throw new Error('환불할 구매 아이템이 없습니다.');
+    const details=refundable.map(item=>({
+      id:item.id,
+      name:item.name,
+      amount:Number(ledger[item.id]?.price)||Number(item.price)||0,
+    }));
+    const amount=details.reduce((sum,entry)=>sum+entry.amount,0);
+    refundable.forEach(item=>{purchased.delete(item.id);delete ledger[item.id]});
+    const nextUser={...user,purchasedItemsV2:[...purchased]};
+    const owned=ownedItemIdsV2(nextUser);
+    const loadout=normalizeLoadoutV2(user.showroomLoadoutV2);
+    for(const category of Object.keys(loadout)){
+      if(Array.isArray(loadout[category]))loadout[category]=loadout[category].filter(id=>owned.has(id));
+      else if(loadout[category]&&!owned.has(loadout[category]))loadout[category]=normalizeLoadoutV2({})[category];
+    }
+    const refundLog=[...(user.catalogRefundLogV2||[]),{
+      refundedAt:new Date().toISOString(),
+      adminUid:auth.currentUser.uid,
+      reason:String(reason||'관리자 환불').trim().slice(0,120),
+      amount,
+      items:details,
+    }].slice(-100);
+    const coins=(Number(user.coins)||0)+amount;
+    tx.update(userRef,{
+      coins,
+      purchasedItemsV2:[...purchased],
+      catalogPurchaseLedgerV2:ledger,
+      catalogRefundLogV2:refundLog,
+      showroomLoadoutV2:loadout,
+    });
+    return {refunded:details,amount,coins,showroomLoadoutV2:loadout};
+  });
+}
+
 export async function deleteUser(userId) {
   await _ready;
   const [records, earned] = await Promise.all([

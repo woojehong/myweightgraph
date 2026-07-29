@@ -540,6 +540,8 @@ input  { font-family: inherit; outline: none; }
 .v2-profile-compact .v2-profile-art>.v3-profile-emoji{transform:scale(1.32) translateY(5%);transform-origin:50% 30%}
 .v2-profile-showcase .v2-profile-art{inset:2%;overflow:hidden;border-radius:10%}
 .v2-profile-showcase .v2-profile-art>.v3-profile-emoji{object-fit:contain;transform:none;transform-origin:50% 50%}
+.v2-profile-showcase.has-frame .v2-profile-art{inset:11%}
+.v2-profile-compact.has-frame .v2-profile-art{inset:13%}
 .v3-profile-base,.v3-profile-emoji{position:relative;z-index:1;display:block;object-fit:contain;filter:drop-shadow(0 2px 3px #0009)}
 .v9-marker-pair{display:flex;align-items:center;justify-content:center;gap:2px;width:74px;height:48px}
 .v9-marker-pair .v3-marker-image{width:36px;height:36px;object-fit:contain;filter:drop-shadow(0 2px 3px #000a)}

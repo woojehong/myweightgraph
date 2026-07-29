@@ -120,7 +120,7 @@ export function validateCatalogPurchaseV2(itemIds){
 }
 
 const img=(entry,className,attrs='')=>entry?.asset
-  ? `<img class="${className}" src="${entry.asset}" alt="" aria-hidden="true" draggable="false" decoding="async" ${attrs}>`
+  ? `<img class="${className}" src="${entry.asset}" alt="" aria-hidden="true" draggable="false" decoding="async" loading="lazy" ${attrs}>`
   : '';
 export const markerPathV2=()=>null;
 export const markerAssetV2=(id,role='low')=>{
@@ -156,12 +156,12 @@ export function renderProfileEmojiV2(id,size=42,fallbackEmoji='🙂'){
 }
 export function renderEmojiBorderV2(id,size=52){
   const entry=getCatalogItemV2(id);
-  return entry?`<img class="v3-emoji-border" src="${entry.asset}" width="${size}" height="${size}" alt="" aria-hidden="true" draggable="false" decoding="async">`:'';
+  return entry?`<img class="v3-emoji-border" src="${entry.asset}" width="${size}" height="${size}" alt="" aria-hidden="true" draggable="false" decoding="async" loading="lazy">`:'';
 }
 export function profileVisualV2(raw,size=48,fallbackEmoji='🙂',mode='compact'){
   const loadout=normalizeLoadoutV2(raw);
   const displayMode=mode==='showcase'?'showcase':'compact';
-  return `<span class="v2-profile v2-profile-${displayMode}" style="width:${size}px;height:${size}px">${renderEmojiBorderV2(loadout.emoji_border,size+14)}<span class="v2-profile-art">${renderProfileEmojiV2(loadout.profile_emoji,size-8,fallbackEmoji)}</span></span>`;
+  return `<span class="v2-profile v2-profile-${displayMode} ${loadout.emoji_border?'has-frame':''}" style="width:${size}px;height:${size}px">${renderEmojiBorderV2(loadout.emoji_border,size+14)}<span class="v2-profile-art">${renderProfileEmojiV2(loadout.profile_emoji,size-8,fallbackEmoji)}</span></span>`;
 }
 export const profileVisualForUserV2=(user,size=48,loadout=user?.showroomLoadoutV2)=>profileVisualV2(loadout,size);
 export const profileShowcaseForUserV2=(user,size=116,loadout=user?.showroomLoadoutV2)=>profileVisualV2(loadout,size,'🙂','showcase');

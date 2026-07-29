@@ -7,7 +7,7 @@ import {
 } from '../js/showroom-v2.js';
 
 assert.deepEqual(RETIRED_SHOWROOM_CATEGORIES,['companion']);
-assert.equal(SHOWROOM_CATALOG_V2.filter(item=>item.category==='companion').length,44,'historical records remain available only for migration safety');
+assert.equal(SHOWROOM_CATALOG_V2.filter(item=>item.category==='companion').length,0,'retired companions must stay outside every active catalog surface');
 assert.equal(ALL_CATALOG_V2.some(item=>item.category==='companion'),false,'retired companions must not enter the public catalog');
 assert.equal(V2_CATEGORIES.includes('companion'),false,'showroom must not expose a companion tab');
 assert.equal(getCatalogItemV2('cp_sleepy_golem'),null);

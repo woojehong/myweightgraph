@@ -16,17 +16,22 @@ body{background:#080c13}.sr-shell{max-width:1240px;margin:auto;padding:16px 14px
 @media(max-width:700px){.sr-profile-head{grid-template-columns:72px minmax(0,1fr);grid-template-rows:auto auto auto auto;aspect-ratio:auto;min-height:0;max-height:none;overflow:visible;padding:8px;gap:7px}.sr-profile-avatar{grid-column:1;grid-row:1/3}.sr-profile-copy{grid-column:2;grid-row:1}.sr-message-preview{grid-column:1/3;grid-row:3}.sr-trophy-preview{grid-column:2;grid-row:2}.sr-profile-markers{grid-column:1/3;grid-row:4}}
 @media(max-width:700px){.sr-filter-top{grid-template-columns:1fr auto}.sr-search{grid-column:1/-1}.sr-filter-group{grid-template-columns:1fr;gap:4px}.sr-filter-label{padding-top:0}.sr-set-grid{grid-template-columns:1fr}}
 @media(max-width:420px){.sr-view-toggle button,.sr-filter-reset{padding-inline:7px}.sr-filter-chip{padding-inline:7px}}
+.sr-collection-summary{grid-column:1/-1;display:grid;grid-template-columns:110px repeat(2,minmax(0,1fr));gap:8px;padding:10px;border:1px solid #e6cc8055;border-radius:11px;background:linear-gradient(135deg,#e6cc800d,#7c3aed0b)}.sr-collection-total{grid-row:span 2;display:grid;place-items:center;text-align:center}.sr-collection-total strong{font-size:28px;color:#e6cc80}.sr-collection-stat{min-width:0;padding:9px;border:1px solid #ffffff12;border-radius:8px;background:#080c1388}.sr-collection-stat b{display:block;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.sr-collection-stat span{font-size:9px;color:var(--muted)}.sr-item-tools{position:absolute;inset:5px 5px auto;display:flex;justify-content:space-between;z-index:8;pointer-events:none}.sr-item-tools button{pointer-events:auto;width:26px;height:26px;border:1px solid #ffffff26;border-radius:50%;background:#080c13dd;color:#aeb7c2}.sr-item-tools button.active{color:#ffd54f;border-color:#ffd54f88}.sr-preset-panel{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-bottom:2px}.sr-preset-slot{min-width:0;padding:9px;border:1px solid var(--border);border-radius:9px;background:#ffffff04;color:var(--text);text-align:left}.sr-preset-slot b{display:block;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.sr-preset-slot small{color:var(--muted);font-size:8px}.sr-detail-preview{display:grid;place-items:center;min-height:190px;margin:10px 0;border-radius:10px;background:#080c13;border:1px solid var(--border);overflow:hidden}.sr-detail-preview img{max-width:100%;max-height:280px;object-fit:contain}.sr-acquire{position:fixed;inset:0;z-index:850;display:none;place-items:center;background:#02050be8;padding:20px}.sr-acquire.open{display:grid}.sr-acquire-card{text-align:center;animation:srAcquire .65s cubic-bezier(.2,.8,.2,1)}.sr-acquire-card h2{margin:12px 0 4px;font-size:24px}.sr-acquire-card p{color:var(--muted)}.sr-acquire-art{width:220px;height:220px;display:grid;place-items:center;filter:drop-shadow(0 0 28px var(--rarity-color,#fff))}.sr-acquire-art img{max-width:100%;max-height:100%;object-fit:contain}@keyframes srAcquire{from{opacity:0;transform:scale(.72) translateY(25px)}to{opacity:1;transform:none}}@media(max-width:700px){.sr-collection-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.sr-collection-total{grid-column:1/-1;grid-row:auto}.sr-preset-panel{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style></head><body>
 <header class="top-bar"><div></div><a href="index.html?select=1" class="mweg-header-wrap"><span class="mweg-title">마웨그</span><span class="mweg-subtitle">My Weight Graph</span></a><div aria-hidden="true"></div></header>
 <main class="sr-shell"><div class="sr-head"><div><h1>쇼룸</h1><p>스킨 탐색·미리보기·구매·장착을 한곳에서 관리합니다.</p></div><div><div class="sr-wallet" id="wallet">🪙 0</div><div class="sr-actions"><button class="btn btn-ghost btn-sm" id="resetBtn">초기화</button><button class="btn btn-ghost btn-sm" id="revertBtn">되돌리기</button><button class="btn btn-primary btn-sm" id="saveBtn">최종 저장</button></div></div></div>
 <div class="sr-layout"><section class="sr-panel"><div class="sr-preview-label"><span>실제 우리 그래프 카드</span><span class="sr-dirty" id="dirty"></span></div><article id="preview" class="sr-card"><div class="loading"><div class="spinner"></div></div></article></section>
-<section class="sr-panel"><div class="sr-cats" id="cats"></div><div class="sr-trophy-order" id="trophyOrder" hidden></div><div class="sr-line-controls" id="lineControls" hidden></div><div class="sr-filter-panel" id="filterPanel"><div class="sr-filter-top"><input class="sr-search" id="search" placeholder="현재 수집품 검색"><div class="sr-view-toggle" aria-label="보기 방식"><button type="button" id="viewItems" class="active" data-view="items">아이템별</button><button type="button" id="viewSets" data-view="sets">세트 장착</button></div><button type="button" class="sr-filter-reset" id="filterReset">필터 초기화</button></div><div class="sr-filter-group"><span class="sr-filter-label">보유 상태</span><div class="sr-filter-options" id="ownershipFilters"></div></div><div class="sr-filter-group"><span class="sr-filter-label">등급</span><div class="sr-filter-options" id="rarityFilters"></div></div><div class="sr-filter-group"><span class="sr-filter-label">카테고리</span><div class="sr-filter-options" id="sourceFilters"></div></div><div class="sr-filter-summary" id="filterSummary"></div></div><div class="sr-grid" id="grid"></div><div class="sr-bulk"><div class="sr-bulk-details" id="bundleText">현재 조합을 확인하세요.</div><button class="btn btn-primary btn-sm" id="bundleBtn">미보유 아이템 구매</button></div></section></div></main><nav class="bottom-nav" id="bottomNav"></nav><div class="sr-toast" id="toast"></div>
-<div class="sr-confirm" id="buyConfirm" role="dialog" aria-modal="true" aria-labelledby="buyConfirmTitle"><div class="sr-confirm-card"><h2 id="buyConfirmTitle">구매 확인</h2><div id="buyConfirmItems"></div><div class="sr-confirm-total" id="buyConfirmTotal"></div><div class="sr-confirm-actions"><button class="btn btn-ghost" id="buyCancel">취소</button><button class="btn btn-primary" id="buyProceed">구매 확정</button></div></div></div>
+<section class="sr-panel"><div class="sr-cats" id="cats"></div><div class="sr-trophy-order" id="trophyOrder" hidden></div><div class="sr-line-controls" id="lineControls" hidden></div><div class="sr-filter-panel" id="filterPanel"><div class="sr-filter-top"><input class="sr-search" id="search" placeholder="현재 수집품 검색"><div class="sr-view-toggle" aria-label="보기 방식"><button type="button" id="viewItems" class="active" data-view="items">아이템별</button><button type="button" id="viewSets" data-view="sets">세트 장착</button><button type="button" id="viewCollection" data-view="collection">수집 도감</button></div><button type="button" class="sr-filter-reset" id="filterReset">필터 초기화</button></div><div class="sr-filter-group"><span class="sr-filter-label">보유 상태</span><div class="sr-filter-options" id="ownershipFilters"></div></div><div class="sr-filter-group"><span class="sr-filter-label">등급</span><div class="sr-filter-options" id="rarityFilters"></div></div><div class="sr-filter-group"><span class="sr-filter-label">카테고리</span><div class="sr-filter-options" id="sourceFilters"></div></div><div class="sr-filter-summary" id="filterSummary"></div></div><div class="sr-grid" id="grid"></div><div class="sr-bulk"><div class="sr-bulk-details" id="bundleText">현재 조합을 확인하세요.</div><button class="btn btn-primary btn-sm" id="bundleBtn">미보유 아이템 구매</button></div></section></div></main><nav class="bottom-nav" id="bottomNav"></nav><div class="sr-toast" id="toast"></div>
+<div class="sr-confirm" id="buyConfirm" role="dialog" aria-modal="true" aria-labelledby="buyConfirmTitle"><div class="sr-confirm-card"><h2 id="buyConfirmTitle">구매 확인</h2><div id="buyConfirmItems"></div><div class="sr-confirm-total" id="buyConfirmTotal"></div><div class="sr-confirm-actions"><button class="btn btn-ghost" id="buyCancel">취소</button><button class="btn btn-primary btn-sm" id="buyProceed">구매 확정</button></div></div></div>
+<div class="sr-confirm" id="itemDetail" role="dialog" aria-modal="true"><div class="sr-confirm-card"><div id="itemDetailBody"></div><div class="sr-confirm-actions"><button class="btn btn-ghost" id="itemDetailClose">닫기</button><button class="btn btn-primary" id="itemDetailApply">미리보기 적용</button></div></div></div>
+<div class="sr-acquire" id="acquireReveal"><div class="sr-acquire-card" id="acquireCard"></div></div>
 <script type="module">
 import{getUser,getWeights,getSettings,updateUser,purchaseCatalogItemsV2,saveShowroomLoadoutV2}from'./js/db.js?v=96';import{isAuthed,clearAuth}from'./js/auth.js';import{renderChart}from'./js/chart-render.js';import{esc}from'./js/util.js';import{activeTodayMessage,normalizeTodayMessage,todayMessageDayKey}from'./js/today-message.js';import{SHOWROOM_DEFAULTS}from'./js/showroom-catalog-v2.js?v=96';import{ALL_CATALOG_V2,V2_CATEGORIES,CATEGORY_META,RARITY_META,compareShowroomRarityV2,normalizeLoadoutV2,ownedItemIdsV2,ownsItemV2,unownedSelectionV2,renderCatalogPreviewV2,profileShowcaseForUserV2,renderTrophyV2,renderMarkerV2,titleInfoV2,getChartDecorationsV2,applyCardV2,decorateMainPlotV2}from'./js/showroom-v2.js?v=96';
 import{SHOWROOM_SOURCE_CATEGORIES,SHOWROOM_FULL_SET_CATEGORIES,showroomFullSets}from'./js/showroom-taxonomy.js';
+import{SHOWROOM_PRESET_LIMIT,normalizeShowroomFavorites,normalizeShowroomPresets,showroomCollectionStats}from'./js/showroom-collection.js';
 const uid=new URLSearchParams(location.search).get('user')||localStorage.getItem('uid');if(!uid)location.href='index.html';const $=id=>document.getElementById(id);let user,records=[],settings={},saved=normalizeLoadoutV2(),draft=normalizeLoadoutV2(),category='graph_skin',timer,viewMode='items';
 const filters={ownership:'',rarities:new Set(),sources:new Set()};
+let favorites=[],customPresets=[];
 function nav(){const links=[['input','✏️','데이터 입력'],['dashboard','📊','내 그래프'],['compare','👥','우리 그래프'],['achievements','🏆','업적'],['dressroom','✨','쇼룸']];$('bottomNav').innerHTML=links.map(([id,icon,label])=>`<a href="${id}.html?user=${uid}" class="${id==='dressroom'?'active':''}"><span class="icon">${icon}</span>${label}</a>`).join('')}
 function toast(msg,err=false){const el=$('toast');el.textContent=msg;el.style.borderColor=err?'var(--red)':'var(--teal)';el.classList.add('show');clearTimeout(timer);timer=setTimeout(()=>el.classList.remove('show'),2500)}function dirty(){return JSON.stringify(saved)!==JSON.stringify(draft)}function sync(){const missing=unownedSelectionV2(user,draft),cost=missing.reduce((s,i)=>s+i.price,0);$('dirty').textContent=dirty()?'저장 전 임시 조합':'';$('bundleText').textContent=missing.length?`미보유 ${missing.length}종 · 🪙 ${cost.toLocaleString('ko-KR')}`:'현재 조합 모두 보유';$('bundleBtn').disabled=!missing.length||user.coins<cost;$('wallet').textContent=`🪙 ${(user.coins||0).toLocaleString('ko-KR')}`}
 function renderCats(){$('cats').innerHTML=V2_CATEGORIES.map(id=>`<button class="sr-cat ${id===category?'active':''}" data-cat="${id}">${CATEGORY_META[id].icon} ${CATEGORY_META[id].name}</button>`).join('');$('cats').querySelectorAll('[data-cat]').forEach(b=>b.onclick=()=>{category=b.dataset.cat;renderCats();renderGrid()})}
@@ -43,7 +48,7 @@ function itemMatchesFilters(item,{ignoreSearch=false}={}){
   return true;
 }
 function renderFilters(){
-  const scope=viewMode==='sets'?ALL_CATALOG_V2:ALL_CATALOG_V2.filter(item=>item.category===category);
+  const scope=viewMode==='sets'||viewMode==='collection'?ALL_CATALOG_V2:ALL_CATALOG_V2.filter(item=>item.category===category);
   const ownedCount=scope.filter(item=>ownsItemV2(user,item.id)).length;
   const unownedCount=scope.length-ownedCount;
   $('ownershipFilters').innerHTML=[
@@ -155,10 +160,10 @@ function renderSetGrid(){
     const set=FULL_SETS.find(entry=>entry.setId===button.dataset.applySet);
     if(!set)return;
     for(const cat of SHOWROOM_FULL_SET_CATEGORIES){
-      const item=set.categoryMap[cat][0];
+      const item=set.presetMap[cat];
       draft[cat]=item?.id||null;
     }
-    const line=set.categoryMap.line_style[0];
+    const line=set.presetMap.line_style;
     if(line?.renderSpec?.colorMode==='custom')draft.lineColor=line.renderSpec.color||'#00e5aa';
     else delete draft.lineColor;
     draft.lineWidth=line?.renderSpec?.width||2.2;
@@ -171,8 +176,64 @@ function renderSetGrid(){
   });
   renderFilterSummary(visibleSets.length,'세트');
 }
+async function toggleFavorite(id){
+  favorites=favorites.includes(id)?favorites.filter(entry=>entry!==id):[...favorites,id];
+  await updateUser(uid,{showroomFavoritesV2:favorites});
+  user={...user,showroomFavoritesV2:favorites};
+  renderGrid();
+}
+function openItemDetail(item){
+  const rarity=RARITY_META[item.rarity],own=ownsItemV2(user,item.id);
+  $('itemDetailBody').innerHTML=`<div style="display:flex;justify-content:space-between;gap:12px"><div><small style="color:${rarity.color}">${rarity.label} · ${esc(CATEGORY_META[item.category]?.name||item.category)}</small><h2 style="margin:4px 0">${esc(item.name)}</h2></div><button type="button" class="sr-filter-chip ${favorites.includes(item.id)?'active':''}" data-detail-favorite style="--chip-color:#ffd54f">${favorites.includes(item.id)?'★ 찜함':'☆ 찜하기'}</button></div><div class="sr-detail-preview">${renderCatalogPreviewV2(item)}</div><p style="font-size:12px;line-height:1.6;color:var(--muted)">${esc(item.visual||'')}</p><div style="display:flex;justify-content:space-between;font-size:11px"><span>${item.motifName?`${esc(item.motifName)} 세트`:'독립 수집품'}</span><b>${item.acquisition==='achievement_only'?'업적 전용':own?'보유 중':`🪙 ${item.price.toLocaleString('ko-KR')}`}</b></div>`;
+  $('itemDetailApply').onclick=()=>{choose(item);$('itemDetail').classList.remove('open')};
+  $('itemDetailBody').querySelector('[data-detail-favorite]').onclick=async()=>{await toggleFavorite(item.id);openItemDetail(item)};
+  $('itemDetail').classList.add('open');
+}
+function renderPresetPanel(){
+  return `<div class="sr-preset-panel">${Array.from({length:SHOWROOM_PRESET_LIMIT},(_,index)=>{const preset=customPresets[index];return preset?`<button type="button" class="sr-preset-slot" data-preset-apply="${index}"><b>${index+1}. ${esc(preset.name)}</b><small>클릭해 미리보기 · 길게 저장하지 않음</small></button>`:`<button type="button" class="sr-preset-slot" data-preset-save="${index}"><b>${index+1}. 빈 조합</b><small>현재 미리보기를 저장</small></button>`}).join('')}</div>`;
+}
+async function saveCustomPreset(index){
+  const current=customPresets[index];
+  const name=prompt('조합 이름을 입력하세요.',current?.name||`조합 ${index+1}`);
+  if(name===null)return;
+  const next=[...customPresets];
+  next[index]={id:current?.id||`preset-${Date.now()}`,name,loadout:normalizeLoadoutV2(draft)};
+  customPresets=normalizeShowroomPresets(next);
+  await updateUser(uid,{showroomPresetsV2:customPresets});
+  user={...user,showroomPresetsV2:customPresets};
+  renderGrid();
+  toast(`${customPresets[index].name} 조합을 저장했습니다.`);
+}
+function bindPresetPanel(grid){
+  grid.querySelectorAll('[data-preset-save]').forEach(button=>button.onclick=()=>saveCustomPreset(Number(button.dataset.presetSave)));
+  grid.querySelectorAll('[data-preset-apply]').forEach(button=>button.onclick=event=>{
+    const index=Number(button.dataset.presetApply),preset=customPresets[index];
+    if(!preset)return;
+    if(event.shiftKey){saveCustomPreset(index);return}
+    draft=normalizeLoadoutV2(preset.loadout);renderGrid();renderPreview();sync();toast(`${preset.name} 조합을 미리보기에 적용했습니다.`);
+  });
+}
+function renderCollectionGrid(){
+  const owned=ownedItemIdsV2(user),stats=showroomCollectionStats(ALL_CATALOG_V2,owned,FULL_SETS),items=ALL_CATALOG_V2.filter(item=>itemMatchesFilters(item)).sort(compareShowroomRarityV2),grid=$('grid');
+  grid.className='sr-grid';
+  const categoryHighlights=Object.entries(stats.byCategory).sort((a,b)=>(b[1].owned/b[1].total)-(a[1].owned/a[1].total)).slice(0,4);
+  grid.innerHTML=`<div class="sr-collection-summary"><div class="sr-collection-total"><strong>${stats.percent}%</strong><span>${stats.owned}/${stats.total} 수집</span></div>${categoryHighlights.map(([id,value])=>`<div class="sr-collection-stat"><b>${esc(CATEGORY_META[id]?.name||id)}</b><span>${value.owned}/${value.total} · ${Math.round(value.owned/value.total*100)||0}%</span></div>`).join('')}</div>${renderPresetPanel()}${items.map(item=>{const own=owned.has(item.id),rar=RARITY_META[item.rarity];return`<div class="sr-item ${own?'':'unowned'}" data-item="${item.id}" role="button" tabindex="0"><span class="sr-item-tools"><button type="button" class="${favorites.includes(item.id)?'active':''}" data-favorite="${item.id}" aria-label="찜하기">${favorites.includes(item.id)?'★':'☆'}</button><button type="button" data-detail="${item.id}" aria-label="상세 보기">ⓘ</button></span>${renderCatalogPreviewV2(item)}<b style="color:${rar.color}">${esc(item.name)}</b><small>${rar.label} · ${own?'보유':'미보유'}</small>${!own?'<span class="sr-test">미획득 수집품</span>':'<span class="sr-owned">도감 등록 완료</span>'}</div>`}).join('')}`;
+  grid.querySelectorAll('[data-favorite]').forEach(button=>button.onclick=event=>{event.stopPropagation();toggleFavorite(button.dataset.favorite)});
+  grid.querySelectorAll('[data-detail]').forEach(button=>button.onclick=event=>{event.stopPropagation();openItemDetail(ALL_CATALOG_V2.find(item=>item.id===button.dataset.detail))});
+  grid.querySelectorAll('[data-item]').forEach(button=>button.onclick=()=>openItemDetail(ALL_CATALOG_V2.find(item=>item.id===button.dataset.item)));
+  bindPresetPanel(grid);
+  renderFilterSummary(items.length,'수집품');
+}
 function renderGridV2(){
   $('cats').style.display=viewMode==='sets'?'none':'';
+  if(viewMode==='collection'){
+    $('cats').style.display='none';
+    $('trophyOrder').hidden=true;
+    $('lineControls').hidden=true;
+    renderFilters();
+    renderCollectionGrid();
+    return;
+  }
   if(viewMode==='sets'){
     $('trophyOrder').hidden=true;
     $('lineControls').hidden=true;
@@ -199,7 +260,8 @@ function confirmBuy(ids){const items=[...new Set(ids)].map(id=>ALL_CATALOG_V2.fi
 const after=before-cost,short=after<0;
 $('buyConfirmTotal').innerHTML=`<div style="display:flex;justify-content:space-between"><span>${items.length}종 합계</span><b>🪙 ${cost.toLocaleString('ko-KR')}</b></div><div style="display:flex;justify-content:space-between;margin-top:4px;font-size:12px;color:var(--muted)"><span>보유 코인</span><span>🪙 ${before.toLocaleString('ko-KR')}</span></div><div style="display:flex;justify-content:space-between;margin-top:2px;font-size:12px"><span style="color:var(--muted)">구매 후 잔액</span><b style="color:${short?'var(--red)':'var(--teal)'}">🪙 ${after.toLocaleString('ko-KR')}</b></div>${short?`<div style="margin-top:6px;font-size:12px;color:var(--red)">코인이 ${(-after).toLocaleString('ko-KR')} 부족합니다.</div>`:''}`;
 $('buyProceed').disabled=short;$('buyProceed').onclick=()=>confirmedBuy(items.map(item=>item.id));$('buyConfirm').classList.add('open')}
-async function confirmedBuy(ids){const proceed=$('buyProceed');try{proceed.disabled=true;proceed.textContent='처리 중…';const res=await purchaseCatalogItemsV2(uid,ids);user.purchasedItemsV2=[...new Set([...(user.purchasedItemsV2||[]),...res.purchased])];user.coins=res.coins;toast(res.purchased.length?`${res.purchased.length}종 구매 완료`:'이미 보유한 스킨입니다.');$('buyConfirm').classList.remove('open');renderGrid();sync()}catch(e){toast(e.message,true)}finally{proceed.textContent='구매 확정';proceed.disabled=(Number(user.coins)||0)<ids.reduce((s,id)=>{const it=ALL_CATALOG_V2.find(x=>x.id===id);return s+(it&&!ownsItemV2(user,id)?it.price:0)},0)}}
+function showAcquireReveal(ids){const items=ids.map(id=>ALL_CATALOG_V2.find(item=>item.id===id)).filter(Boolean);if(!items.length)return;const lead=[...items].sort(compareShowroomRarityV2)[0],rarity=RARITY_META[lead.rarity];$('acquireCard').innerHTML=`<div class="sr-acquire-art" style="--rarity-color:${rarity.color}">${renderCatalogPreviewV2(lead)}</div><h2 style="color:${rarity.color}">${esc(lead.name)}</h2><p>${rarity.label} 수집품 획득${items.length>1?` · 외 ${items.length-1}종`:''}</p><button class="btn btn-primary" data-acquire-close>도감에 등록</button>`;$('acquireReveal').classList.add('open');$('acquireCard').querySelector('[data-acquire-close]').onclick=()=>$('acquireReveal').classList.remove('open')}
+async function confirmedBuy(ids){const proceed=$('buyProceed');try{proceed.disabled=true;proceed.textContent='처리 중…';const res=await purchaseCatalogItemsV2(uid,ids);user.purchasedItemsV2=[...new Set([...(user.purchasedItemsV2||[]),...res.purchased])];user.coins=res.coins;toast(res.purchased.length?`${res.purchased.length}종 구매 완료`:'이미 보유한 스킨입니다.');$('buyConfirm').classList.remove('open');renderGrid();sync();showAcquireReveal(res.purchased)}catch(e){toast(e.message,true)}finally{proceed.textContent='구매 확정';proceed.disabled=(Number(user.coins)||0)<ids.reduce((s,id)=>{const it=ALL_CATALOG_V2.find(x=>x.id===id);return s+(it&&!ownsItemV2(user,id)?it.price:0)},0)}}
 $('buyCancel').onclick=()=>$('buyConfirm').classList.remove('open');renderGrid=renderGridV2;buy=buyConfirmProxy;sync=syncV2;$('bundleBtn').onclick=()=>{const items=purchasableSelection();items.length?confirmBuy(items.map(item=>item.id)):toast('테스트 아이템은 구매할 수 없습니다.',true)};$('saveBtn').onclick=async()=>{if(selectedTestItems().length){toast('테스트 아이템은 세션 미리보기 전용이며 저장할 수 없습니다.',true);return}try{saved=await saveShowroomLoadoutV2(uid,draft);draft=normalizeLoadoutV2(saved);toast('기본 장착 설정을 저장했습니다.');sync()}catch(e){toast(e.message,true)}};
-async function init(){nav();user=await getUser(uid);if(!user){location.href='index.html';return}if(user.passwordHash&&!isAuthed(uid,user.passwordHash)){location.href='index.html?select=1';return}[records,settings]=await Promise.all([getWeights(uid),getSettings(uid,user)]);saved=normalizeLoadoutV2(user.showroomLoadoutV2);draft=normalizeLoadoutV2(saved);renderCats();renderGrid();renderPreview();sync()}nav();renderCats();init().catch(e=>toast(e.message,true));
+async function init(){nav();user=await getUser(uid);if(!user){location.href='index.html';return}if(user.passwordHash&&!isAuthed(uid,user.passwordHash)){location.href='index.html?select=1';return}[records,settings]=await Promise.all([getWeights(uid),getSettings(uid,user)]);saved=normalizeLoadoutV2(user.showroomLoadoutV2);draft=normalizeLoadoutV2(saved);const catalogIds=new Set(ALL_CATALOG_V2.map(item=>item.id));favorites=normalizeShowroomFavorites(user.showroomFavoritesV2,catalogIds);customPresets=normalizeShowroomPresets(user.showroomPresetsV2);$('itemDetailClose').onclick=()=>$('itemDetail').classList.remove('open');renderCats();renderGrid();renderPreview();sync()}nav();renderCats();init().catch(e=>toast(e.message,true));
 </script><script src="register-sw.js"></script></body></html>
