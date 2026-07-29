@@ -1,4 +1,4 @@
-const CACHE = 'weight-v124-rarity-sort';
+const CACHE = 'weight-v125-fluid-card-header';
 const ASSETS = [
   './index.html', './dashboard.html', './input.html', './import.html',
   './achievements.html', './compare.html', './dressroom.html', './shop.html', './guide.html', './visual-lab.html',

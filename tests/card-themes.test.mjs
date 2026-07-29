@@ -39,7 +39,7 @@ const css=await readFile(new URL('../css/showroom-card-themes.css',import.meta.u
 const baseCss=await readFile(new URL('../css/style.css',import.meta.url),'utf8');
 for(const token of ['grid-template-columns:repeat(7,26px)','grid-template-rows:repeat(2,26px)','justify-content:right','direction:rtl','object-fit:cover','aspect-ratio:4.2/1',':empty{display:none!important}','min-height:60px!important'])assert.ok(css.includes(token),token);
 for(const [source,label] of [[showroom,'showroom'],[compare,'compare']]){
-  for(const token of ['aspect-ratio:4.2/1','min-height:160px','max-height:166px'])assert.ok(source.includes(token),`${label} compact header: ${token}`);
+  for(const token of ['width:100%','max-width:none','aspect-ratio:4.2/1','min-height:160px','max-height:none'])assert.ok(source.includes(token),`${label} responsive header: ${token}`);
 }
 for(const token of ['.sr-profile-head[data-card-theme] .sr-profile-markers{display:grid','min-width:100%;justify-self:stretch!important','.cmp-profile[data-card-theme] .cmp-markers{display:grid'])assert.ok((showroom+compare).includes(token),token);
 for(const token of ['.v2-profile-compact .v2-profile-art{inset:8%','.v2-profile-showcase .v2-profile-art{inset:2%','.v2-profile-showcase .v2-profile-art>.v3-profile-emoji{object-fit:contain;transform:none'])assert.ok(baseCss.includes(token),token);
@@ -53,7 +53,7 @@ for(const token of [
 ])assert.ok(compare.includes(token),`responsive compare layout: ${token}`);
 
 const sw = await readFile(new URL('../sw.js',import.meta.url),'utf8');
-assert.ok(sw.includes('weight-v124-rarity-sort'));
+assert.ok(sw.includes('weight-v125-fluid-card-header'));
 for(const item of CARD_THEME_ITEMS)assert.ok(sw.includes(item.asset),item.id);
 for(const item of PORTRAIT_FRAME_ITEMS_V7)assert.ok(sw.includes(item.asset),item.id);
 for(const item of [...CARD_THEME_ITEMS_V13,...PORTRAIT_FRAME_ITEMS_V13])assert.ok(sw.includes(item.id),item.id);
