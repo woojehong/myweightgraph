@@ -85,7 +85,12 @@
     .tdy-mlabel{font-size:10px;color:var(--muted)}
     .tdy-gap{width:10px}
     .tdy-row .tl-group{display:flex;gap:5px}
-    @media(max-width:380px){.tdy-row{gap:9px}.tdy-gap{width:5px}}
+    @media(max-width:520px){
+      .tdy-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;gap:11px 14px;width:100%}
+      .tdy-meal{min-width:0}
+      .tdy-row .tl-group{justify-content:center}
+      .tdy-gap{display:none}
+    }
 
     /* ── C안: 지난 기록 — 모바일 1열, 데스크탑 3칸씩 ────────── */
     .past-title{font-size:11px;color:var(--muted);margin:14px 0 6px 4px;font-weight:700}

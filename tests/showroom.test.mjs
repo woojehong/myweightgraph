@@ -321,7 +321,7 @@ assert.equal((visualLab.match(/drawMarker\(ctx,marker,/g)||[]).length,1,'visual 
 assert.equal((visualLab.match(/drawMarker\(ctx,/g)||[]).length-1,1,'visual lab must render exactly one point marker');
 
 const sw=await readFile(new URL('../sw.js',import.meta.url),'utf8');
-assert.ok(sw.includes("weight-v128-themed-stat-panels"));assert.ok(sw.includes("c.addAll(CORE_ASSETS)"));assert.equal(sw.includes('c.addAll(ASSETS)'),false);
+assert.ok(sw.includes("weight-v129-mobile-layout-audit"));assert.ok(sw.includes("c.addAll(CORE_ASSETS)"));assert.equal(sw.includes('c.addAll(ASSETS)'),false);
 for(const entry of SHOWROOM_CATALOG_V2.filter(entry=>entry.asset&&entry.id!=='pe_r_roaring_tiger_general')){
   const cached=entry.asset.includes('/showroom-v13/')
     ?sw.includes(`'${entry.id}'`)
@@ -337,6 +337,12 @@ assert.equal(CATEGORY_META.trophy.max,14,'header trophy showcase capacity must b
 for(const retiredToken of ['id="companionControls"','renderCompanionControls','data-companion-layout','동반자 없음'])assert.equal(showroom.includes(retiredToken),false,retiredToken);
 assert.ok(showroom.includes('.sr-cats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))'));
 assert.ok(showroom.includes('@media(max-width:520px){.sr-cats{grid-template-columns:repeat(2,minmax(0,1fr))}}'));
+for(const token of [
+  'grid-template-columns:82px minmax(0,1fr)',
+  '.sr-message-preview,.sr-profile-head[data-card-theme] .sr-message-preview{grid-column:2!important;grid-row:2!important',
+  '.sr-trophy-preview,.sr-profile-head[data-card-theme] .sr-trophy-preview{position:relative!important;inset:auto!important;grid-column:1/-1!important;grid-row:3!important',
+  '.sr-profile-markers,.sr-profile-head[data-card-theme] .sr-profile-markers{grid-column:1/-1!important;grid-row:4!important',
+])assert.ok(showroom.includes(token),`mobile showroom profile layout: ${token}`);
 assert.equal(showroom.includes('id="logoutBtn"'),false,'dressroom header must not render the large logout button');
 const compare=await readFile(new URL('../compare.html',import.meta.url),'utf8');
 for(const token of ['decorateMainPlotV2','getChartDecorationsV2','data-main-weight-plot="true"','mainPlotAspectRatio: 16 / 9','id="dietToggle" type="checkbox"','id="exerciseToggle" type="checkbox"','for="dietToggle"','for="exerciseToggle"',"localStorage.getItem('compare_show_diet') === 'true'","localStorage.getItem('compare_show_exercise') === 'true'","persistSubgraphToggle('compare_show_diet'","persistSubgraphToggle('compare_show_exercise'",'showDietGraph,','showExerciseGraph,','renderGrid()'])assert.ok(compare.includes(token),token);
@@ -363,6 +369,12 @@ for(const page of ['index.html','input.html','dashboard.html','compare.html','ac
   assert.doesNotThrow(()=>new Function(withoutImports),`${page}: inline module syntax`);
 }
 const dashboard=await readFile(new URL('../dashboard.html',import.meta.url),'utf8');
+const inputPage=await readFile(new URL('../input.html',import.meta.url),'utf8');
+for(const token of [
+  '@media(max-width:520px)',
+  '.tdy-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))',
+  '.tdy-gap{display:none}',
+])assert.ok(inputPage.includes(token),`mobile input meal layout: ${token}`);
 for(const token of [
   'id="tShowroomEffects"', '쇼룸 효과 적용', "bind('tShowroomEffects','applyShowroomEffects')",
   'data-main-weight-plot="true"', 'decorateMainPlotV2(plot, showroomLoadout || {})',
