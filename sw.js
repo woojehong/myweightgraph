@@ -1,4 +1,4 @@
-const CACHE = 'weight-v127-collection-and-lazy-assets';
+const CACHE = 'weight-v128-themed-stat-panels';
 const ASSETS = [
   './index.html', './dashboard.html', './input.html', './import.html',
   './achievements.html', './compare.html', './dressroom.html', './shop.html', './guide.html', './visual-lab.html',

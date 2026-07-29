@@ -321,7 +321,7 @@ assert.equal((visualLab.match(/drawMarker\(ctx,marker,/g)||[]).length,1,'visual 
 assert.equal((visualLab.match(/drawMarker\(ctx,/g)||[]).length-1,1,'visual lab must render exactly one point marker');
 
 const sw=await readFile(new URL('../sw.js',import.meta.url),'utf8');
-assert.ok(sw.includes("weight-v127-collection-and-lazy-assets"));assert.ok(sw.includes("c.addAll(CORE_ASSETS)"));assert.equal(sw.includes('c.addAll(ASSETS)'),false);
+assert.ok(sw.includes("weight-v128-themed-stat-panels"));assert.ok(sw.includes("c.addAll(CORE_ASSETS)"));assert.equal(sw.includes('c.addAll(ASSETS)'),false);
 for(const entry of SHOWROOM_CATALOG_V2.filter(entry=>entry.asset&&entry.id!=='pe_r_roaring_tiger_general')){
   const cached=entry.asset.includes('/showroom-v13/')
     ?sw.includes(`'${entry.id}'`)
@@ -346,6 +346,9 @@ for(const token of ['renderMarkerV2',"renderMarkerV2(draft.point_marker,'high')"
 for(const token of ['updateUser','normalizeTodayMessage','todayMessageDayKey','data-today-message','data-message-reset','data-message-save','saveShowroomMessage','오늘의 한마디를 입력해보세요'])assert.ok(showroom.includes(token),token);
 const db=await readFile(new URL('../js/db.js',import.meta.url),'utf8');
 for(const token of ['purchaseCatalogItemsV2','validateCatalogPurchaseV2(itemIds)','persistableLoadoutV2(rawLoadout)','트로피 외 테스트 아이템은 소유권을 추가하거나 회수할 수 없습니다','runTransaction','adminSetCatalogOwnershipV2','adminRefundCatalogPurchasesV2','catalogPurchaseLedgerV2','catalogRefundLogV2','adminGrantedItems',"item.category==='trophy'"])assert.ok(db.includes(token),token);
+for(const staleColor of ['rgba(195,65,42,.92)','rgba(34,128,50,.92)','rgba(20,98,152,.92)']){
+  assert.ok(!showroom.includes(staleColor),`card themes must not inherit forced RGB stat color: ${staleColor}`);
+}
 assert.ok(db.includes('applyShowroomEffects:false'),'dashboard showroom effects must default to off in user chart settings');
 const purchaseSource=db.slice(db.indexOf('export async function purchaseCatalogItemsV2'),db.indexOf('export const purchaseShowroomItem'));
 assert.ok(purchaseSource.indexOf('validateCatalogPurchaseV2(itemIds)')<purchaseSource.indexOf('runTransaction'),'test-only purchase must fail before Firestore transaction');

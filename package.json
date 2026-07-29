@@ -1,8 +1,9 @@
 {
   "type": "module",
   "scripts": {
-    "test": "node --test tests/*.test.mjs && node tests/html-module-syntax.cjs",
-    "qa:showroom": "node scripts/showroom_qa.mjs"
+    "test": "node --test tests/*.test.mjs && node tests/html-module-syntax.cjs && node scripts/showroom_visual_qa.mjs",
+    "qa:showroom": "node scripts/showroom_qa.mjs",
+    "qa:showroom-visual": "node scripts/showroom_visual_qa.mjs"
   },
   "dependencies": {
     "@pixiv/three-vrm": "3.5.5",
