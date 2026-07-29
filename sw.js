@@ -1,4 +1,4 @@
-const CACHE = 'weight-v129-mobile-layout-audit';
+const CACHE = 'weight-v130-admin-reward-audit';
 const ASSETS = [
   './index.html', './dashboard.html', './input.html', './import.html',
   './achievements.html', './compare.html', './dressroom.html', './shop.html', './guide.html', './visual-lab.html',

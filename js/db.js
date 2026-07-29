@@ -251,7 +251,26 @@ export async function adminSetCatalogOwnershipV2(userId,itemIds,grant=true){
   if(requested.some(id=>{const item=getCatalogItemV2(id);return item?.testOnly&&item.category!=='trophy'}))throw new Error('트로피 외 테스트 아이템은 소유권을 추가하거나 회수할 수 없습니다.');
   await _ready;if(auth.currentUser?.uid!==ADMIN_UID)throw new Error('슈퍼관리자 권한이 필요합니다.');
   const ids=requested.filter(id=>{const item=getCatalogItemV2(id);return item&&(item.category==='trophy'||item.purchasable!==false)}),userRef=doc(db,'users',userId);
-  return runTransaction(db,async tx=>{const snap=await tx.get(userRef);if(!snap.exists())throw new Error('사용자를 찾을 수 없습니다.');const user=snap.data(),current=new Set(user.adminGrantedItems||[]);ids.forEach(id=>grant?current.add(id):current.delete(id));const nextUser={...user,adminGrantedItems:[...current]},owned=ownedItemIdsV2(nextUser),loadout=normalizeLoadoutV2(user.showroomLoadoutV2);for(const category of Object.keys(loadout)){if(Array.isArray(loadout[category]))loadout[category]=loadout[category].filter(id=>owned.has(id));else if(loadout[category]&&!owned.has(loadout[category]))loadout[category]=normalizeLoadoutV2({})[category]}tx.update(userRef,{adminGrantedItems:[...current],showroomLoadoutV2:loadout});return {adminGrantedItems:[...current],showroomLoadoutV2:loadout}});
+  return runTransaction(db,async tx=>{
+    const snap=await tx.get(userRef);
+    if(!snap.exists())throw new Error('사용자를 찾을 수 없습니다.');
+    const user=snap.data(),current=new Set(user.adminGrantedItems||[]);
+    const changed=ids.filter(id=>grant?!current.has(id):current.has(id));
+    ids.forEach(id=>grant?current.add(id):current.delete(id));
+    const nextUser={...user,adminGrantedItems:[...current]},owned=ownedItemIdsV2(nextUser),loadout=normalizeLoadoutV2(user.showroomLoadoutV2);
+    for(const category of Object.keys(loadout)){
+      if(Array.isArray(loadout[category]))loadout[category]=loadout[category].filter(id=>owned.has(id));
+      else if(loadout[category]&&!owned.has(loadout[category]))loadout[category]=normalizeLoadoutV2({})[category];
+    }
+    const grantLog=changed.length?[...(user.catalogGrantLogV2||[]),{
+      changedAt:new Date().toISOString(),
+      adminUid:auth.currentUser.uid,
+      action:grant?'grant':'revoke',
+      items:changed,
+    }].slice(-100):(user.catalogGrantLogV2||[]);
+    tx.update(userRef,{adminGrantedItems:[...current],catalogGrantLogV2:grantLog,showroomLoadoutV2:loadout});
+    return {adminGrantedItems:[...current],catalogGrantLogV2:grantLog,showroomLoadoutV2:loadout};
+  });
 }
 // Refunds retail purchases only. Achievement and admin-granted ownership stay
 // intact. Purchases made before the ledger existed use the current item price.

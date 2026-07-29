@@ -59,6 +59,7 @@
     .tier-color-swatch{width:28px;height:28px;border-radius:50%;border:2px solid rgba(255,255,255,.15);cursor:pointer;}
     .adm-skin-tools{display:grid;grid-template-columns:1fr repeat(3,110px);gap:6px;margin-bottom:8px}.adm-skin-tools input,.adm-skin-tools select{min-width:0;padding:7px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:11px}.adm-skin-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:6px;max-height:480px;overflow:auto}.adm-skin-row{display:grid;grid-template-columns:auto 1fr auto;gap:6px;align-items:center;padding:7px;border:1px solid var(--border);border-radius:7px;background:var(--surface2);font-size:10px}.adm-skin-row b{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.adm-skin-row button{padding:4px 6px;border-radius:5px;font-size:9px}.adm-bulk{display:flex;gap:6px;margin-top:8px}@media(max-width:600px){.adm-skin-tools{grid-template-columns:1fr 1fr}.adm-skin-tools input{grid-column:1/-1}}
     .trophy-linker{display:grid;grid-template-columns:minmax(230px,.8fr) minmax(0,1.7fr);gap:12px}.trophy-ach-list{max-height:520px;overflow:auto;display:grid;gap:5px}.trophy-ach-card{width:100%;text-align:left;padding:9px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--text);cursor:pointer}.trophy-ach-card.active{border-color:#e6cc80;box-shadow:0 0 0 1px rgba(230,204,128,.25)}.trophy-ach-card small{display:block;color:var(--muted);margin-top:3px}.trophy-gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:7px}.trophy-pick{min-height:148px;padding:8px;border:1px solid var(--border);border-radius:9px;background:var(--surface2);color:var(--text);cursor:pointer;text-align:center}.trophy-pick.selected{border-color:#e6cc80;background:rgba(230,204,128,.08);box-shadow:0 0 0 1px rgba(230,204,128,.22)}.trophy-pick img{width:78px;height:78px;object-fit:contain;display:block;margin:0 auto 5px}.trophy-pick b{display:block;color:#e6cc80;font-size:11px}.trophy-pick small{display:block;color:var(--muted);font-size:9px;margin-top:3px}.trophy-link-actions{display:flex;align-items:center;gap:7px;margin-top:10px}.trophy-link-actions .status{margin-right:auto;color:var(--muted);font-size:11px}@media(max-width:760px){.trophy-linker{grid-template-columns:1fr}.trophy-ach-list{max-height:230px}}
+    .adm-history{margin-top:10px;border-top:1px solid var(--border);padding-top:9px}.adm-history summary{cursor:pointer;color:var(--muted);font-size:11px;font-weight:700}.adm-history-list{display:grid;gap:5px;margin-top:7px;max-height:220px;overflow:auto}.adm-history-row{display:grid;grid-template-columns:88px 72px minmax(0,1fr) auto;gap:7px;align-items:start;padding:6px 7px;border:1px solid rgba(255,255,255,.07);border-radius:7px;background:rgba(255,255,255,.025);font-size:9px}.adm-history-row b{font-size:10px}.adm-history-row time,.adm-history-row small{color:var(--muted)}@media(max-width:600px){.adm-history-row{grid-template-columns:72px minmax(0,1fr)}}
     .ach-admin-list{display:flex;flex-direction:column;gap:4px;margin-top:8px;max-height:360px;overflow-y:auto;}
     /* 월별 아코디언 */
     .month-accordion{margin-bottom:4px;}
@@ -116,7 +117,7 @@ import { onAuthChange, adminSignOut, ADMIN_UID,
          adminRefundCatalogPurchasesV2 } from './js/db.js';
 import { ACHIEVEMENTS, ACHIEVEMENT_CATEGORIES, DEFAULT_TIERS } from './js/achievements.js';
 import { computeAchievementState, syncAchievements } from './js/achievements-engine.js';
-import { ALL_CATALOG_V2, V2_CATEGORIES, CATEGORY_META, RARITY_META, ownedItemIdsV2, profileVisualForUserV2, titleInfoV2 } from './js/showroom-v2.js?v=96';
+import { ALL_CATALOG_V2, V2_CATEGORIES, CATEGORY_META, RARITY_META, getCatalogItemV2, ownedItemIdsV2, profileVisualForUserV2, titleInfoV2 } from './js/showroom-v2.js?v=96';
 
 let allUsers=[], selectedUid=null, settings={};
 
@@ -367,8 +368,21 @@ function renderDetail(user, records, systemEarned=new Set()) {
         ${buildAchOverrideUI(user)}
       </div>
     </div>
-    <div class="card mt-12"><div class="section-title">✨ V2 스킨 ${ALL_CATALOG_V2.length}종 지급 관리</div><div class="adm-skin-tools"><input id="admSkinSearch" placeholder="ID·이름·설명·구현키 검색" oninput="renderAdminSkinGrid()"><select id="admSkinCategory" onchange="renderAdminSkinGrid()"><option value="">전체 범주</option>${V2_CATEGORIES.map(id=>`<option value="${id}">${CATEGORY_META[id].name}</option>`).join('')}</select><select id="admSkinRarity" onchange="renderAdminSkinGrid()"><option value="">전체 등급</option>${Object.entries(RARITY_META).filter(([id])=>ALL_CATALOG_V2.some(item=>item.rarity===id)).map(([id,m])=>`<option value="${id}">${m.label}</option>`).join('')}</select><select id="admSkinOwn" onchange="renderAdminSkinGrid()"><option value="">전체 보유</option><option value="owned">보유</option><option value="unowned">미보유</option></select></div><div class="adm-skin-grid" id="admSkinGrid"></div><div class="adm-bulk"><button class="btn btn-primary btn-sm" onclick="adminBulkSkin(true)">선택 일괄 지급</button><button class="btn btn-danger btn-sm" onclick="adminBulkSkin(false)">선택 관리자 지급분 회수</button></div></div>`;
+    <div class="card mt-12"><div class="section-title">✨ V2 스킨 ${ALL_CATALOG_V2.length}종 지급 관리</div><div class="adm-skin-tools"><input id="admSkinSearch" placeholder="ID·이름·설명·구현키 검색" oninput="renderAdminSkinGrid()"><select id="admSkinCategory" onchange="renderAdminSkinGrid()"><option value="">전체 범주</option>${V2_CATEGORIES.map(id=>`<option value="${id}">${CATEGORY_META[id].name}</option>`).join('')}</select><select id="admSkinRarity" onchange="renderAdminSkinGrid()"><option value="">전체 등급</option>${Object.entries(RARITY_META).filter(([id])=>ALL_CATALOG_V2.some(item=>item.rarity===id)).map(([id,m])=>`<option value="${id}">${m.label}</option>`).join('')}</select><select id="admSkinOwn" onchange="renderAdminSkinGrid()"><option value="">전체 보유</option><option value="owned">보유</option><option value="unowned">미보유</option></select></div><div class="adm-skin-grid" id="admSkinGrid"></div><div class="adm-bulk"><button class="btn btn-primary btn-sm" onclick="adminBulkSkin(true)">선택 일괄 지급</button><button class="btn btn-danger btn-sm" onclick="adminBulkSkin(false)">선택 관리자 지급분 회수</button></div>${renderCatalogAdminHistory(user)}</div>`;
   window._adminCatalogUser=user;renderAdminSkinGrid();
+}
+
+function renderCatalogAdminHistory(user){
+  const grants=(user.catalogGrantLogV2||[]).map(entry=>({...entry,type:'grant'}));
+  const refunds=(user.catalogRefundLogV2||[]).map(entry=>({...entry,type:'refund',changedAt:entry.refundedAt}));
+  const rows=[...grants,...refunds].sort((a,b)=>String(b.changedAt||'').localeCompare(String(a.changedAt||''))).slice(0,40);
+  const itemName=id=>getCatalogItemV2(id)?.name||id;
+  return `<details class="adm-history"><summary>최근 지급·회수·환불 내역 ${rows.length}건</summary><div class="adm-history-list">${rows.map(entry=>{
+    const refund=entry.type==='refund';
+    const label=refund?'구매 환불':entry.action==='revoke'?'지급분 회수':'관리자 지급';
+    const ids=refund?(entry.items||[]).map(item=>item.id):(entry.items||[]);
+    return `<div class="adm-history-row"><time>${String(entry.changedAt||'').replace('T',' ').slice(0,16)}</time><b>${label}</b><span>${ids.map(itemName).join(' · ')||'항목 없음'}</span><small>${refund?`${Number(entry.amount||0).toLocaleString('ko-KR')}P · ${entry.reason||''}`:entry.adminUid||''}</small></div>`;
+  }).join('')||'<div style="color:var(--muted);font-size:10px">아직 처리 내역이 없습니다.</div>'}</div></details>`;
 }
 
 window.renderAdminSkinGrid=()=>{const host=document.getElementById('admSkinGrid'),u=window._adminCatalogUser;if(!host||!u)return;const q=(document.getElementById('admSkinSearch')?.value||'').toLowerCase(),cat=document.getElementById('admSkinCategory')?.value||'',rar=document.getElementById('admSkinRarity')?.value||'',own=document.getElementById('admSkinOwn')?.value||'',owned=ownedItemIdsV2(u),granted=new Set(u.adminGrantedItems||[]),purchased=new Set(u.purchasedItemsV2||[]),earned=new Set(u.achievementRewardItems||[]);host.innerHTML=ALL_CATALOG_V2.filter(item=>(!q||`${item.id} ${item.name} ${item.visual||''} ${item.implKey||''}`.toLowerCase().includes(q))&&(!cat||item.category===cat)&&(!rar||item.rarity===rar)&&(!own||(own==='owned')===owned.has(item.id))).map(item=>{const sources=[purchased.has(item.id)&&'구매',earned.has(item.id)&&'업적',granted.has(item.id)&&'관리자 지급'].filter(Boolean).join(' · ')||'미보유',grantable=!item.testOnly||item.category==='trophy';return`<label class="adm-skin-row"><input type="checkbox" data-admin-skin="${item.id}" ${grantable?'':'disabled'}><span><b style="color:${RARITY_META[item.rarity].color}">${item.name}</b><small style="display:block;color:var(--muted)">${CATEGORY_META[item.category].name} · ${item.id}<br>출처: ${sources}</small></span>${grantable?`<button type="button" class="${granted.has(item.id)?'btn-danger':'btn-primary'}" onclick="event.preventDefault();adminToggleSkin('${item.id}',${!granted.has(item.id)})">${granted.has(item.id)?'관리자 지급분 회수':'관리자 지급'}</button>`:'<small style="color:var(--muted)">테스트 전용</small>'}</label>`}).join('')};
@@ -1214,7 +1228,7 @@ function buildTrophyConnector(query='') {
       <div>
         <div style="font-size:12px;margin-bottom:8px"><b>${selected?.name||'업적을 선택하세요'}</b><span style="color:var(--muted)"> 달성 시 지급할 트로피를 복수 선택할 수 있습니다.</span></div>
         <div class="trophy-gallery">${activeTrophies().map(t=>`<button type="button" class="trophy-pick ${picked.has(t.id)?'selected':''}" onclick="toggleTrophyReward('${t.id}')" aria-pressed="${picked.has(t.id)}"><img src="${t.asset}" alt=""><b>${t.name}</b><small>${trophyAssignmentCount(t.id)}개 업적에 연결</small></button>`).join('')}</div>
-        <div class="trophy-link-actions"><span class="status">선택 업적에 ${picked.size}종 · 저장 전 변경은 이용자에게 반영되지 않습니다.</span><button class="btn btn-secondary btn-sm" onclick="revertTrophyRewards()">되돌리기</button><button class="btn btn-primary btn-sm" onclick="saveTrophyRewards()">변경 저장</button></div>
+        <div class="trophy-link-actions"><span class="status">선택 업적에 ${picked.size}종 · 저장하면 기존 달성자에게도 즉시 소급 지급됩니다.</span><button class="btn btn-secondary btn-sm" onclick="revertTrophyRewards()">되돌리기</button><button id="saveTrophyRewardsBtn" class="btn btn-primary btn-sm" onclick="saveTrophyRewards()">저장·전체 계정 반영</button></div>
       </div>
     </div>`;
 }
@@ -1228,9 +1242,36 @@ window.toggleTrophyReward=id=>{
 };
 window.revertTrophyRewards=()=>{trophyRewardDraft=structuredClone(achievementTrophyRewards);renderTrophyConnector(document.getElementById('trophyAchSearch')?.value||'');showToast('저장 전 변경을 되돌렸습니다.','ok')};
 window.saveTrophyRewards=async()=>{
+  const button=document.getElementById('saveTrophyRewardsBtn');
+  if(button?.disabled)return;
+  if(button){button.disabled=true;button.textContent='저장·반영 중...'}
   achievementTrophyRewards=normalizeActiveTrophyRewards(trophyRewardDraft);
   trophyRewardDraft=structuredClone(achievementTrophyRewards);
-  await saveDrSettings();renderTrophyConnector(document.getElementById('trophyAchSearch')?.value||'');showToast('업적별 트로피 보상을 저장했습니다.','ok');
+  let synced=0,failed=0,recipients=0,granted=0;
+  try{
+    await saveDrSettings();
+    const trophyIds=new Set(activeTrophies().map(item=>item.id));
+    for(const cached of allUsers){
+      try{
+        const before=new Set((cached.achievementRewardItems||[]).filter(id=>trophyIds.has(id)));
+        const result=await syncAchievements(cached.id);
+        if(!result)continue;
+        const after=new Set((result.user.achievementRewardItems||[]).filter(id=>trophyIds.has(id)));
+        const added=[...after].filter(id=>!before.has(id)).length;
+        if(added){recipients++;granted+=added}
+        Object.assign(cached,result.user);
+        synced++;
+      }catch(error){
+        console.error('trophy reward sync failed',cached.id,error);
+        failed++;
+      }
+    }
+    renderTrophyConnector(document.getElementById('trophyAchSearch')?.value||'');
+    showToast(`트로피 연결 저장 · ${synced}명 동기화 · ${recipients}명에게 ${granted}종 지급${failed?` · ${failed}명 실패`:''}`,failed?'err':'ok');
+  }finally{
+    const current=document.getElementById('saveTrophyRewardsBtn');
+    if(current){current.disabled=false;current.textContent='저장·전체 계정 반영'}
+  }
 };
 
 function renderTitleList() {
