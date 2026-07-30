@@ -257,14 +257,16 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
     ctx.restore();
   }
   const markerHits=new Map();
-  function dot(ctx, px, py, color, r, markerRole=null) {
+  function dot(ctx, px, py, color, r, markerRole=null, safeArea=null) {
     const key=`${Math.round(px)}:${Math.round(py)}`,hit=markerHits.get(key)||0;markerHits.set(key,hit+1);
     const angle=hit*Math.PI*2/3;px+=hit?Math.cos(angle)*9:0;py+=hit?Math.sin(angle)*9:0;
     ctx.save();
     const markerImage=markerRole?markerImages[markerRole]:null;
     if(markerImage?.complete&&markerImage.naturalWidth){
+      const safeSize=safeArea&&isMobile?Math.min(markerSize,Math.max(48,Math.min(safeArea.width*.22,safeArea.height*.32))):markerSize;
+      if(safeArea){const half=safeSize/2;px=Math.max(safeArea.left+half,Math.min(safeArea.right-half,px));py=Math.max(safeArea.top+half,Math.min(safeArea.bottom-half,py));}
       ctx.shadowColor='rgba(0,0,0,.85)';ctx.shadowBlur=5;
-      ctx.drawImage(markerImage,px-markerSize/2,py-markerSize/2,markerSize,markerSize);ctx.restore();return;
+      ctx.drawImage(markerImage,px-safeSize/2,py-safeSize/2,safeSize,safeSize);ctx.restore();return;
     }
     ctx.fillStyle=color;ctx.strokeStyle=BG;ctx.lineWidth=2;ctx.beginPath();ctx.arc(px,py,r,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.restore();
   }
@@ -280,7 +282,7 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
 
     if (showMaxMarker) {
       const mp = pts[maxIdx];
-      dot(ctx, gx(mp.t), gy(mp.w), RED, 7, 'high');
+      dot(ctx, gx(mp.t), gy(mp.w), RED, 7, 'high', area);
       // tight(모아보기): 점만 표시, 말풍선·리더선 생략 (값은 프로필 줄 배지로 표시)
       if (!tight)
         drawBox(ctx, gx(mp.t), gy(mp.w), gx(mp.t)+12, gy(mp.w)+Math.round(14*scale), [`최고  ${maxW.toFixed(1)} kg`, lbl(mp.date)], '195,65,42', chart, sBP, sBLH, sFont0, sFont1);
@@ -289,7 +291,7 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
       const drawMinIdx = minIndices;
       if (drawMinIdx.length > 0) {
         const mi = pts[drawMinIdx[drawMinIdx.length-1]], mix = gx(mi.t), miy = gy(mi.w);
-        dot(ctx, mix, miy, GREEN, 7, 'low');
+        dot(ctx, mix, miy, GREEN, 7, 'low', area);
         if (!tight) {
           const minLines = [`최저  ${minW.toFixed(1)} kg`, ...drawMinIdx.slice(0, 2).map(i => lbl(pts[i].date))];
           drawBox(ctx, mix, miy, mix+12, miy+Math.round(14*scale), minLines, '34,128,50', chart, sBP, sBLH, sFont0, sFont1);
@@ -654,6 +656,7 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
     type: 'line', data: { datasets },
     options: {
       responsive: true,
+      ...(isMobile ? { devicePixelRatio: Math.min(window.devicePixelRatio || 1, 1.5) } : {}),
       aspectRatio: fixedPlotTotalH
         ? chartRefW / fixedPlotTotalH
         : gridCell

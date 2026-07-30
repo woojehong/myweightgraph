@@ -297,12 +297,13 @@ assert.equal(mainPlotDecorator.includes('v3-card-plot-layer'),false,'card theme 
 assert.ok(renderer.includes('options.mainPlot===true?decorateMainPlotV2(plot,raw):false'),'legacy API must require explicit mainPlot opt-in');
 const chart=await readFile(new URL('../js/chart-render.js',import.meta.url),'utf8');
 assert.equal((chart.match(/dot\(ctx,/g)||[]).length-1,3,'max/min/current marker calls stay explicit');
-assert.equal((chart.match(/dot\(ctx, gx\(mp\.t\), gy\(mp\.w\), RED, 7, 'high'\)/g)||[]).length,1,'paired high marker must render exactly once at the highest point');
-assert.equal((chart.match(/dot\(ctx, mix, miy, GREEN, 7, 'low'\)/g)||[]).length,1,'paired low marker must render exactly once at the lowest point');
+assert.equal((chart.match(/dot\(ctx, gx\(mp\.t\), gy\(mp\.w\), RED, 7, 'high', area\)/g)||[]).length,1,'paired high marker must render exactly once at the highest point');
+assert.equal((chart.match(/dot\(ctx, mix, miy, GREEN, 7, 'low', area\)/g)||[]).length,1,'paired low marker must render exactly once at the lowest point');
 assert.ok(chart.includes('chartDecorations?.markerHighAsset'));assert.ok(chart.includes('chartDecorations?.markerLowAsset'));assert.ok(chart.includes('ctx.drawImage(markerImage'));
 assert.ok(chart.includes('Number(chartDecorations?.markerSize) || 32'));
 assert.ok(chart.includes('Math.max(20, Math.min(100'));
-assert.ok(chart.includes('ctx.drawImage(markerImage,px-markerSize/2,py-markerSize/2,markerSize,markerSize)'));
+assert.ok(chart.includes('ctx.drawImage(markerImage,px-safeSize/2,py-safeSize/2,safeSize,safeSize)'));
+assert.ok(chart.includes('devicePixelRatio: Math.min(window.devicePixelRatio || 1, 1.5)'));
 const datasetSource=chart.slice(chart.indexOf('const datasets = ['),chart.indexOf('const sharedX ='));
 assert.equal(datasetSource.includes('markerSize'),false,'image marker size must not affect ordinary dataset points');
 assert.equal(chart.includes("text: '체중 (kg)'"),false,'Y-axis title must be removed');
@@ -321,7 +322,7 @@ assert.equal((visualLab.match(/drawMarker\(ctx,marker,/g)||[]).length,1,'visual 
 assert.equal((visualLab.match(/drawMarker\(ctx,/g)||[]).length-1,1,'visual lab must render exactly one point marker');
 
 const sw=await readFile(new URL('../sw.js',import.meta.url),'utf8');
-assert.ok(sw.includes("weight-v130-admin-reward-audit"));assert.ok(sw.includes("c.addAll(CORE_ASSETS)"));assert.equal(sw.includes('c.addAll(ASSETS)'),false);
+assert.ok(sw.includes("weight-v131-mobile-fx-budget"));assert.ok(sw.includes("c.addAll(CORE_ASSETS)"));assert.equal(sw.includes('c.addAll(ASSETS)'),false);
 for(const entry of SHOWROOM_CATALOG_V2.filter(entry=>entry.asset&&entry.id!=='pe_r_roaring_tiger_general')){
   const cached=entry.asset.includes('/showroom-v13/')
     ?sw.includes(`'${entry.id}'`)

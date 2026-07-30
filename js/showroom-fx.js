@@ -1472,9 +1472,12 @@ function v11DrawArt(ctx,id,index,x,y,size,alpha,rotation=0,blend='screen'){
   ctx.save();ctx.globalCompositeOperation=blend;ctx.globalAlpha=clamp(alpha,0,1);
   ctx.translate(x,y);ctx.rotate(rotation);ctx.drawImage(image,-size/2,-size/2,size,size);ctx.restore();
 }
+let v11Density=1;
+const v11Count=(count,min=3)=>Math.max(min,Math.round(count*v11Density));
 function v11ArtStream(ctx,a,id,t,{count=14,indices=[1,2],speed=.08,size=.07,alpha=.42,wave=.12,reverse=false,trail=2,seed=1}={}){
   const w=a.right-a.left,h=a.bottom-a.top,unit=Math.min(w,h);
-  for(let i=0;i<count;i++){
+  const visibleCount=v11Count(count);
+  for(let i=0;i<visibleCount;i++){
     const velocity=speed*(.7+rnd(i+seed,2)*.65),phase=(rnd(i+seed,3)+t*velocity)%1,p=reverse?1-phase:phase;
     const x=a.left+w*(-.08+p*1.16),baseY=a.top+h*(.12+.76*rnd(i+seed,4));
     const y=baseY+Math.sin(p*TAU*(1.2+rnd(i,5))+i+t*.45)*h*wave;
@@ -1487,8 +1490,9 @@ function v11ArtStream(ctx,a,id,t,{count=14,indices=[1,2],speed=.08,size=.07,alph
 }
 function v11ArtOrbit(ctx,a,id,t,{count=8,indices=[1,2],cx=.5,cy=.5,rx=.3,ry=.28,size=.1,alpha=.5,speed=.25,seed=1}={}){
   const w=a.right-a.left,h=a.bottom-a.top,unit=Math.min(w,h);
-  for(let i=0;i<count;i++){
-    const angle=t*speed+(i/count)*TAU+rnd(i+seed,1)*.35;
+  const visibleCount=v11Count(count);
+  for(let i=0;i<visibleCount;i++){
+    const angle=t*speed+(i/visibleCount)*TAU+rnd(i+seed,1)*.35;
     const x=a.left+w*(cx+Math.cos(angle)*rx),y=a.top+h*(cy+Math.sin(angle)*ry);
     v11DrawArt(ctx,id,indices[i%indices.length],x,y,unit*size*(.8+rnd(i,3)*.45),alpha,angle+Math.PI/2);
   }
@@ -1500,7 +1504,7 @@ function v11LayeredAmbient(ctx,a,id,t,{anchors=[1,2],stream=[3,4],orbit=[5,6],ac
   v11DrawArt(ctx,id,anchors[1],a.right-w*.1,a.bottom-h*(.17+.025*Math.cos(t*.34+seed)),unit*(mythic?.4:.3)*breathe,alpha,.08-.025*Math.sin(t*.2));
   v11ArtStream(ctx,a,id,t,{count:mythic?18:11,indices:stream,speed,size:mythic?.065:.052,alpha:alpha*.9,wave,trail:mythic?2:1,seed});
   v11ArtOrbit(ctx,a,id,t,{count:mythic?9:5,indices:orbit,cx:.78,cy:.3,rx:.14,ry:.2,size:mythic?.06:.047,alpha:alpha*.82,speed:mythic?.34:.16,seed:seed+17});
-  for(let i=0;i<(mythic?5:3);i++){
+  for(let i=0;i<v11Count(mythic?5:3,2);i++){
     const x=a.left+w*(.16+i*(mythic?.17:.29)),y=a.top+h*(.18+.62*rnd(i+seed,8));
     v11DrawArt(ctx,id,accent[i%accent.length],x,y,unit*(mythic?.085:.065),alpha*(.52+.18*Math.sin(t*(mythic?.8:.45)+i)),t*(mythic?.09:.035)*(i%2?1:-1));
   }
@@ -1668,11 +1672,15 @@ const V11_AMBIENT_RENDERERS = Object.freeze({
 function drawV11Ambient(ctx, area, id, T, small) {
   const renderer=V11_AMBIENT_RENDERERS[id];if(!renderer)return;
   const time=reduceMotion()?0:T/1000;
-  ctx.save();ctx.globalAlpha=small?.7:1;renderer(ctx,area,time,small);v11ProtectCenter(ctx,area);ctx.restore();
+  const priorDensity=v11Density,w=area.right-area.left;
+  v11Density=small||w<520?.55:w<760?.75:1;
+  ctx.save();ctx.globalAlpha=small?.78:1;renderer(ctx,area,time,small);v11ProtectCenter(ctx,area);ctx.restore();
+  v11Density=priorDensity;
 }
 function loop(ts) {
   rafId = requestAnimationFrame(loop);
-  const budget = liveCharts.size >= 4 ? 42 : liveCharts.size >= 2 ? 30 : 20;
+  const mobile=window.innerWidth<768;
+  const budget = liveCharts.size >= 4 ? (mobile?50:42) : liveCharts.size >= 2 ? (mobile?40:30) : (mobile?32:20);
   if (ts - lastTick < budget) return;
   lastTick = ts;
   if (document.hidden) return;
