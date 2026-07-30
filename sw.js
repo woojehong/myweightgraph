@@ -1,4 +1,4 @@
-const CACHE = 'weight-v132-canonical-set-audit';
+const CACHE = 'weight-v133-profile-surface-audit';
 const ASSETS = [
   './index.html', './dashboard.html', './input.html', './import.html',
   './achievements.html', './compare.html', './dressroom.html', './shop.html', './guide.html', './visual-lab.html',

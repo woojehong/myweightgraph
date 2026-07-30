@@ -322,7 +322,7 @@ assert.equal((visualLab.match(/drawMarker\(ctx,marker,/g)||[]).length,1,'visual 
 assert.equal((visualLab.match(/drawMarker\(ctx,/g)||[]).length-1,1,'visual lab must render exactly one point marker');
 
 const sw=await readFile(new URL('../sw.js',import.meta.url),'utf8');
-assert.ok(sw.includes("weight-v132-canonical-set-audit"));assert.ok(sw.includes("c.addAll(CORE_ASSETS)"));assert.equal(sw.includes('c.addAll(ASSETS)'),false);
+assert.ok(sw.includes("weight-v133-profile-surface-audit"));assert.ok(sw.includes("c.addAll(CORE_ASSETS)"));assert.equal(sw.includes('c.addAll(ASSETS)'),false);
 for(const entry of SHOWROOM_CATALOG_V2.filter(entry=>entry.asset&&entry.id!=='pe_r_roaring_tiger_general')){
   const cached=entry.asset.includes('/showroom-v13/')
     ?sw.includes(`'${entry.id}'`)
@@ -361,6 +361,10 @@ const purchaseSource=db.slice(db.indexOf('export async function purchaseCatalogI
 assert.ok(purchaseSource.indexOf('validateCatalogPurchaseV2(itemIds)')<purchaseSource.indexOf('runTransaction'),'test-only purchase must fail before Firestore transaction');
 const admin=await readFile(new URL('../admin.html',import.meta.url),'utf8');
 for(const token of ['achievementTrophyRewards','buildTrophyConnector','toggleTrophyReward','saveTrophyRewards','저장·전체 계정 반영','syncAchievements(cached.id)','renderCatalogAdminHistory','catalogGrantLogV2','catalogRefundLogV2','최근 지급·회수·환불 내역'])assert.ok(admin.includes(token),token);
+assert.ok(admin.includes('초상화와 프레임은 사용자의 쇼룸 장착 설정을 따릅니다.'));
+for(const legacyAdminToken of ['ADMIN_EMOJIS','_adminPickEmoji','id="eEmojiGrid"','id="eEmoji"','pickAdminEmoji']){
+  assert.equal(admin.includes(legacyAdminToken),false,`admin legacy emoji editor must stay retired: ${legacyAdminToken}`);
+}
 for(const page of ['index.html','input.html','dashboard.html','compare.html','achievements.html','dressroom.html','import.html','admin.html']){
   const html=await readFile(new URL(`../${page}`,import.meta.url),'utf8');
   assert.ok(html.includes(page==='dressroom.html'?'profileShowcaseForUserV2':'profileVisualForUserV2'),`${page}: common showroom profile renderer missing`);

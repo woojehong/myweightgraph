@@ -54,7 +54,7 @@ for(const token of [
 ])assert.ok(compare.includes(token),`responsive compare layout: ${token}`);
 
 const sw = await readFile(new URL('../sw.js',import.meta.url),'utf8');
-assert.ok(sw.includes('weight-v132-canonical-set-audit'));
+assert.ok(sw.includes('weight-v133-profile-surface-audit'));
 for(const item of CARD_THEME_ITEMS)assert.ok(sw.includes(item.asset),item.id);
 for(const item of PORTRAIT_FRAME_ITEMS_V7)assert.ok(sw.includes(item.asset),item.id);
 for(const item of [...CARD_THEME_ITEMS_V13,...PORTRAIT_FRAME_ITEMS_V13])assert.ok(sw.includes(item.id),item.id);
