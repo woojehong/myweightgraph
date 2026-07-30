@@ -638,9 +638,9 @@ function chartOpts(user) {
   return base;
 }
 
-// 열 개수: 각 카드의 헤더 안전 폭을 확보한다. 넓은 데스크탑에서만 2열.
+// 실제 모바일만 1열이다. 데스크탑 창은 줄여도 카드 비율을 유지하며 2열로 축소한다.
 function gridCols(n) {
-  const desktop = window.matchMedia('(min-width:1500px)').matches;
+  const desktop = window.matchMedia('(min-width:768px)').matches;
   return desktop ? (n <= 1 ? 1 : 2) : 1;
 }
 
