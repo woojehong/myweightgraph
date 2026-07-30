@@ -67,8 +67,10 @@ for(const token of [
   'SHOWROOM_SOURCE_CATEGORIES','showroomFullSets','renderSetGrid','sr-set-grid',
   'data-apply-set','세트 전체 미리보기','원클릭 전체 미리보기',
   "for(const cat of SHOWROOM_FULL_SET_CATEGORIES)","draft[cat]=item?.id||null",
+  "const canonicalItems=SHOWROOM_FULL_SET_CATEGORIES.map(cat=>set.presetMap[cat]).filter(Boolean)",
+  "const applied=SHOWROOM_FULL_SET_CATEGORIES.every(cat=>draft[cat]===(set.presetMap[cat]?.id||null))",
+  '공식 구성품','추가 구매 없음',
   '.sort(compareShowroomRarityV2)',
-  "set.categoryMap[cat].length?set.categoryMap[cat].some(item=>draft[cat]===item.id):draft[cat]==null",
 ])assert.ok(showroom.includes(token),token);
 assert.ok(showroom.includes('빈 범주는 기본으로 미리보기'));
 assert.ok(showroom.includes('세트 미리보기 · 기본'));

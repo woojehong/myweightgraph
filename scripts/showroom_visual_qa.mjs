@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import { ALL_CATALOG_V2 } from '../js/showroom-v2.js';
 import {
   SHOWROOM_FULL_SET_CATEGORIES,
@@ -11,6 +12,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const errors = [];
 const warnings = [];
 const inspected = [];
+const hashes = new Map();
 
 function webpSize(buffer) {
   const chunk = buffer.toString('ascii', 12, 16);
@@ -72,23 +74,33 @@ function imageSize(buffer) {
 }
 
 const expected = {
-  graph_skin: { ratio: 16 / 9, tolerance: 0.025 },
-  card_theme: { ratio: 4.2, tolerance: 0.12 },
-  profile_emoji: { ratio: 1, tolerance: 0.035 },
-  emoji_border: { ratio: 1, tolerance: 0.035 },
-  point_marker: { ratio: 1, tolerance: 0.035 },
+  graph_skin: { ratio: 16 / 9, tolerance: 0.025, minWidth: 1536, minHeight: 864 },
+  card_theme: { ratio: 4.2, tolerance: 0.12, minWidth: 1680, minHeight: 400 },
+  profile_emoji: { ratio: 1, tolerance: 0.035, minWidth: 1024, minHeight: 1024 },
+  emoji_border: { ratio: 1, tolerance: 0.035, minWidth: 512, minHeight: 512 },
+  point_marker: { ratio: 1, tolerance: 0.035, minWidth: 512, minHeight: 512 },
 };
 
 for (const item of ALL_CATALOG_V2) {
   if (!item.asset || !expected[item.category]) continue;
   const source = path.resolve(root, item.asset.replace(/^\.\//, ''));
   try {
-    const { width, height } = imageSize(await readFile(source));
+    const buffer = await readFile(source);
+    const { width, height } = imageSize(buffer);
+    const hash = createHash('sha256').update(buffer).digest('hex');
+    const hashItems = hashes.get(hash) || [];
+    hashItems.push(item.id);
+    hashes.set(hash, hashItems);
     const ratio = height ? width / height : 0;
     const rule = expected[item.category];
     const delta = Math.abs(ratio - rule.ratio);
     if (!width || !height) {
       errors.push(`${item.id}: 이미지 크기를 읽을 수 없습니다.`);
+    } else if (width < rule.minWidth || height < rule.minHeight) {
+      errors.push(
+        `${item.id}: ${item.category} 해상도 ${width}x${height} `
+        + `(최소 ${rule.minWidth}x${rule.minHeight})`,
+      );
     } else if (delta > rule.tolerance) {
       errors.push(
         `${item.id}: ${item.category} 비율 ${ratio.toFixed(3)} `
@@ -106,6 +118,23 @@ for (const item of ALL_CATALOG_V2) {
     errors.push(`${item.id}: 이미지 분석 실패 (${error.message})`);
   }
 }
+
+for (const ids of hashes.values()) {
+  if (ids.length > 1) errors.push(`동일 이미지 중복 사용: ${ids.join(', ')}`);
+}
+
+const dimensionsByCategory = Object.fromEntries(
+  Object.keys(expected).map(category => {
+    const rows = inspected.filter(item => item.category === category);
+    return [category, {
+      count: rows.length,
+      minWidth: Math.min(...rows.map(item => item.width)),
+      minHeight: Math.min(...rows.map(item => item.height)),
+      maxWidth: Math.max(...rows.map(item => item.width)),
+      maxHeight: Math.max(...rows.map(item => item.height)),
+    }];
+  }),
+);
 
 for (const set of showroomFullSets(ALL_CATALOG_V2)) {
   const missing = SHOWROOM_FULL_SET_CATEGORIES.filter(
@@ -126,6 +155,7 @@ for (const set of showroomFullSets(ALL_CATALOG_V2)) {
 console.log(JSON.stringify({
   status: errors.length ? 'FAIL' : 'PASS',
   inspected: inspected.length,
+  dimensionsByCategory,
   sets: showroomFullSets(ALL_CATALOG_V2).length,
   warnings,
   errors,

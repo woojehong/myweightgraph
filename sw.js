@@ -1,4 +1,4 @@
-const CACHE = 'weight-v131-mobile-fx-budget';
+const CACHE = 'weight-v132-canonical-set-audit';
 const ASSETS = [
   './index.html', './dashboard.html', './input.html', './import.html',
   './achievements.html', './compare.html', './dressroom.html', './shop.html', './guide.html', './visual-lab.html',
