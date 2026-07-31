@@ -1,0 +1,590 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#080d14">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="favicon.png">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/nutrition.css">
+  <title>식단 | 마웨그</title>
+</head>
+<body>
+<header class="top-bar">
+  <div></div>
+  <a href="index.html?select=1" class="mweg-header-wrap" style="justify-self:center">
+    <span class="mweg-title">마웨그</span><span class="mweg-subtitle">Nutrition Lab</span>
+  </a>
+  <button class="btn btn-ghost btn-sm" id="logoutBtn">로그아웃</button>
+</header>
+
+<main class="nutrition-page">
+  <section class="nutrition-hero">
+    <div><h1>식단</h1><p>기록은 빠르게, 추정치는 솔직하게. 기존 포인트·업적과 분리된 사이드 기능입니다.</p></div>
+    <div class="nutrition-date"><button class="btn btn-ghost btn-sm" id="prevDay">‹</button><input class="input-field" id="dayInput" type="date"><button class="btn btn-ghost btn-sm" id="nextDay">›</button></div>
+  </section>
+  <nav class="nutrition-tabs" id="tabs">
+    <button data-tab="today" class="active">오늘</button>
+    <button data-tab="presets">즐겨먹기 관리</button>
+    <button data-tab="goals">목표 설정</button>
+    <button data-tab="inbody">InBody</button>
+    <button data-tab="workout">운동 준비</button>
+  </nav>
+
+  <section id="tab-today">
+    <div class="nut-summary" id="summary"></div>
+    <div id="estimateNote"></div>
+    <article class="nut-card favorite-builder">
+      <div class="favorite-builder-head">
+        <div>
+          <p class="eyebrow">탭해서 한 끼 조립</p>
+          <h2>즐겨먹는 음식 <span id="favoriteCount">0/30</span></h2>
+          <p>카드를 누르면 1단위씩 바구니에 담깁니다. 자주 쓰는 음식부터 빠르게 조합하세요.</p>
+        </div>
+        <div class="favorite-builder-tools">
+          <label for="favoriteSort">정렬</label>
+          <select class="input-field" id="favoriteSort"><option value="manual">내 순서</option><option value="frequency">자주 먹는 순</option><option value="name">이름순</option></select>
+          <button class="btn btn-ghost" id="manageFavorites">편집·추가</button>
+        </div>
+      </div>
+      <div class="favorite-food-grid" id="favoriteFoodGrid"></div>
+    </article>
+    <div class="nut-grid nutrition-lower-grid">
+      <article class="nut-card">
+        <div class="nut-card-head"><h2>오늘의 식사 기록</h2><button class="btn btn-ghost btn-sm" id="addEntry">직접 추가</button></div>
+        <div id="mealList"></div>
+      </article>
+      <aside style="display:grid;gap:14px;align-content:start">
+        <article class="nut-card one-off-card">
+          <div class="nut-card-head"><div><h2>한 번만 기록</h2><span class="nut-muted">즐겨먹지 않는 음식은 여기서</span></div></div>
+          <div class="quick-actions secondary-actions">
+            <button class="btn btn-ghost" id="openSearch">음식 검색</button>
+            <button class="btn btn-ghost" id="manualAdd">직접 입력</button>
+            <button class="btn btn-ghost" id="repeatRecent">최근 음식</button>
+            <button class="btn btn-ghost" id="openPresets">즐겨먹기 추가</button>
+          </div>
+        </article>
+        <article class="nut-card">
+          <div class="nut-card-head"><h2>음식 검색</h2><span class="nut-muted">기록 또는 즐겨먹기 추가</span></div>
+          <div class="search-box"><input class="input-field" id="foodSearch" placeholder="닭가슴살, 밥, 프로틴…"></div>
+          <div class="food-suggestions" id="foodSuggestions"></div>
+        </article>
+        <details class="nut-card photo-analysis-card photo-analysis-secondary">
+          <summary>
+            <span><strong>사진으로 분석</strong><small>보조 기능 · 하루 3회</small></span>
+            <span class="photo-quota" id="photoQuota">오늘 0/3회 사용</span>
+          </summary>
+          <div class="photo-analysis-body">
+            <div class="photo-analysis-head">
+              <div class="nut-muted">사진 선택과 압축만으로는 횟수가 차감되지 않습니다.</div>
+            </div>
+            <ol class="photo-steps" id="photoSteps" aria-label="사진 분석 단계">
+              <li class="active">1. 사진 선택</li><li>2. 섭취량 설명</li><li>3. 최종 확인</li><li>4. 분석 요청</li>
+            </ol>
+            <div class="photo-picker">
+              <input id="photoInput" type="file" accept="image/*" hidden>
+              <label class="btn btn-ghost btn-full" for="photoInput">식사 사진 선택</label>
+              <p class="photo-help">선택 즉시 1024px 이하 JPEG로 자동 압축해 미리보기를 만듭니다.</p>
+            </div>
+            <div class="photo-preview-wrap hidden" id="photoPreviewWrap"><img id="photoPreview" alt="압축된 식사 사진 미리보기"><div class="photo-file-meta" id="photoFileMeta"></div></div>
+            <div class="field photo-description">
+              <label for="photoDescription">실제로 먹은 양과 남긴 음식 *</label>
+              <textarea class="input-field" id="photoDescription" rows="4" maxlength="500" disabled placeholder="예: 밥 반 공기, 된장국은 국물 절반 남김, 제육볶음은 보이는 양의 약 80% 먹음"></textarea>
+              <ul class="photo-description-checklist" aria-label="설명 작성 체크리스트">
+                <li><span>섭취량</span> 반 공기, 2조각, 보이는 양의 80%처럼 적기</li>
+                <li><span>남긴 양</span> 국물·소스·반찬 중 먹지 않은 부분 적기</li>
+                <li><span>조리·제품 특성</span> 튀김/구이, 저당 제품, 제품명 등 적기</li>
+              </ul>
+              <div class="photo-description-meta"><span id="photoDescriptionHint">사진을 먼저 선택하세요.</span><span id="photoDescriptionCount">0/15자</span></div>
+            </div>
+            <button class="btn btn-primary btn-full" id="reviewPhotoAnalysis" disabled>최종 확인으로</button>
+            <div class="photo-confirm hidden" id="photoConfirm">
+              <strong>신중하게 확인해 주세요.</strong>
+              <p>분석 요청을 누르는 순간 오늘의 3회 제한 중 1회를 사용합니다. 사진과 실제 섭취량 설명이 정확한지 다시 확인하세요.</p>
+              <button class="btn btn-ghost btn-full" id="editPhotoAnalysis">사진·설명 수정</button>
+              <label class="photo-confirm-check"><input id="photoConfirmCheck" type="checkbox"> 사진과 설명을 최종 확인했습니다.</label>
+              <button class="btn btn-primary btn-full" id="requestPhotoAnalysis" disabled>분석 요청</button>
+            </div>
+            <div class="photo-status" id="photoAnalysisStatus" role="status" aria-live="polite"></div>
+          </div>
+        </details>
+      </aside>
+    </div>
+  </section>
+
+  <section id="tab-presets" class="hidden">
+    <article class="nut-card">
+      <div class="nut-card-head"><div><h2>즐겨먹는 음식 관리</h2><div class="nut-muted">개별 음식만 최대 30개까지 저장합니다. 내 순서에서는 앞·뒤로 배치할 수 있습니다.</div></div><button class="btn btn-primary btn-sm" id="newPreset">+ 음식 추가</button></div>
+      <div class="preset-grid" id="presetGrid"></div>
+    </article>
+  </section>
+
+  <section id="tab-goals" class="hidden">
+    <div class="nut-grid">
+      <article class="nut-card">
+        <h2>AI 없이 계산하는 시작 제안</h2>
+        <p class="nut-muted">현재 체중·신장·나이와 활동 수준을 이용합니다. 자동 적용되지 않습니다.</p>
+        <div class="field" style="margin-top:12px"><label>활동 수준</label><select class="input-field" id="activityLevel"></select></div>
+        <button class="btn btn-ghost btn-full mt-12" id="suggestTargets">새 목표 제안 받기</button>
+        <div id="suggestionBox"></div>
+      </article>
+      <article class="nut-card">
+        <h2>현재 목표</h2>
+        <div class="target-form" id="targetForm">
+          <div class="field"><label>칼로리 kcal</label><input class="input-field" id="tCalories" type="number"></div>
+          <div class="field"><label>탄수화물 g</label><input class="input-field" id="tCarbs" type="number"></div>
+          <div class="field"><label>단백질 g</label><input class="input-field" id="tProtein" type="number"></div>
+          <div class="field"><label>지방 g</label><input class="input-field" id="tFat" type="number"></div>
+          <div class="field"><label>나트륨 mg</label><input class="input-field" id="tSodium" type="number"></div>
+          <div class="field"><label>당 g</label><input class="input-field" id="tSugar" type="number"></div>
+        </div>
+        <div id="targetWarnings"></div>
+        <button class="btn btn-primary btn-full mt-12" id="saveTargets">목표 저장</button>
+      </article>
+    </div>
+  </section>
+
+  <section id="tab-inbody" class="hidden">
+    <div class="nut-grid">
+      <article class="nut-card">
+        <h2>월간 InBody 등록</h2>
+        <p class="nut-muted">무료 버전은 결과값을 직접 입력합니다. 저장한 값은 다음 목표 제안의 검토 자료가 됩니다.</p>
+        <div class="inbody-form mt-12">
+          <div class="field"><label>측정일</label><input class="input-field" id="ibDate" type="date"></div>
+          <div class="field"><label>체중 kg</label><input class="input-field" id="ibWeight" type="number" step=".1"></div>
+          <div class="field"><label>골격근량 kg</label><input class="input-field" id="ibMuscle" type="number" step=".1"></div>
+          <div class="field"><label>체지방량 kg</label><input class="input-field" id="ibFatMass" type="number" step=".1"></div>
+          <div class="field"><label>체지방률 %</label><input class="input-field" id="ibFatPct" type="number" step=".1"></div>
+          <div class="field"><label>BMI</label><input class="input-field" id="ibBmi" type="number" step=".1"></div>
+          <div class="field"><label>기초대사량 kcal</label><input class="input-field" id="ibBmr" type="number"></div>
+          <div class="field"><label>내장지방 레벨 (선택)</label><input class="input-field" id="ibVisceral" type="number"></div>
+        </div>
+        <button class="btn btn-primary btn-full mt-12" id="saveInbody">측정 결과 저장</button>
+      </article>
+      <article class="nut-card"><h2>측정 이력</h2><div id="inbodyList"></div></article>
+    </div>
+  </section>
+
+  <section id="tab-workout" class="hidden">
+    <article class="nut-card">
+      <h2>운동 기록 준비</h2>
+      <p class="nut-muted">식단 기능을 우선 완성한 뒤 별도 페이지에서 확장합니다.</p>
+      <div class="suggestion-box"><strong>예약된 구조</strong><br><span class="nut-muted">운동 세션 → 운동 종목 → 중량·반복·세트. 향후 RPE/RIR, 드롭세트, 슈퍼세트와 이전 기록 복사를 추가할 수 있습니다.</span></div>
+    </article>
+  </section>
+</main>
+
+<section class="assembly-dock hidden" id="assemblyDock" aria-label="조립 바구니">
+  <div class="assembly-dock-inner">
+    <div class="assembly-dock-copy">
+      <strong><span id="assemblyItemCount">0</span>가지 선택</strong>
+      <span id="assemblyDockItems"></span>
+    </div>
+    <div class="assembly-dock-macros" id="assemblyDockMacros"></div>
+    <button class="btn btn-primary" id="openAssemblyReview">한 끼 기록</button>
+  </div>
+</section>
+<nav class="bottom-nav" id="bottomNav"></nav>
+<div class="modal-bg" id="assemblyModal">
+  <div class="modal nut-modal assembly-modal">
+    <div class="nut-card-head"><div><p class="eyebrow">조립 바구니</p><h3>이번 끼니 확인</h3></div><button class="icon-btn" id="closeAssembly">✕</button></div>
+    <div class="assembly-review-list" id="assemblyReviewList"></div>
+    <div class="assembly-review-totals" id="assemblyReviewTotals"></div>
+    <div class="assembly-meal-fields">
+      <div class="field"><label for="assemblyMeal">끼니</label><select class="input-field" id="assemblyMeal"><option value="breakfast">아침</option><option value="lunch">점심</option><option value="dinner">저녁</option><option value="snack">간식</option></select></div>
+      <div class="field"><label for="assemblyTime">먹은 시간</label><input class="input-field" id="assemblyTime" type="time"></div>
+    </div>
+    <p class="assembly-save-note">선택한 음식은 한 번에 저장됩니다. 저장 전까지 언제든 수량을 바꿀 수 있습니다.</p>
+    <button class="btn btn-primary btn-full" id="saveAssembly">선택한 음식 한 번에 기록</button>
+  </div>
+</div>
+<div class="modal-bg" id="entryModal">
+  <div class="modal nut-modal">
+    <div class="nut-card-head"><h3 id="entryModalTitle">음식 추가</h3><button class="icon-btn" id="closeEntry">✕</button></div>
+    <div class="entry-form">
+      <div class="field half"><label>식사</label><select class="input-field" id="eMeal"><option value="breakfast">아침</option><option value="lunch">점심</option><option value="dinner">저녁</option><option value="snack">간식</option></select></div>
+      <div class="field half"><label>시간 (선택)</label><input class="input-field" id="eTime" type="time"></div>
+      <div class="field wide"><label>음식명 *</label><input class="input-field" id="eName" maxlength="80"></div>
+      <div class="field half"><label>양·단위</label><input class="input-field" id="eServing" placeholder="100g, 3조각, 반 공기"></div>
+      <div class="field half"><label>출처</label><select class="input-field" id="eSource"><option value="manual">직접 입력</option><option value="database">음식 DB</option><option value="estimate">추정치</option><option value="user_confirmed">사용자 확정</option></select></div>
+      <div class="field"><label>칼로리 *</label><input class="input-field" id="eCalories" type="number"></div>
+      <div class="field"><label>탄수화물 g *</label><input class="input-field" id="eCarbs" type="number" step=".1"></div>
+      <div class="field"><label>단백질 g *</label><input class="input-field" id="eProtein" type="number" step=".1"></div>
+      <div class="field"><label>지방 g *</label><input class="input-field" id="eFat" type="number" step=".1"></div>
+      <div class="field half"><label>나트륨 mg (선택)</label><input class="input-field" id="eSodium" type="number"></div>
+      <div class="field half"><label>당 g (선택)</label><input class="input-field" id="eSugar" type="number" step=".1"></div>
+      <div class="field wide"><label>먹은 비율</label><div class="ratio-options" id="ratioOptions"></div></div>
+    </div>
+    <div class="flex-row gap-8 mt-16"><button class="btn btn-ghost btn-full" id="saveAsPreset">즐겨먹기에 추가</button><button class="btn btn-primary btn-full" id="saveEntry">기록 저장</button></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { getUser,getWeights,getNutritionProfile,saveNutritionProfile,getNutritionEntries,saveNutritionEntry,saveNutritionEntries,softDeleteNutritionEntry,getNutritionPresets,saveNutritionPreset,getSharedNutritionFoods,getInbodyRecords,saveInbodyRecord } from './js/db.js';
+import { clearAuth } from './js/auth.js';
+import { esc } from './js/util.js';
+import { ACTIVITY_LEVELS,suggestNutritionTargets,validateNutritionTargets,nutritionDayFor,sumNutrition,targetStatus,STARTER_FOODS,PHOTO_DESCRIPTION_MIN_LENGTH,compressNutritionPhoto,createPhotoAnalysisAdapter,photoAnalysisUsage,validatePhotoDescription,MAX_FAVORITE_FOODS,foodAssemblyKey,foodAssemblyTotals,foodWeightUnit,nutritionForSelection,setFoodAssemblyGrams,sortFavoriteFoods,updateFoodAssembly } from './js/nutrition.js';
+
+const uid=new URLSearchParams(location.search).get('user')||localStorage.getItem('uid');
+if(!uid)location.href='index.html';
+const $=id=>document.getElementById(id);
+let user,profile,entries=[],presets=[],sharedFoods=[],inbody=[],editing=null,ratio=1,day=nutritionDayFor();
+let assembly=[],favoriteSort='manual',assemblySaving=false;
+let photoState={compressed:null,fileName:'',previewUrl:null,stage:'select',pending:false};
+let currentPhotoUsage=photoAnalysisUsage(0);
+const photoAdapter=createPhotoAnalysisAdapter(window.nutritionPhotoAnalysisAdapter);
+const defaultTargets={calories:2200,carbs:250,protein:160,fat:65,sodium:2000,sugar:50};
+const mealNames={breakfast:'아침',lunch:'점심',dinner:'저녁',snack:'간식'};
+const nutrientMeta={calories:['칼로리','kcal','--nut-cal'],carbs:['탄수화물','g','--nut-carb'],protein:['단백질','g','--nut-protein'],fat:['지방','g','--nut-fat']};
+
+function toast(message,type='ok'){const t=$('toast');t.textContent=message;t.className=`toast show ${type}`;setTimeout(()=>t.classList.remove('show'),2200)}
+function nav(){const links=[['input','✏️','데이터 입력'],['dashboard','📊','내 그래프'],['compare','👥','우리 그래프'],['diet','🥗','식단 <span class="nav-beta">BETA</span>'],['achievements','🏆','업적'],['dressroom','✨','쇼룸']];$('bottomNav').innerHTML=links.map(([id,icon,label])=>`<a href="${id}.html?user=${encodeURIComponent(uid)}" class="${id==='diet'?'active':''}"><span class="icon">${icon}</span>${label}</a>`).join('')}
+function target(){return {...defaultTargets,...profile?.targets}}
+function dayEntries(){return entries.filter(e=>e.day===day)}
+function currentTimeValue(date=new Date()){return `${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`}
+function ownFoodPresets(){return presets.filter(p=>p.ownerId===uid&&p.type==='food'&&p.favorite!==false&&p.entries?.[0]).slice(0,MAX_FAVORITE_FOODS)}
+function favoriteFood(preset){return {...preset.entries[0],id:preset.id,presetId:preset.id,name:preset.name||preset.entries[0].name,useCount:preset.useCount||0,sortOrder:preset.sortOrder}}
+function selectedAssembly(food){const key=foodAssemblyKey(food);return assembly.find(item=>item.key===key)}
+function selectionLabel(food,item){
+  if(!item)return '담기 전';
+  const weight=foodWeightUnit(food);
+  return weight&&item.grams!=null?`${Math.round(item.grams)}g`:`${Number(item.quantity||0).toLocaleString()}개`;
+}
+function renderFavoriteBuilder(){
+  const favorites=sortFavoriteFoods(ownFoodPresets(),favoriteSort);
+  $('favoriteCount').textContent=`${favorites.length}/${MAX_FAVORITE_FOODS}`;
+  $('favoriteFoodGrid').innerHTML=favorites.length?favorites.map(p=>{
+    const food=favoriteFood(p),item=selectedAssembly(food),scaled=nutritionForSelection(food,item||{quantity:0}),weight=foodWeightUnit(food);
+    return `<article class="favorite-food-card ${item?'selected':''}" data-key="${esc(foodAssemblyKey(food))}">
+      <button class="favorite-card-tap" data-action="add" data-key="${esc(foodAssemblyKey(food))}" aria-label="${esc(food.name)} 1단위 담기">
+        <span class="favorite-card-name">${esc(food.name)}</span>
+        <span class="favorite-serving">${esc(food.servingLabel||'1단위')} · ${Math.round(food.calories||0)} kcal</span>
+        <span class="favorite-selected">${item?`${selectionLabel(food,item)} 선택`:'탭해서 +1'}</span>
+      </button>
+      <div class="favorite-live-macros">${item?`<strong>${Math.round(scaled.calories)} kcal</strong><span>탄 ${Math.round(scaled.carbs||0)} · 단 ${Math.round(scaled.protein||0)} · 지 ${Math.round(scaled.fat||0)}</span>`:'<span>아직 선택하지 않음</span>'}</div>
+      ${weight?`<div class="weight-quick" aria-label="${esc(food.name)} 빠른 중량"><button data-grams="150" data-key="${esc(foodAssemblyKey(food))}">150g</button><button data-grams="200" data-key="${esc(foodAssemblyKey(food))}">200g</button><button data-grams="custom" data-key="${esc(foodAssemblyKey(food))}">직접</button></div>`:''}
+      <div class="quantity-stepper" aria-label="${esc(food.name)} 수량 조절"><button data-delta="-1" data-key="${esc(foodAssemblyKey(food))}" aria-label="${esc(food.name)} 줄이기">−</button><output>${selectionLabel(food,item)}</output><button data-delta="1" data-key="${esc(foodAssemblyKey(food))}" aria-label="${esc(food.name)} 늘리기">+</button></div>
+    </article>`;
+  }).join(''):`<div class="favorite-empty"><strong>즐겨먹는 음식을 먼저 추가하세요.</strong><span>닭가슴살, 밥, 달걀처럼 자주 조립하는 개별 음식을 최대 30개 저장할 수 있습니다.</span><button class="btn btn-primary" id="emptyAddFavorite">첫 음식 추가</button></div>`;
+  document.querySelectorAll('.favorite-card-tap').forEach(button=>button.onclick=()=>adjustAssembly(button.dataset.key,1));
+  document.querySelectorAll('.quantity-stepper button').forEach(button=>button.onclick=()=>adjustAssembly(button.dataset.key,Number(button.dataset.delta)));
+  document.querySelectorAll('.weight-quick button').forEach(button=>button.onclick=()=>setAssemblyWeight(button.dataset.key,button.dataset.grams));
+  $('emptyAddFavorite')?.addEventListener('click',()=>showTab('presets'));
+}
+function foodForKey(key){const preset=ownFoodPresets().find(p=>foodAssemblyKey(favoriteFood(p))===key);return preset?favoriteFood(preset):assembly.find(item=>item.key===key)?.food}
+function adjustAssembly(key,delta){
+  const food=foodForKey(key);
+  if(!food)return;
+  assembly=updateFoodAssembly(assembly,food,delta);
+  renderAssembly();
+}
+function setAssemblyWeight(key,value){
+  const food=foodForKey(key);
+  if(!food)return;
+  let grams=value;
+  if(value==='custom'){
+    const current=selectedAssembly(food)?.grams||foodWeightUnit(food)?.amount||100;
+    grams=prompt(`${food.name} 중량(g)`,String(Math.round(current)));
+    if(grams==null)return;
+  }
+  const parsed=Number(grams);
+  if(!(parsed>0&&parsed<=3000)){toast('중량은 1~3,000g으로 입력하세요.','err');return}
+  assembly=setFoodAssemblyGrams(assembly,food,parsed);
+  renderAssembly();
+}
+function renderAssembly(){
+  renderFavoriteBuilder();
+  const totals=foodAssemblyTotals(assembly);
+  $('assemblyDock').classList.toggle('hidden',assembly.length===0);
+  $('assemblyItemCount').textContent=totals.itemCount;
+  $('assemblyDockItems').textContent=assembly.map(item=>`${item.food.name} ${selectionLabel(item.food,item)}`).join(' · ');
+  $('assemblyDockMacros').innerHTML=`<strong>${Math.round(totals.calories)} kcal</strong><span>탄 ${Math.round(totals.carbs)} · 단 ${Math.round(totals.protein)} · 지 ${Math.round(totals.fat)}</span>`;
+  if($('assemblyModal').classList.contains('open'))renderAssemblyReview();
+}
+function renderAssemblyReview(){
+  const totals=foodAssemblyTotals(assembly);
+  $('assemblyReviewList').innerHTML=assembly.map(item=>{
+    const scaled=nutritionForSelection(item.food,item);
+    return `<div class="assembly-review-row"><div><strong>${esc(item.food.name)}</strong><span>${selectionLabel(item.food,item)} · ${Math.round(scaled.calories)} kcal</span></div><div class="quantity-stepper"><button data-review-delta="-1" data-key="${esc(item.key)}" aria-label="${esc(item.food.name)} 줄이기">−</button><output>${selectionLabel(item.food,item)}</output><button data-review-delta="1" data-key="${esc(item.key)}" aria-label="${esc(item.food.name)} 늘리기">+</button></div></div>`;
+  }).join('');
+  $('assemblyReviewTotals').innerHTML=`<strong>합계 ${Math.round(totals.calories)} kcal</strong><span>탄수 ${Math.round(totals.carbs)}g · 단백질 ${Math.round(totals.protein)}g · 지방 ${Math.round(totals.fat)}g</span>`;
+  document.querySelectorAll('[data-review-delta]').forEach(button=>button.onclick=()=>adjustAssembly(button.dataset.key,Number(button.dataset.reviewDelta)));
+  if(!assembly.length)$('assemblyModal').classList.remove('open');
+}
+function renderSummary(){
+  const totals=sumNutrition(dayEntries()),targets=target(),finalized=day<nutritionDayFor();
+  $('summary').innerHTML=Object.entries(nutrientMeta).map(([key,[label,unit,color]])=>{
+    const value=Math.round(totals[key]),goal=Number(targets[key]||0),pct=Math.min(100,goal?value/goal*100:0),status=targetStatus(key,value,goal,finalized);
+    return `<div class="nut-metric ${status}"><div class="nut-metric-top"><div><span>${label}</span><br><strong>${value}</strong> <span>${unit}</span></div><span>/ ${goal}</span></div><div class="nut-progress"><i style="--pct:${pct}%;--bar:var(${color})"></i></div></div>`;
+  }).join('');
+  $('estimateNote').innerHTML=totals.estimatedCount?`<div class="nut-estimate-note">△ 오늘 합계에 추정 기록 ${totals.estimatedCount}건이 포함되어 있습니다.</div>`:'';
+}
+function renderMeals(){
+  const list=dayEntries();
+  $('mealList').innerHTML=Object.keys(mealNames).map(type=>{
+    const items=list.filter(e=>e.mealType===type),subtotal=Math.round(sumNutrition(items).calories);
+    return `<section class="meal-section"><div class="meal-head"><strong>${mealNames[type]}</strong><span>${subtotal} kcal · ${items.length}개</span></div>${items.length?items.map(e=>`
+      <div class="food-row"><div><h3>${esc(e.name)}<span class="source-badge ${e.source==='estimate'?'estimate':''}">${e.source==='estimate'?'추정':e.source==='database'?'DB':e.source==='user_confirmed'?'확정':'직접'}</span></h3><div class="food-meta">${esc(e.servingLabel||'')} · 탄 ${Math.round((e.carbs||0)*(e.consumedRatio??1))} · 단 ${Math.round((e.protein||0)*(e.consumedRatio??1))} · 지 ${Math.round((e.fat||0)*(e.consumedRatio??1))}</div></div><div class="food-kcal">${Math.round((e.calories||0)*(e.consumedRatio??1))} kcal</div><div class="food-actions"><button class="icon-btn edit-entry" data-id="${e.id}">수정</button><button class="icon-btn delete-entry" data-id="${e.id}">삭제</button></div></div>`).join(''):'<div class="empty-state">기록 없음</div>'}</section>`;
+  }).join('');
+  document.querySelectorAll('.edit-entry').forEach(b=>b.onclick=()=>openEntry(entries.find(e=>e.id===b.dataset.id)));
+  document.querySelectorAll('.delete-entry').forEach(b=>b.onclick=async()=>{const e=entries.find(x=>x.id===b.dataset.id);if(!confirm(`${e.name} 기록을 휴지통으로 옮길까요?`))return;await softDeleteNutritionEntry(uid,e);entries=entries.filter(x=>x.id!==e.id);renderAll();toast('삭제 기록은 슈퍼관리자가 복구할 수 있습니다.')});
+}
+function renderSearch(){
+  const q=$('foodSearch').value.trim().toLowerCase();
+  const recent=[...entries].reverse().filter((e,i,a)=>a.findIndex(x=>x.name===e.name)===i).slice(0,8);
+  const all=[...recent,...presets.filter(p=>p.type==='food').flatMap(p=>p.entries||[]),...sharedFoods,...STARTER_FOODS];
+  const unique=[...new Map(all.filter(f=>!q||String(f.name).toLowerCase().includes(q)).map(f=>[f.name,f])).values()].slice(0,12);
+  $('foodSuggestions').innerHTML=unique.length?unique.map((f,i)=>`<div class="suggestion-row"><button class="suggestion" data-record-i="${i}"><span><strong>${esc(f.name)}</strong><br><small>${esc(f.servingLabel||'직접 양 설정')}</small></span><span>${Math.round(f.calories||0)} kcal</span></button><button class="favorite-toggle" data-fav-i="${i}" aria-label="${esc(f.name)} 즐겨먹기에 추가">☆</button></div>`).join(''):'<div class="empty-state">검색 결과가 없습니다.</div>';
+  document.querySelectorAll('[data-record-i]').forEach(b=>b.onclick=()=>openEntry({...unique[Number(b.dataset.recordI)],id:null,day,source:unique[Number(b.dataset.recordI)].source||'database'}));
+  document.querySelectorAll('[data-fav-i]').forEach(b=>b.onclick=()=>addFavoriteFromFood(unique[Number(b.dataset.favI)]));
+}
+async function addFavoriteFromFood(food){
+  const favorites=ownFoodPresets();
+  if(favorites.length>=MAX_FAVORITE_FOODS){toast(`즐겨먹는 음식은 최대 ${MAX_FAVORITE_FOODS}개입니다.`,'err');return}
+  if(favorites.some(p=>String(p.name).trim()===String(food.name).trim())){toast('이미 즐겨먹기에 있는 음식입니다.','err');return}
+  const entry={...food,id:null,day:null,mealType:null,eatenAt:null,consumedRatio:1,source:food.source||'database'};
+  await saveNutritionPreset(uid,{name:food.name,type:'food',entries:[entry],favorite:true,sortOrder:favorites.length,useCount:0});
+  presets=await getNutritionPresets(uid);
+  renderAll();
+  toast(`${food.name}을 즐겨먹기에 추가했습니다.`);
+}
+function renderPresets(){
+  const favorites=sortFavoriteFoods(ownFoodPresets(),'manual');
+  $('presetGrid').innerHTML=favorites.length?favorites.map((p,index)=>{
+    const food=favoriteFood(p);
+    return `<article class="preset-card favorite-manage-card"><div><h3>${esc(food.name)}</h3><p>${esc(food.servingLabel||'1단위')} · ${Math.round(food.calories||0)} kcal · 사용 ${Number(p.useCount||0)}회</p></div><div class="favorite-manage-actions"><button class="icon-btn move-favorite" data-id="${p.id}" data-direction="-1" ${index===0?'disabled':''} aria-label="${esc(food.name)} 앞으로">↑</button><button class="icon-btn move-favorite" data-id="${p.id}" data-direction="1" ${index===favorites.length-1?'disabled':''} aria-label="${esc(food.name)} 뒤로">↓</button><button class="btn btn-ghost btn-sm remove-favorite" data-id="${p.id}">즐겨먹기 해제</button></div></article>`;
+  }).join(''):'<div class="empty-state">저장된 즐겨먹는 음식이 없습니다. ‘음식 추가’를 눌러 개별 음식을 등록하세요.</div>';
+  document.querySelectorAll('.move-favorite').forEach(button=>button.onclick=()=>moveFavorite(button.dataset.id,Number(button.dataset.direction)));
+  document.querySelectorAll('.remove-favorite').forEach(button=>button.onclick=()=>removeFavorite(button.dataset.id));
+}
+async function moveFavorite(id,direction){
+  const favorites=sortFavoriteFoods(ownFoodPresets(),'manual');
+  const from=favorites.findIndex(p=>p.id===id),to=from+direction;
+  if(from<0||to<0||to>=favorites.length)return;
+  const current=favorites[from],swap=favorites[to];
+  await Promise.all([
+    saveNutritionPreset(uid,{...current,sortOrder:to}),
+    saveNutritionPreset(uid,{...swap,sortOrder:from}),
+  ]);
+  presets=await getNutritionPresets(uid);
+  renderAll();
+}
+async function removeFavorite(id){
+  const preset=presets.find(p=>p.ownerId===uid&&p.id===id);
+  if(!preset||!confirm(`${preset.name}을 즐겨먹기에서 해제할까요?`))return;
+  await saveNutritionPreset(uid,{...preset,favorite:false});
+  assembly=assembly.filter(item=>item.food.presetId!==id);
+  presets=await getNutritionPresets(uid);
+  renderAll();
+}
+function renderInbody(){
+  $('inbodyList').innerHTML=inbody.length?[...inbody].reverse().map(r=>`<div class="food-row"><div><h3>${r.date}</h3><div class="food-meta">골격근 ${r.skeletalMuscle??'-'}kg · 체지방 ${r.bodyFatPercent??'-'}% · BMR ${r.bmr??'-'}</div></div><div class="food-kcal">${r.weight??'-'}kg</div><div></div></div>`).join(''):'<div class="empty-state">등록된 측정 결과가 없습니다.</div>';
+}
+function photoUsageKey(){return `mweg:nutrition-photo-usage:${uid}:${day}`}
+function readLocalPhotoUsage(){
+  try{return photoAnalysisUsage(JSON.parse(localStorage.getItem(photoUsageKey())||'{}').used)}
+  catch{return photoAnalysisUsage(0)}
+}
+function storeLocalPhotoUsage(usage){
+  localStorage.setItem(photoUsageKey(),JSON.stringify({used:usage.used,day,updatedAt:new Date().toISOString()}));
+}
+function formatPhotoBytes(bytes){
+  const value=Number(bytes)||0;
+  return value>=1024*1024?`${(value/1024/1024).toFixed(1)}MB`:`${Math.max(1,Math.round(value/1024))}KB`;
+}
+function setPhotoStatus(message='',type=''){
+  $('photoAnalysisStatus').textContent=message;
+  $('photoAnalysisStatus').className=`photo-status${type?` ${type}`:''}`;
+}
+function renderPhotoAnalysis(){
+  const description=validatePhotoDescription($('photoDescription').value);
+  const hasPhoto=Boolean(photoState.compressed);
+  const atConfirmation=['confirm','request'].includes(photoState.stage);
+  const canReview=hasPhoto&&description.valid&&!currentPhotoUsage.exhausted&&!photoState.pending;
+  const canRequest=canReview&&atConfirmation&&$('photoConfirmCheck').checked&&photoAdapter.available;
+  $('photoQuota').textContent=`오늘 ${currentPhotoUsage.used}/${currentPhotoUsage.limit}회 사용 · ${currentPhotoUsage.remaining}회 남음`;
+  $('photoQuota').classList.toggle('exhausted',currentPhotoUsage.exhausted);
+  $('photoPreviewWrap').classList.toggle('hidden',!hasPhoto);
+  $('photoDescription').disabled=!hasPhoto||photoState.pending;
+  $('photoInput').disabled=photoState.pending;
+  $('photoDescriptionCount').textContent=`${description.length}/${PHOTO_DESCRIPTION_MIN_LENGTH}자`;
+  $('photoDescriptionHint').textContent=hasPhoto?description.message:'사진을 먼저 선택하세요.';
+  $('photoDescriptionHint').classList.toggle('valid',description.valid);
+  $('reviewPhotoAnalysis').disabled=!canReview;
+  $('photoConfirm').classList.toggle('hidden',!atConfirmation);
+  $('requestPhotoAnalysis').disabled=!canRequest;
+  $('requestPhotoAnalysis').textContent=photoState.pending?'분석 중…':photoAdapter.available?'분석 요청':'분석 API 준비 중';
+  [...$('photoSteps').children].forEach((item,index)=>{
+    const current=photoState.stage==='select'?0:photoState.stage==='details'?1:photoState.stage==='confirm'?2:3;
+    item.classList.toggle('active',index===current);
+    item.classList.toggle('done',index<current);
+  });
+  if(currentPhotoUsage.exhausted)setPhotoStatus('오늘 사진 분석 3회를 모두 사용했습니다. 내일 다시 이용할 수 있습니다.','err');
+  else if(!photoAdapter.available)setPhotoStatus('분석 서버 준비 중입니다. 사진 선택·압축·설명 작성은 가능하지만 요청과 횟수 차감은 실행되지 않습니다.','waiting');
+}
+async function refreshPhotoUsage(){
+  const localUsage=readLocalPhotoUsage();
+  try{
+    const remote=await photoAdapter.getUsage({uid,day});
+    currentPhotoUsage=remote==null?localUsage:photoAnalysisUsage(typeof remote==='number'?remote:remote.used);
+  }catch(e){
+    console.warn('사진 분석 사용량을 불러오지 못했습니다.',e);
+    currentPhotoUsage=localUsage;
+  }
+  renderPhotoAnalysis();
+}
+function renderAll(){renderSummary();renderMeals();renderSearch();renderPresets();renderInbody();renderAssembly()}
+function showTab(name){document.querySelectorAll('[id^="tab-"]').forEach(el=>el.classList.toggle('hidden',el.id!==`tab-${name}`));document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===name))}
+function fillTargets(values){$('tCalories').value=values.calories||'';$('tCarbs').value=values.carbs||'';$('tProtein').value=values.protein||'';$('tFat').value=values.fat||'';$('tSodium').value=values.sodium||2000;$('tSugar').value=values.sugar||50}
+function readTargets(){return {calories:$('tCalories').value,carbs:$('tCarbs').value,protein:$('tProtein').value,fat:$('tFat').value,sodium:$('tSodium').value,sugar:$('tSugar').value}}
+function openEntry(data=null){
+  editing=data?.id?data:null;ratio=Number(data?.consumedRatio??1);
+  $('entryModalTitle').textContent=editing?'음식 수정':'음식 추가';
+  $('eMeal').value=data?.mealType||'snack';$('eTime').value=editing?(data?.eatenAt||''):(data?.eatenAt||currentTimeValue());$('eName').value=data?.name||'';$('eServing').value=data?.servingLabel||'';$('eSource').value=data?.source||'manual';
+  for(const [id,key] of [['eCalories','calories'],['eCarbs','carbs'],['eProtein','protein'],['eFat','fat'],['eSodium','sodium'],['eSugar','sugar']])$(id).value=data?.[key]??'';
+  renderRatios();$('entryModal').classList.add('open');
+}
+function renderRatios(){const opts=[[1,'전부'],[.75,'¾'],[.5,'절반'],[.25,'¼']];$('ratioOptions').innerHTML=opts.map(([v,l])=>`<button type="button" data-v="${v}" class="${ratio===v?'active':''}">${l}</button>`).join('');$('ratioOptions').querySelectorAll('button').forEach(b=>b.onclick=()=>{ratio=Number(b.dataset.v);renderRatios()})}
+function entryFromForm(){return {id:editing?.id||null,day,mealType:$('eMeal').value,eatenAt:$('eTime').value||null,name:$('eName').value,servingLabel:$('eServing').value,source:$('eSource').value,consumedRatio:ratio,calories:$('eCalories').value,carbs:$('eCarbs').value,protein:$('eProtein').value,fat:$('eFat').value,sodium:$('eSodium').value,sugar:$('eSugar').value}}
+async function reloadEntries(){entries=await getNutritionEntries(uid);renderAll()}
+
+$('tabs').querySelectorAll('button').forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
+$('favoriteSort').onchange=()=>{favoriteSort=$('favoriteSort').value;renderFavoriteBuilder()};
+$('manageFavorites').onclick=$('openPresets').onclick=()=>showTab('presets');
+$('openAssemblyReview').onclick=()=>{
+  if(!assembly.length)return;
+  $('assemblyTime').value=currentTimeValue();
+  $('assemblyModal').classList.add('open');
+  renderAssemblyReview();
+};
+$('closeAssembly').onclick=()=>$('assemblyModal').classList.remove('open');
+$('assemblyModal').onclick=e=>{if(e.target===$('assemblyModal'))$('assemblyModal').classList.remove('open')};
+$('saveAssembly').onclick=async()=>{
+  if(assemblySaving||!assembly.length)return;
+  assemblySaving=true;$('saveAssembly').disabled=true;$('saveAssembly').textContent='기록 중…';
+  try{
+    const mealType=$('assemblyMeal').value,eatenAt=$('assemblyTime').value||currentTimeValue();
+    const rows=assembly.map(item=>{
+      const scaled=nutritionForSelection(item.food,item),weight=foodWeightUnit(item.food);
+      return {day,mealType,eatenAt,name:item.food.name,servingLabel:weight&&item.grams!=null?`${Math.round(item.grams)}g`:`${item.quantity} × ${item.food.servingLabel||'1단위'}`,consumedRatio:1,source:item.food.source||'manual',calories:scaled.calories,carbs:scaled.carbs,protein:scaled.protein,fat:scaled.fat,sodium:scaled.sodium,sugar:scaled.sugar};
+    });
+    await saveNutritionEntries(uid,rows);
+    const usedIds=new Set(assembly.map(item=>item.food.presetId).filter(Boolean));
+    await Promise.allSettled([...usedIds].map(id=>{
+      const preset=presets.find(p=>p.ownerId===uid&&p.id===id);
+      return preset?saveNutritionPreset(uid,{...preset,useCount:Number(preset.useCount||0)+1,markUsed:true}):null;
+    }));
+    assembly=[];$('assemblyModal').classList.remove('open');
+    [entries,presets]=await Promise.all([getNutritionEntries(uid),getNutritionPresets(uid)]);
+    renderAll();toast(`${rows.length}가지 음식을 한 번에 기록했습니다.`);
+  }catch(e){toast(e.message,'err')}
+  finally{assemblySaving=false;$('saveAssembly').disabled=false;$('saveAssembly').textContent='선택한 음식 한 번에 기록'}
+};
+$('dayInput').value=day;$('dayInput').onchange=()=>{day=$('dayInput').value;photoState.stage=photoState.compressed?'details':'select';$('photoConfirmCheck').checked=false;renderAll();refreshPhotoUsage()};
+for(const [id,delta] of [['prevDay',-1],['nextDay',1]])$(id).onclick=()=>{const d=new Date(`${day}T12:00:00`);d.setDate(d.getDate()+delta);day=d.toISOString().slice(0,10);$('dayInput').value=day;photoState.stage=photoState.compressed?'details':'select';$('photoConfirmCheck').checked=false;renderAll();refreshPhotoUsage()};
+$('photoInput').onchange=async()=>{
+  const file=$('photoInput').files?.[0];
+  if(!file)return;
+  const selectionId=(photoState.selectionId||0)+1;
+  if(photoState.previewUrl)URL.revokeObjectURL(photoState.previewUrl);
+  photoState={compressed:null,fileName:file.name,previewUrl:null,stage:'select',pending:false,selectionId};
+  $('photoConfirmCheck').checked=false;
+  renderPhotoAnalysis();
+  setPhotoStatus('사진을 안전하게 압축하고 있습니다. 아직 분석 요청이나 횟수 차감은 없습니다.','waiting');
+  try{
+    const compressed=await compressNutritionPhoto(file);
+    if(photoState.selectionId!==selectionId)return;
+    const previewUrl=URL.createObjectURL(compressed.blob);
+    photoState={...photoState,compressed,previewUrl,stage:'details'};
+    $('photoPreview').src=previewUrl;
+    $('photoFileMeta').textContent=`${compressed.width}×${compressed.height} · ${formatPhotoBytes(compressed.originalBytes)} → ${formatPhotoBytes(compressed.compressedBytes)}`;
+    renderPhotoAnalysis();
+  }catch(e){
+    if(photoState.selectionId!==selectionId)return;
+    photoState={...photoState,compressed:null,previewUrl:null,stage:'select'};
+    $('photoInput').value='';
+    renderPhotoAnalysis();
+    setPhotoStatus(e.message,'err');
+  }
+};
+$('photoDescription').oninput=()=>{
+  if(['confirm','request'].includes(photoState.stage)){
+    photoState.stage='details';
+    $('photoConfirmCheck').checked=false;
+  }
+  renderPhotoAnalysis();
+};
+$('reviewPhotoAnalysis').onclick=()=>{
+  const checked=validatePhotoDescription($('photoDescription').value);
+  if(!photoState.compressed||!checked.valid||currentPhotoUsage.exhausted)return;
+  photoState.stage='confirm';
+  $('photoConfirmCheck').checked=false;
+  renderPhotoAnalysis();
+  $('photoConfirm').scrollIntoView({behavior:'smooth',block:'nearest'});
+};
+$('editPhotoAnalysis').onclick=()=>{
+  photoState.stage='details';
+  $('photoConfirmCheck').checked=false;
+  renderPhotoAnalysis();
+  $('photoDescription').focus();
+};
+$('photoConfirmCheck').onchange=renderPhotoAnalysis;
+$('requestPhotoAnalysis').onclick=async()=>{
+  const description=validatePhotoDescription($('photoDescription').value);
+  if(photoState.pending||!photoAdapter.available||!photoState.compressed||!description.valid||currentPhotoUsage.exhausted||!$('photoConfirmCheck').checked)return;
+  photoState.pending=true;
+  photoState.stage='request';
+  renderPhotoAnalysis();
+  setPhotoStatus('사진을 분석하고 있습니다. 성공 응답 전에는 횟수를 차감하지 않습니다.','waiting');
+  try{
+    const result=await photoAdapter.analyze({
+      uid,day,
+      description:description.value,
+      image:photoState.compressed.blob,
+      imageMeta:{
+        fileName:photoState.fileName,
+        width:photoState.compressed.width,
+        height:photoState.compressed.height,
+        mimeType:photoState.compressed.mimeType,
+      },
+    });
+    currentPhotoUsage=photoAnalysisUsage(result?.usage?.used??currentPhotoUsage.used+1);
+    storeLocalPhotoUsage(currentPhotoUsage);
+    photoState.pending=false;
+    renderPhotoAnalysis();
+    setPhotoStatus('분석이 완료되었습니다. 결과를 확인한 뒤 직접 저장해 주세요.','ok');
+    if(result?.entry)openEntry({...result.entry,id:null,day,source:'estimate'});
+  }catch(e){
+    photoState.pending=false;
+    photoState.stage='confirm';
+    renderPhotoAnalysis();
+    setPhotoStatus(e.message||'사진 분석에 실패했습니다. 횟수는 차감되지 않았습니다.','err');
+  }
+};
+$('addEntry').onclick=$('manualAdd').onclick=()=>openEntry();
+$('openSearch').onclick=()=>{$('foodSearch').scrollIntoView({behavior:'smooth',block:'center'});$('foodSearch').focus()};
+$('repeatRecent').onclick=()=>entries.length?openEntry({...entries[entries.length-1],id:null,day}):toast('최근 음식이 없습니다.','err');
+$('foodSearch').oninput=renderSearch;$('closeEntry').onclick=()=> $('entryModal').classList.remove('open');
+$('entryModal').onclick=e=>{if(e.target===$('entryModal'))$('entryModal').classList.remove('open')};
+$('saveEntry').onclick=async()=>{try{await saveNutritionEntry(uid,entryFromForm());$('entryModal').classList.remove('open');await reloadEntries();toast('식단을 기록했습니다.')}catch(e){toast(e.message,'err')}};
+$('saveAsPreset').onclick=async()=>{try{const item=entryFromForm();if(!item.name)throw new Error('음식명을 입력하세요.');if(ownFoodPresets().length>=MAX_FAVORITE_FOODS)throw new Error(`즐겨먹는 음식은 최대 ${MAX_FAVORITE_FOODS}개입니다.`);if(ownFoodPresets().some(p=>p.name===item.name))throw new Error('이미 즐겨먹기에 있는 음식입니다.');await saveNutritionPreset(uid,{name:item.name,type:'food',entries:[{...item,id:null,day:null,mealType:null,eatenAt:null,consumedRatio:1}],favorite:true,sortOrder:ownFoodPresets().length,useCount:0});presets=await getNutritionPresets(uid);renderAll();toast('즐겨먹는 음식에 추가했습니다.')}catch(e){toast(e.message,'err')}};
+$('newPreset').onclick=()=>openEntry();
+$('suggestTargets').onclick=()=>{try{const latest=[...entries].reverse().find(e=>false);const weight=(inbody.length?[...inbody].reverse()[0].weight:null)||window.currentWeight;const s=suggestNutritionTargets({weight,height:user.height,birthYear:user.birthYear,activityLevel:$('activityLevel').value});window.pendingSuggestion=s;$('suggestionBox').innerHTML=`<div class="suggestion-box"><strong>${s.calories} kcal · 탄 ${s.carbs}g · 단 ${s.protein}g · 지 ${s.fat}g</strong><br><span class="nut-muted">추정 BMR ${s.bmr}kcal · 유지열량 약 ${s.maintenance}kcal</span><button class="btn btn-primary btn-full mt-12" id="acceptSuggestion">이 제안을 목표칸에 적용</button></div>`;$('acceptSuggestion').onclick=()=>fillTargets({...s,sodium:target().sodium,sugar:target().sugar})}catch(e){toast(e.message,'err')}};
+$('saveTargets').onclick=async()=>{const checked=validateNutritionTargets(readTargets());$('targetWarnings').innerHTML=checked.errors.length?`<div class="suggestion-box" style="border-color:#a94c4c">${checked.errors.map(esc).join('<br>')}</div>`:'';if(checked.errors.length)return;profile={...profile,activityLevel:$('activityLevel').value,targets:checked.values};await saveNutritionProfile(uid,profile);renderSummary();toast('목표를 저장했습니다.')};
+$('saveInbody').onclick=async()=>{try{await saveInbodyRecord(uid,{date:$('ibDate').value,weight:$('ibWeight').value,skeletalMuscle:$('ibMuscle').value,bodyFatMass:$('ibFatMass').value,bodyFatPercent:$('ibFatPct').value,bmi:$('ibBmi').value,bmr:$('ibBmr').value,visceralFat:$('ibVisceral').value});inbody=await getInbodyRecords(uid);renderInbody();toast('InBody 결과를 저장했습니다.')}catch(e){toast(e.message,'err')}};
+$('logoutBtn').onclick=()=>{clearAuth();localStorage.removeItem('uid');location.href='index.html'};
+
+async function init(){
+  nav();$('activityLevel').innerHTML=Object.entries(ACTIVITY_LEVELS).map(([id,v])=>`<option value="${id}">${v.label} · ${v.note}</option>`).join('');
+  [user,profile,entries,presets,sharedFoods,inbody]=await Promise.all([getUser(uid),getNutritionProfile(uid),getNutritionEntries(uid),getNutritionPresets(uid),getSharedNutritionFoods(),getInbodyRecords(uid)]);
+  if(!user){localStorage.removeItem('uid');location.href='index.html?select=1';return}
+  const weights=await getWeights(uid);window.currentWeight=[...weights].reverse().find(r=>r.weight!=null)?.weight||null;
+  $('activityLevel').value=profile?.activityLevel||'moderate';fillTargets(target());$('ibDate').value=new Date().toISOString().slice(0,10);renderAll();await refreshPhotoUsage();
+}
+renderPhotoAnalysis();
+init().catch(e=>{console.error(e);toast('식단 데이터를 불러오지 못했습니다.','err')});
+</script>
+</body>
+</html>

@@ -114,7 +114,8 @@ import { onAuthChange, adminSignOut, ADMIN_UID,
          getEarnedAchievements,
          getTierSettings, saveTierSettings,
          saveAdminOverride, adminSetCatalogOwnershipV2,
-         adminRefundCatalogPurchasesV2 } from './js/db.js';
+         adminRefundCatalogPurchasesV2,
+         getNutritionTrash, restoreNutritionEntry } from './js/db.js';
 import { ACHIEVEMENTS, ACHIEVEMENT_CATEGORIES, DEFAULT_TIERS } from './js/achievements.js';
 import { computeAchievementState, syncAchievements } from './js/achievements-engine.js';
 import { ALL_CATALOG_V2, V2_CATEGORIES, CATEGORY_META, RARITY_META, getCatalogItemV2, ownedItemIdsV2, profileVisualForUserV2, titleInfoV2 } from './js/showroom-v2.js?v=96';
@@ -368,9 +369,42 @@ function renderDetail(user, records, systemEarned=new Set()) {
         ${buildAchOverrideUI(user)}
       </div>
     </div>
+    <div class="card mt-12">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+        <div>
+          <div class="section-title" style="margin:0">🥗 식단 휴지통</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">사용자가 삭제한 음식 기록을 슈퍼관리자만 조회·복구합니다.</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="loadNutritionTrash('${user.id}')">불러오기</button>
+      </div>
+      <div id="nutritionTrash-${user.id}" style="margin-top:10px"></div>
+    </div>
     <div class="card mt-12"><div class="section-title">✨ V2 스킨 ${ALL_CATALOG_V2.length}종 지급 관리</div><div class="adm-skin-tools"><input id="admSkinSearch" placeholder="ID·이름·설명·구현키 검색" oninput="renderAdminSkinGrid()"><select id="admSkinCategory" onchange="renderAdminSkinGrid()"><option value="">전체 범주</option>${V2_CATEGORIES.map(id=>`<option value="${id}">${CATEGORY_META[id].name}</option>`).join('')}</select><select id="admSkinRarity" onchange="renderAdminSkinGrid()"><option value="">전체 등급</option>${Object.entries(RARITY_META).filter(([id])=>ALL_CATALOG_V2.some(item=>item.rarity===id)).map(([id,m])=>`<option value="${id}">${m.label}</option>`).join('')}</select><select id="admSkinOwn" onchange="renderAdminSkinGrid()"><option value="">전체 보유</option><option value="owned">보유</option><option value="unowned">미보유</option></select></div><div class="adm-skin-grid" id="admSkinGrid"></div><div class="adm-bulk"><button class="btn btn-primary btn-sm" onclick="adminBulkSkin(true)">선택 일괄 지급</button><button class="btn btn-danger btn-sm" onclick="adminBulkSkin(false)">선택 관리자 지급분 회수</button></div>${renderCatalogAdminHistory(user)}</div>`;
   window._adminCatalogUser=user;renderAdminSkinGrid();
 }
+
+window.loadNutritionTrash=async uid=>{
+  const host=document.getElementById(`nutritionTrash-${uid}`);
+  if(!host)return;
+  host.innerHTML='<div class="loading"><div class="spinner"></div></div>';
+  try{
+    const rows=await getNutritionTrash(uid);
+    host.innerHTML=rows.length?rows.sort((a,b)=>String(b.day||'').localeCompare(String(a.day||''))).map(entry=>`
+      <div style="display:grid;grid-template-columns:90px minmax(0,1fr) auto auto;gap:8px;align-items:center;padding:8px;border-top:1px solid var(--border)">
+        <span style="font-size:11px;color:var(--muted)">${entry.day||'-'}</span>
+        <span><b style="font-size:12px">${entry.name||'-'}</b><small style="display:block;color:var(--muted)">${entry.servingLabel||''}</small></span>
+        <span style="font-size:11px">${Math.round(Number(entry.calories)||0)} kcal</span>
+        <button class="btn btn-primary btn-sm" data-restore-nutrition="${entry.id}">복구</button>
+      </div>`).join(''):'<div style="padding:14px;text-align:center;color:var(--muted);font-size:11px">삭제된 식단 기록이 없습니다.</div>';
+    host.querySelectorAll('[data-restore-nutrition]').forEach(button=>button.onclick=async()=>{
+      const entry=rows.find(item=>item.id===button.dataset.restoreNutrition);
+      if(!entry)return;
+      await restoreNutritionEntry(uid,entry);
+      showToast(`${entry.name} 기록을 복구했습니다.`,'ok');
+      loadNutritionTrash(uid);
+    });
+  }catch(error){host.innerHTML=`<div style="color:var(--red);font-size:11px">${error.message}</div>`}
+};
 
 function renderCatalogAdminHistory(user){
   const grants=(user.catalogGrantLogV2||[]).map(entry=>({...entry,type:'grant'}));

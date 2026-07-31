@@ -136,6 +136,171 @@ export async function updateUser(userId, data) {
   await setDocR(doc(db, 'users', userId), data, { merge: true });
 }
 
+// ── Nutrition side module ──────────────────────────────────────────────
+const nutritionEntriesRef = uid => collection(db, 'nutritionEntries', uid, 'entries');
+const nutritionPresetsRef = uid => collection(db, 'nutritionPresets', uid, 'items');
+const inbodyRecordsRef = uid => collection(db, 'inbodyRecords', uid, 'records');
+
+export async function getNutritionProfile(userId) {
+  const snap = await getDocR(doc(db, 'nutritionProfiles', userId));
+  return snap.exists() ? { id: snap.id, ...snap.data() } : null;
+}
+
+export async function saveNutritionProfile(userId, data) {
+  const clean = {
+    activityLevel: String(data.activityLevel || 'moderate'),
+    targets: data.targets || {},
+    suggestion: data.suggestion || null,
+    updatedAt: serverTimestamp(),
+  };
+  await setDocR(doc(db, 'nutritionProfiles', userId), clean, { merge: true });
+  return clean;
+}
+
+export async function getNutritionEntries(userId) {
+  const snap = await getDocsR(query(nutritionEntriesRef(userId), orderBy('day', 'asc')));
+  return snap.docs.map(item => ({ id: item.id, ...item.data() }));
+}
+
+function nutritionEntryData(raw) {
+  const data = {
+    day: raw.day,
+    mealType: raw.mealType || 'snack',
+    eatenAt: raw.eatenAt || null,
+    name: String(raw.name || '').trim().slice(0, 80),
+    servingLabel: String(raw.servingLabel || '').trim().slice(0, 40),
+    consumedRatio: Number(raw.consumedRatio ?? 1),
+    calories: Number(raw.calories),
+    carbs: Number(raw.carbs),
+    protein: Number(raw.protein),
+    fat: Number(raw.fat),
+    sodium: raw.sodium === '' || raw.sodium == null ? null : Number(raw.sodium),
+    sugar: raw.sugar === '' || raw.sugar == null ? null : Number(raw.sugar),
+    source: raw.source === 'estimate' ? 'estimate' : (raw.source || 'manual'),
+    confidence: raw.confidence || null,
+    sharedFoodId: raw.sharedFoodId || null,
+    updatedAt: serverTimestamp(),
+  };
+  if (!data.day || !data.name || ![data.calories,data.carbs,data.protein,data.fat].every(Number.isFinite)) {
+    throw new Error('음식명과 칼로리·탄수화물·단백질·지방은 필수입니다.');
+  }
+  return data;
+}
+
+export async function saveNutritionEntry(userId, raw) {
+  const id = raw.id || crypto.randomUUID();
+  const data = nutritionEntryData(raw);
+  await setDocR(doc(db, 'nutritionEntries', userId, 'entries', id), data, { merge: true });
+  return { id, ...data };
+}
+
+export async function saveNutritionEntries(userId, rows = []) {
+  if (!Array.isArray(rows) || rows.length === 0) throw new Error('기록할 음식을 한 개 이상 선택하세요.');
+  await _ready;
+  const prepared = rows.map(raw => ({ id: raw.id || crypto.randomUUID(), data: nutritionEntryData(raw) }));
+  const batch = writeBatch(db);
+  for (const item of prepared) {
+    batch.set(doc(db, 'nutritionEntries', userId, 'entries', item.id), item.data, { merge: true });
+  }
+  await batch.commit();
+  return prepared.map(item => ({ id: item.id, ...item.data }));
+}
+
+export async function softDeleteNutritionEntry(userId, entry) {
+  await _ready;
+  const id = entry.id;
+  const batch = writeBatch(db);
+  batch.set(doc(db, 'nutritionTrash', userId, 'entries', id), {
+    ...entry,
+    deletedAt: serverTimestamp(),
+    deletedBy: userId,
+  });
+  batch.delete(doc(db, 'nutritionEntries', userId, 'entries', id));
+  await batch.commit();
+}
+
+export async function getNutritionPresets(userId) {
+  const [ownSnap, sharedSnap] = await Promise.all([
+    getDocsR(nutritionPresetsRef(userId)),
+    getDocsR(collection(db, 'nutritionSharedPresets')),
+  ]);
+  const rows = [
+    ...ownSnap.docs.map(item => ({ id: item.id, ownerId: userId, ...item.data() })),
+    ...sharedSnap.docs.map(item => ({ id: item.id, ...item.data() })),
+  ];
+  return [...new Map(rows.map(item => [`${item.ownerId || ''}:${item.id}`, item])).values()];
+}
+
+export async function saveNutritionPreset(userId, raw) {
+  const id = raw.id || crypto.randomUUID();
+  const data = {
+    name: String(raw.name || '').trim().slice(0, 60),
+    type: raw.type || 'food',
+    entries: Array.isArray(raw.entries) ? raw.entries : [],
+    shared: raw.shared === true,
+    favorite: raw.favorite !== false,
+    sortOrder: Number.isFinite(Number(raw.sortOrder)) ? Number(raw.sortOrder) : 999,
+    useCount: Math.max(0, Number(raw.useCount) || 0),
+    lastUsedAt: raw.markUsed ? serverTimestamp() : (raw.lastUsedAt || null),
+    ownerId: userId,
+    updatedAt: serverTimestamp(),
+  };
+  await setDocR(doc(db, 'nutritionPresets', userId, 'items', id), data, { merge: true });
+  if (data.shared) {
+    await setDocR(doc(db, 'nutritionSharedPresets', `${userId}_${id}`), { ...data, sourcePresetId: id }, { merge: true });
+  }
+  return id;
+}
+
+export async function getSharedNutritionFoods() {
+  const snap = await getDocsR(collection(db, 'nutritionFoods'));
+  return snap.docs.map(item => ({ id: item.id, ...item.data() }));
+}
+
+export async function saveSharedNutritionFood(raw) {
+  const id = raw.id || crypto.randomUUID();
+  const data = { ...raw };
+  delete data.id;
+  await setDocR(doc(db, 'nutritionFoods', id), {
+    ...data, updatedAt: serverTimestamp(),
+  }, { merge: true });
+  return id;
+}
+
+export async function getInbodyRecords(userId) {
+  const snap = await getDocsR(query(inbodyRecordsRef(userId), orderBy('date', 'asc')));
+  return snap.docs.map(item => ({ id: item.id, ...item.data() }));
+}
+
+export async function saveInbodyRecord(userId, raw) {
+  const date = raw.date;
+  if (!date) throw new Error('측정일을 입력하세요.');
+  const data = { date, updatedAt: serverTimestamp() };
+  for (const key of ['weight','skeletalMuscle','bodyFatMass','bodyFatPercent','bmi','bmr','visceralFat']) {
+    data[key] = raw[key] === '' || raw[key] == null ? null : Number(raw[key]);
+  }
+  await setDocR(doc(db, 'inbodyRecords', userId, 'records', date), data, { merge: true });
+  return data;
+}
+
+export async function getNutritionTrash(userId) {
+  await _ready;
+  if (auth.currentUser?.uid !== ADMIN_UID) throw new Error('슈퍼관리자 권한이 필요합니다.');
+  const snap = await getDocs(collection(db, 'nutritionTrash', userId, 'entries'));
+  return snap.docs.map(item => ({ id: item.id, ...item.data() }));
+}
+
+export async function restoreNutritionEntry(userId, entry) {
+  await _ready;
+  if (auth.currentUser?.uid !== ADMIN_UID) throw new Error('슈퍼관리자 권한이 필요합니다.');
+  const clean = { ...entry };
+  delete clean.id; delete clean.deletedAt; delete clean.deletedBy;
+  const batch = writeBatch(db);
+  batch.set(doc(db, 'nutritionEntries', userId, 'entries', entry.id), clean);
+  batch.delete(doc(db, 'nutritionTrash', userId, 'entries', entry.id));
+  await batch.commit();
+}
+
 // Atomically records newly earned achievements and settles their wallet/item
 // rewards against the latest user document. The caller may have evaluated the
 // achievement state from a stale snapshot; re-reading both the user and every

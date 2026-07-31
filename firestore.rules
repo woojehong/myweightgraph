@@ -77,6 +77,38 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Standalone nutrition module. Regular app sessions may use the shared
+    // friend-group data; deleted entries are visible/restorable only to admin.
+    match /nutritionProfiles/{uid} {
+      allow read, create, update: if signedIn();
+      allow delete: if isAdmin();
+    }
+    match /nutritionEntries/{uid}/entries/{entryId} {
+      allow read, create, update, delete: if signedIn();
+    }
+    match /nutritionPresets/{uid}/items/{presetId} {
+      allow read, create, update, delete: if signedIn();
+    }
+    match /nutritionSharedPresets/{presetId} {
+      allow read, create, update: if signedIn();
+      allow delete: if isAdmin();
+    }
+    match /nutritionFoods/{foodId} {
+      allow read, create, update: if signedIn();
+      allow delete: if isAdmin();
+    }
+    match /inbodyRecords/{uid}/records/{recordId} {
+      allow read, create, update: if signedIn();
+      allow delete: if isAdmin();
+    }
+    match /nutritionTrash/{uid}/entries/{entryId} {
+      allow create: if signedIn();
+      allow read, update, delete: if isAdmin();
+    }
+    match /workoutSessions/{uid}/sessions/{sessionId} {
+      allow read, create, update, delete: if signedIn();
+    }
+
     // ── everything else: deny ──
     match /{document=**} {
       allow read, write: if false;
