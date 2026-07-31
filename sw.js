@@ -1,4 +1,4 @@
-const CACHE = 'weight-v136-nutrition-beta';
+const CACHE = 'weight-v137-nutrition-beta-imports';
 const ASSETS = [
   './index.html', './dashboard.html', './input.html', './import.html',
   './achievements.html', './compare.html', './dressroom.html', './diet.html', './shop.html', './guide.html', './visual-lab.html',

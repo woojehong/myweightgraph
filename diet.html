@@ -222,10 +222,10 @@
 <div class="toast" id="toast"></div>
 
 <script type="module">
-import { getUser,getWeights,getNutritionProfile,saveNutritionProfile,getNutritionEntries,saveNutritionEntry,saveNutritionEntries,softDeleteNutritionEntry,getNutritionPresets,saveNutritionPreset,getSharedNutritionFoods,getInbodyRecords,saveInbodyRecord } from './js/db.js';
-import { clearAuth } from './js/auth.js';
-import { esc } from './js/util.js';
-import { ACTIVITY_LEVELS,suggestNutritionTargets,validateNutritionTargets,nutritionDayFor,sumNutrition,targetStatus,STARTER_FOODS,PHOTO_DESCRIPTION_MIN_LENGTH,compressNutritionPhoto,createPhotoAnalysisAdapter,photoAnalysisUsage,validatePhotoDescription,MAX_FAVORITE_FOODS,foodAssemblyKey,foodAssemblyTotals,foodWeightUnit,nutritionForSelection,setFoodAssemblyGrams,sortFavoriteFoods,updateFoodAssembly } from './js/nutrition.js';
+import { getUser,getWeights,getNutritionProfile,saveNutritionProfile,getNutritionEntries,saveNutritionEntry,saveNutritionEntries,softDeleteNutritionEntry,getNutritionPresets,saveNutritionPreset,getSharedNutritionFoods,getInbodyRecords,saveInbodyRecord } from './js/db.js?v=137';
+import { clearAuth } from './js/auth.js?v=137';
+import { esc } from './js/util.js?v=137';
+import { ACTIVITY_LEVELS,suggestNutritionTargets,validateNutritionTargets,nutritionDayFor,sumNutrition,targetStatus,STARTER_FOODS,PHOTO_DESCRIPTION_MIN_LENGTH,compressNutritionPhoto,createPhotoAnalysisAdapter,photoAnalysisUsage,validatePhotoDescription,MAX_FAVORITE_FOODS,foodAssemblyKey,foodAssemblyTotals,foodWeightUnit,nutritionForSelection,setFoodAssemblyGrams,sortFavoriteFoods,updateFoodAssembly } from './js/nutrition.js?v=137';
 
 const uid=new URLSearchParams(location.search).get('user')||localStorage.getItem('uid');
 if(!uid)location.href='index.html';
