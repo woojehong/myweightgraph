@@ -147,6 +147,20 @@ export const renderAmbientV2=id=>{
   return img(entry,'v3-ambient-preview');
 };
 
+export const PROFILE_VISUAL_SCALE_V2=Object.freeze({
+  pe_l_fallen_frost_prince:Object.freeze({full:.91,frame:.95,bust:1.38}),
+  pe_l_tideglass_archmage:Object.freeze({full:.99,frame:1.03,bust:1.48}),
+  pe_l_ironjaw_warchief:Object.freeze({full:.90,frame:.94,bust:1.37}),
+  pe_l_raven_tower_guardian:Object.freeze({full:.96,frame:1,bust:1.44}),
+  pe_l_netherblade_betrayer:Object.freeze({full:.86,frame:.90,bust:1.32}),
+  pe_l_dark_ranger_queen:Object.freeze({full:.97,frame:1.01,bust:1.45}),
+  pe_l_worldsoul_stormcaller:Object.freeze({full:.88,frame:.92,bust:1.34}),
+  pe_l_felskull_warlock:Object.freeze({full:.90,frame:.94,bust:1.37}),
+  pe_l_red_dragon_lifequeen:Object.freeze({full:.96,frame:1,bust:1.44}),
+  pe_l_cataclysm_black_dragon:Object.freeze({full:.86,frame:.90,bust:1.32}),
+  pe13_m_tideborn_queen:Object.freeze({full:.97,frame:1.01,bust:1.45}),
+  pe13_m_sunwell_prince:Object.freeze({full:.97,frame:1.01,bust:1.45}),
+});
 const escapeProfileText=value=>String(value).replace(/[&<>"']/g,char=>({
   '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;',
 })[char]);
@@ -156,7 +170,9 @@ export function renderProfileEmojiV2(id,size=42,fallbackEmoji='🙂',portraitMod
   if(!entry)return `<span class="v3-profile-base" style="font-size:${Math.round(size*.52)}px" aria-label="기본 프로필 이모티콘">${escapeProfileText(fallback)}</span>`;
   const normalizedMode=normalizePortraitModeV2(portraitMode);
   const asset=entry.portraitAssets?.[normalizedMode]||entry.asset;
-  return `<img class="v3-profile-emoji" data-profile-id="${entry.id}" data-portrait-mode="${normalizedMode}" src="${asset}" width="${size}" height="${size}" alt="${entry.name}" draggable="false" decoding="async">`;
+  const profileScale=PROFILE_VISUAL_SCALE_V2[entry.id];
+  const scaleStyle=profileScale?` style="--portrait-full-scale:${profileScale.full};--portrait-frame-scale:${profileScale.frame};--portrait-bust-scale:${profileScale.bust}"`:'';
+  return `<img class="v3-profile-emoji" data-profile-id="${entry.id}" data-portrait-mode="${normalizedMode}" src="${asset}" width="${size}" height="${size}" alt="${entry.name}" draggable="false" decoding="async"${scaleStyle}>`;
 }
 export function renderEmojiBorderV2(id,size=52){
   const entry=getCatalogItemV2(id);
