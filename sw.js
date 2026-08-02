@@ -1,4 +1,4 @@
-const CACHE = 'weight-v137-nutrition-beta-imports';
+const CACHE = 'weight-v138-daesanghyeok-legendary';
 const ASSETS = [
   './index.html', './dashboard.html', './input.html', './import.html',
   './achievements.html', './compare.html', './dressroom.html', './diet.html', './shop.html', './guide.html', './visual-lab.html',
@@ -8,7 +8,7 @@ const ASSETS = [
   './js/quests.js', './js/quest-panel.js', './js/showroom-fx.js', './js/showroom-fx-v11.js',
   './js/util.js', './js/daily-rewards.js', './js/meal-status.js', './js/showroom-v2.js',
   './js/today-message.js', './js/nutrition.js',
-  './js/showroom-catalog-v2.js', './js/showroom-catalog-v4.generated.js', './js/showroom-graph-skins.js', './js/showroom-graph-skins-v12.js', './js/showroom-card-themes.js', './js/showroom-card-themes-v12.js', './js/showroom-profile-emojis-v6.js', './js/showroom-portrait-frames-v7.js', './js/showroom-point-markers-v9.js', './js/showroom-trophies-v10.js', './js/showroom-taxonomy.js', './js/showroom-fullsets-v13.js', './js/showroom-collection.js', './js/titles-catalog-v2.js', './js/achievement-item-rewards-v2.js',
+  './js/showroom-catalog-v2.js', './js/showroom-catalog-v4.generated.js', './js/showroom-graph-skins.js', './js/showroom-graph-skins-v12.js', './js/showroom-card-themes.js', './js/showroom-card-themes-v12.js', './js/showroom-profile-emojis-v6.js', './js/showroom-portrait-frames-v7.js', './js/showroom-point-markers-v9.js', './js/showroom-trophies-v10.js', './js/showroom-taxonomy.js', './js/showroom-fullsets-v13.js', './js/showroom-fullsets-v14.js', './js/showroom-collection.js', './js/titles-catalog-v2.js', './js/achievement-item-rewards-v2.js',
   './manifest.json', './favicon.png',
   './register-sw.js',
   './assets/showroom-v4/graph_skin/gs4_uncommon_ironpeak_workshop.webp',
@@ -198,6 +198,14 @@ const ASSETS = [
   ...['pe13_m_tideborn_queen','pe13_m_sunwell_prince','pe13_e_star_shield_captain','pe13_u_loopy_cheer'].map(id=>`./assets/showroom-v13/profile_emoji/${id}.webp`),
   ...['eb13_m_tide_admiral','eb13_m_banshee_valkyr','eb13_m_raven_timegate','eb13_m_azshara_coral','eb13_e_crimson_hex','eb13_e_star_shield','eb13_u_softbear','eb13_u_loopy'].map(id=>`./assets/showroom-v13/emoji_border/${id}.webp`),
   ...['pm13_m_banshee_arrow','pm13_m_azshara_tiara','pm13_m_sunwell_orb','pm13_e_arc_reactor','pm13_e_crimson_hex','pm13_e_star_shield','pm13_u_loopy_cheer'].flatMap(id=>['high','low'].map(role=>`./assets/showroom-v13/point_marker/${id}_${role}.webp`)),
+  './assets/showroom-v14/daesanghyeok/graph_skin.webp',
+  './assets/showroom-v14/daesanghyeok/card_theme.webp',
+  './assets/showroom-v14/daesanghyeok/portrait_full.webp',
+  './assets/showroom-v14/daesanghyeok/portrait_bust.webp',
+  './assets/showroom-v14/daesanghyeok/portrait_frame.webp',
+  './assets/showroom-v14/daesanghyeok/marker_high.webp',
+  './assets/showroom-v14/daesanghyeok/marker_low.webp',
+  './assets/showroom-v14/daesanghyeok/t1_logo.svg',
 ];
 // Install only the application shell. Collection artwork is cached on first
 // view by the network-first fetch handler instead of forcing a ~78 MB install.

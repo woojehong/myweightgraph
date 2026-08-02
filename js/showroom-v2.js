@@ -13,7 +13,7 @@ export const RARITY_META=Object.freeze({
   rare:{label:'희귀',color:'#0070DD'}, epic:{label:'영웅',color:'#A335EE'},
   mythic:{label:'신화',color:'#FF8000'},
   transcendent:{label:'초월',color:'#FF2D2D'},
-  legendary:{label:'전설',color:'var(--muted)'},
+  legendary:{label:'전설',color:'#FFD166'},
   artifact:{label:'유물',color:'#E6CC80'},
 });
 export const RARITY_DISPLAY_ORDER=Object.freeze([
@@ -48,6 +48,8 @@ export const itemsByCategoryV2=category=>ALL_CATALOG_V2.filter(entry=>entry.cate
 export const V2_CATEGORIES=Object.freeze([...SHOWROOM_CATEGORIES.filter(category=>!retiredCategories.has(category)),'title']);
 
 export const COMPANION_LAYOUT_DEFAULTS=Object.freeze({scale:1,opacity:1,x:90,y:15});
+export const PORTRAIT_DISPLAY_MODES=Object.freeze(['full','bust']);
+export const normalizePortraitModeV2=value=>PORTRAIT_DISPLAY_MODES.includes(value)?value:'full';
 export const COMPANION_LAYOUT_LIMITS=Object.freeze({
   scale:Object.freeze({min:.5,max:5}),
   opacity:Object.freeze({min:.2,max:1}),
@@ -67,7 +69,7 @@ export function normalizeCompanionLayoutV2(raw){
 
 export function normalizeLoadoutV2(raw){
   const src=raw&&typeof raw==='object'?raw:{};
-  const out={...SHOWROOM_DEFAULTS,trophy:[],title:null,companionLayout:normalizeCompanionLayoutV2(src.companionLayout)};
+  const out={...SHOWROOM_DEFAULTS,trophy:[],title:null,portraitMode:normalizePortraitModeV2(src.portraitMode),companionLayout:normalizeCompanionLayoutV2(src.companionLayout)};
   for(const category of V2_CATEGORIES){
     const meta=CATEGORY_META[category];
     if(meta?.multi){
@@ -137,7 +139,7 @@ export const renderAmbientV2=id=>{
   const entry=getCatalogItemV2(id);
   if(!entry)return '';
   if(id==='ae12_m_tidal_archmage_blizzard')return `<span class="v11-ambient-preview v12-blizzard-preview" data-fx="${id}" aria-hidden="true">${Array.from({length:18},(_,i)=>`<i style="--i:${i};--x:${(i*37)%100}%;--y:${(i*53)%86}%;--s:${8+(i%4)*3}px;--a:${.32+(i%5)*.11};--d:${2.2+(i%5)*.35}s">❄</i>`).join('')}</span>`;
-  if(id.startsWith('ae13_'))return `<span class="v11-ambient-preview v13-ambient-preview" data-fx="${id}" aria-hidden="true">${Array.from({length:20},(_,i)=>`<i style="--i:${i};--x:${(i*37)%96+2}%;--y:${(i*53)%88+4}%;--s:${4+(i%5)*2}px;--a:${.28+(i%4)*.12};--d:${2.4+(i%6)*.42}s"></i>`).join('')}</span>`;
+  if(id.startsWith('ae13_')||id.startsWith('ae14_'))return `<span class="v11-ambient-preview ${id.startsWith('ae14_')?'v14-ambient-preview':'v13-ambient-preview'}" data-fx="${id}" aria-hidden="true">${Array.from({length:id.startsWith('ae14_')?28:20},(_,i)=>`<i style="--i:${i};--x:${(i*37)%96+2}%;--y:${(i*53)%88+4}%;--s:${4+(i%5)*2}px;--a:${.28+(i%4)*.12};--d:${2.4+(i%6)*.42}s"></i>`).join('')}</span>`;
   if(id.startsWith('ae11_')){
     const base=`./assets/showroom-v11/ambient_effect/${id}`;
     return `<span class="v11-ambient-preview" data-fx="${id}">${[1,2,3,4].map((n,index)=>`<img src="${base}_${String(n).padStart(2,'0')}.png" alt="" aria-hidden="true" style="--i:${index}">`).join('')}</span>`;
@@ -148,11 +150,13 @@ export const renderAmbientV2=id=>{
 const escapeProfileText=value=>String(value).replace(/[&<>"']/g,char=>({
   '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;',
 })[char]);
-export function renderProfileEmojiV2(id,size=42,fallbackEmoji='🙂'){
+export function renderProfileEmojiV2(id,size=42,fallbackEmoji='🙂',portraitMode='full'){
   const entry=getCatalogItemV2(id);
   const fallback=typeof fallbackEmoji==='string'&&fallbackEmoji.trim()?fallbackEmoji.trim():'🙂';
   if(!entry)return `<span class="v3-profile-base" style="font-size:${Math.round(size*.52)}px" aria-label="기본 프로필 이모티콘">${escapeProfileText(fallback)}</span>`;
-  return `<img class="v3-profile-emoji" src="${entry.asset}" width="${size}" height="${size}" alt="${entry.name}" draggable="false" decoding="async">`;
+  const normalizedMode=normalizePortraitModeV2(portraitMode);
+  const asset=entry.portraitAssets?.[normalizedMode]||entry.asset;
+  return `<img class="v3-profile-emoji" data-profile-id="${entry.id}" data-portrait-mode="${normalizedMode}" src="${asset}" width="${size}" height="${size}" alt="${entry.name}" draggable="false" decoding="async">`;
 }
 export function renderEmojiBorderV2(id,size=52){
   const entry=getCatalogItemV2(id);
@@ -161,7 +165,8 @@ export function renderEmojiBorderV2(id,size=52){
 export function profileVisualV2(raw,size=48,fallbackEmoji='🙂',mode='compact'){
   const loadout=normalizeLoadoutV2(raw);
   const displayMode=mode==='showcase'?'showcase':'compact';
-  return `<span class="v2-profile v2-profile-${displayMode} ${loadout.emoji_border?'has-frame':''}" style="width:${size}px;height:${size}px">${renderEmojiBorderV2(loadout.emoji_border,size+14)}<span class="v2-profile-art">${renderProfileEmojiV2(loadout.profile_emoji,size-8,fallbackEmoji)}</span></span>`;
+  const portraitMode=displayMode==='compact'?'bust':loadout.portraitMode;
+  return `<span class="v2-profile v2-profile-${displayMode} v2-portrait-${portraitMode} ${loadout.emoji_border?'has-frame':''}" data-portrait-mode="${portraitMode}" style="width:${size}px;height:${size}px">${renderEmojiBorderV2(loadout.emoji_border,size+14)}<span class="v2-profile-art">${renderProfileEmojiV2(loadout.profile_emoji,size-8,fallbackEmoji,portraitMode)}</span></span>`;
 }
 export const profileVisualForUserV2=(user,size=48,loadout=user?.showroomLoadoutV2)=>profileVisualV2(loadout,size);
 export const profileShowcaseForUserV2=(user,size=116,loadout=user?.showroomLoadoutV2)=>profileVisualV2(loadout,size,'🙂','showcase');
@@ -193,7 +198,7 @@ export function getChartDecorationsV2(raw){
   const lineSpec=line?.renderSpec||{},customColor=lineSpec.colorMode==='custom';
   const lineColor=customColor&&validHex(raw?.lineColor)?raw.lineColor:(lineSpec.color||colors?.[0]);
   const requestedWidth=Number(raw?.lineWidth),lineWidth=Number.isFinite(requestedWidth)?Math.max(1,Math.min(6,requestedWidth)):lineSpec.width;
-  const rarityBackground={uncommon:'#293039',rare:'#17283a',epic:'#211630',mythic:'#2b1d0d'};
+  const rarityBackground={uncommon:'#293039',rare:'#17283a',epic:'#211630',mythic:'#2b1d0d',legendary:'#102625'};
   const backgroundColor=colors?.[3]||rarityBackground[skin?.rarity]||'#070b12';
   return {
     actualColor:lineColor||colors?.[0], maColor:colors?.[1], gridColor:colors?.[2],
@@ -210,18 +215,32 @@ export function getChartDecorationsV2(raw){
   };
 }
 
+const CARD_THEME_CSS_VARIABLES=Object.freeze(['accent','panel','edge','shadow']);
+function applyCardCssThemeV2(profile,theme){
+  for(const key of CARD_THEME_CSS_VARIABLES)profile?.style?.removeProperty?.(`--ct-${key}`);
+  for(const [key,value] of Object.entries(theme?.cssTheme||{})){
+    if(CARD_THEME_CSS_VARIABLES.includes(key)&&typeof value==='string')profile?.style?.setProperty?.(`--ct-${key}`,value);
+  }
+}
+
 export function applyCardV2(card,raw){
   if(!card)return false;
   const loadout=normalizeLoadoutV2(raw),theme=getCatalogItemV2(loadout.card_theme);
   const profile=card.matches?.('.cmp-profile,.sr-profile-head')?card:card.querySelector?.(':scope > .cmp-profile, :scope > .sr-profile-head');
-  profile?.querySelectorAll?.(':scope > .v3-card-theme-frame, :scope > .v4-card-theme-frame')?.forEach(node=>node.remove());
+  profile?.querySelectorAll?.(':scope > .v3-card-theme-frame, :scope > .v4-card-theme-frame, :scope > .v14-card-theme-logo')?.forEach(node=>node.remove());
   profile?.querySelectorAll?.('.mk > .v4-card-badge-frame')?.forEach(node=>node.remove());
   for(const attribute of ['data-card-preset','data-card-theme','data-card-rarity','data-card-effect'])profile?.removeAttribute(attribute);
+  applyCardCssThemeV2(profile,theme);
   if(!theme||!profile)return false;
   const frame=document.createElement('img');
   frame.className=theme.cardAssets?.header?'v4-card-theme-frame':'v3-card-theme-frame';
   frame.src=theme.cardAssets?.header||theme.asset;frame.alt='';frame.setAttribute('aria-hidden','true');
   profile.prepend(frame);
+  if(theme.logoAsset){
+    const logo=document.createElement('img');
+    logo.className='v14-card-theme-logo';logo.src=theme.logoAsset;logo.alt='T1';
+    profile.prepend(logo);
+  }
   profile.dataset.cardPreset=theme.id;
   profile.dataset.cardTheme=theme.id;
   profile.dataset.cardRarity=theme.rarity;

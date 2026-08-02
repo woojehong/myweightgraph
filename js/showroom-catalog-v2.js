@@ -7,6 +7,7 @@ import { PORTRAIT_FRAME_ITEMS_V7 } from './showroom-portrait-frames-v7.js';
 import { POINT_MARKER_ITEMS_V9 } from './showroom-point-markers-v9.js';
 import { TROPHY_ITEMS_V10 } from './showroom-trophies-v10.js';
 import { SHOWROOM_FULLSET_ITEMS_V13 } from './showroom-fullsets-v13.js';
+import { SHOWROOM_FULLSET_ITEMS_V14 } from './showroom-fullsets-v14.js';
 
 // Maweg showroom catalog: V4 fully replaces V3 only after a validated 108-item runtime module exists.
 const item = (category, id, name, rarity, price, asset, visual) => Object.freeze({
@@ -55,7 +56,7 @@ const specs = Object.freeze({
 export const SHOWROOM_CATEGORIES = Object.freeze(Object.keys(specs));
 export const SHOWROOM_DEFAULTS = Object.freeze({
   graph_skin:null, line_style:null, card_theme:null, point_marker:null, companion:null,
-  ambient_effect:null, trophy:[], profile_emoji:null, emoji_border:null,
+  ambient_effect:null, trophy:[], profile_emoji:null, emoji_border:null, portraitMode:'full',
 });
 
 const SHOWROOM_CATALOG_V3_FALLBACK = Object.freeze(SHOWROOM_CATEGORIES.flatMap(category =>
@@ -96,7 +97,7 @@ export const CATEGORY_PRICE_WEIGHT = Object.freeze({
   trophy:null,
 });
 export const RARITY_BASE_PRICE = Object.freeze({
-  common:80, uncommon:120, rare:260, epic:550, mythic:1100,
+  common:80, uncommon:120, rare:260, epic:550, mythic:1100, legendary:1430,
 });
 export const LEGENDARY_CATEGORY_PRICE = Object.freeze({
   graph_skin:3000,
@@ -109,7 +110,7 @@ export const LEGENDARY_CATEGORY_PRICE = Object.freeze({
   companion:1800,
 });
 export const RARITY_PRICE_RATIO = Object.freeze({
-  common:.1, uncommon:.2, rare:.4, epic:.65, mythic:1,
+  common:.1, uncommon:.2, rare:.4, epic:.65, mythic:1, legendary:1.3,
 });
 export function showroomPriceOf(category, rarity){
   const legendary = LEGENDARY_CATEGORY_PRICE[category];
@@ -149,6 +150,7 @@ const SHOWROOM_V5_ADDITIONS=Object.freeze([
   ...POINT_MARKER_ITEMS_V9,
   ...TROPHY_ITEMS_V10,
   ...SHOWROOM_FULLSET_ITEMS_V13,
+  ...SHOWROOM_FULLSET_ITEMS_V14,
 ]);
 // Retired content stays in its source module for historical data inspection, but
 // must never re-enter purchase, ownership, admin-grant, or preset flows.
@@ -157,11 +159,16 @@ export const RETIRED_ACTIVE_CATALOG_IDS=Object.freeze([
 ]);
 const retiredActiveCatalogIds=new Set(RETIRED_ACTIVE_CATALOG_IDS);
 const showroomV5Ids=new Set(SHOWROOM_V5_ADDITIONS.map(entry=>entry.id));
+const showroomV14Ids=new Set(SHOWROOM_FULLSET_ITEMS_V14.map(entry=>entry.id));
 export const SHOWROOM_CATALOG_V2=Object.freeze([
   ...SHOWROOM_CATALOG_BASE,
   ...SHOWROOM_V5_ADDITIONS,
 ].filter(entry=>entry.category!=='companion'&&!retiredActiveCatalogIds.has(entry.id)).map(entry => {
-  const normalized=entry.rarity==='legendary'?Object.freeze({...entry,rarity:'mythic'}):entry;
+  // Historical top-tier content used "legendary" as an internal alias for
+  // mythic. V14 is the first intentionally released, separately priced
+  // legendary collection and must retain its public rarity.
+  const normalized=entry.rarity==='legendary'&&!showroomV14Ids.has(entry.id)
+    ?Object.freeze({...entry,rarity:'mythic'}):entry;
   // All completed showroom collections are released through the effective
   // catalog. Trophy ownership remains achievement-only via retail().
   return retail(normalized);
@@ -264,6 +271,8 @@ export function assertShowroomCatalogV2(catalog=SHOWROOM_CATALOG_V2){
       const expectedRoot=SHOWROOM_FULLSET_ITEMS_V13.some(item=>item.id===entry.id)?'./assets/showroom-v13':entry.id.startsWith('gs12_')?'./assets/showroom-v12':TROPHY_ITEMS_V10.some(item=>item.id===entry.id)?'./assets/showroom-v10':POINT_MARKER_ITEMS_V9.some(item=>item.id===entry.id)?'./assets/showroom-v9':CARD_THEME_ITEMS.some(item=>item.id===entry.id)?(entry.asset.startsWith('./assets/showroom-v12/')?'./assets/showroom-v12':'./assets/showroom-v8'):PORTRAIT_FRAME_ITEMS_V7.some(item=>item.id===entry.id)?'./assets/showroom-v7':PROFILE_EMOJI_ITEMS_V6.some(item=>item.id===entry.id)?(entry.asset.startsWith('./assets/showroom-v8/')?'./assets/showroom-v8':'./assets/showroom-v6'):showroomV5Ids.has(entry.id)?'./assets/showroom-v5':(isV4Tier||expandedGraphSkins)?'./assets/showroom-v4':'./assets/showroom-v3';
       if(isCodeNative(category)&&entry.asset===null){
         if(!entry.renderSpec)throw new Error(`${entry.id}: invalid code-native item`);
+      }else if(showroomV14Ids.has(entry.id)){
+        if(!entry.asset?.startsWith('./assets/showroom-v14/daesanghyeok/'))throw new Error(`${entry.id}: invalid V14 asset path`);
       }else if(!entry.asset||!entry.asset.startsWith(`${expectedRoot}/${category}/`))throw new Error(`${entry.id}: invalid asset path`);
     }
   }

@@ -1,6 +1,7 @@
 .cmp-profile[data-card-theme],.sr-profile-head[data-card-theme]{position:relative;isolation:isolate;box-sizing:border-box;overflow:hidden;padding:12px 14px!important;border:0!important;border-radius:12px}
 .cmp-profile>.v4-card-theme-frame,.sr-profile-head>.v4-card-theme-frame{position:absolute;z-index:0;inset:0;width:100%;height:100%;display:block;object-fit:cover;pointer-events:none;border-radius:12px;filter:drop-shadow(0 5px 10px #000b)}
 .cmp-profile[data-card-theme]>:not(.v4-card-theme-frame),.sr-profile-head[data-card-theme]>:not(.v4-card-theme-frame){position:relative;z-index:2}
+.cmp-profile>.v14-card-theme-logo,.sr-profile-head>.v14-card-theme-logo{position:absolute;z-index:1;left:50%;top:8px;width:52px;height:auto;transform:translateX(-50%);filter:brightness(0) invert(85%) sepia(57%) saturate(553%) hue-rotate(351deg) brightness(103%) contrast(93%) drop-shadow(0 2px 4px #000b);pointer-events:none;opacity:.9}
 [data-card-theme="ct8_legendary_frozen_throne"]{--ct-accent:#8bdcff;--ct-panel:rgba(5,18,32,.72);--ct-edge:rgba(139,220,255,.2);--ct-shadow:#49bfff55;--ct-frame:url("../assets/showroom-v8/card_theme/panels/frozen_panel_frame.png")}
 [data-card-theme="ct8_legendary_nether_sanctum"]{--ct-accent:#c09aff;--ct-panel:rgba(18,10,27,.74);--ct-edge:rgba(181,140,255,.2);--ct-shadow:#73ff9250;--ct-frame:url("../assets/showroom-v8/card_theme/panels/nether_panel_frame.png")}
 [data-card-theme^="ct8_u_"]{--ct-accent:#e7edf5;--ct-panel:rgba(10,15,22,.78);--ct-edge:#ffffff24;--ct-shadow:#ffffff20}

@@ -11,7 +11,7 @@ assert.deepEqual(CARD_THEME_ITEMS.map(item=>item.rarity),[
   ...Array(5).fill('uncommon'),...Array(5).fill('rare'),...Array(5).fill('epic'),...Array(5).fill('legendary'),
   'rare','epic',...Array(6).fill('legendary'),
 ]);
-assert.equal(SHOWROOM_CATALOG_V2.filter(item => item.category === 'card_theme').length,32);
+assert.equal(SHOWROOM_CATALOG_V2.filter(item => item.category === 'card_theme').length,33);
 for(const item of SHOWROOM_CATALOG_V2.filter(item=>item.category==='card_theme')){
   assert.equal(item.testOnly,false);assert.equal(item.purchasable,true);assert.equal(item.persistable,true);assert.ok(item.price>0);
 }
@@ -54,7 +54,7 @@ for(const token of [
 ])assert.ok(compare.includes(token),`responsive compare layout: ${token}`);
 
 const sw = await readFile(new URL('../sw.js',import.meta.url),'utf8');
-assert.ok(sw.includes('weight-v137-nutrition-beta-imports'));
+assert.ok(sw.includes('weight-v138-daesanghyeok-legendary'));
 for(const item of CARD_THEME_ITEMS)assert.ok(sw.includes(item.asset),item.id);
 for(const item of PORTRAIT_FRAME_ITEMS_V7)assert.ok(sw.includes(item.asset),item.id);
 for(const item of [...CARD_THEME_ITEMS_V13,...PORTRAIT_FRAME_ITEMS_V13])assert.ok(sw.includes(item.id),item.id);

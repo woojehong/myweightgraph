@@ -15,5 +15,5 @@ const owned=new Set(SHOWROOM_CATALOG_V2.slice(0,5).map(item=>item.id));
 const stats=showroomCollectionStats(ALL_CATALOG_V2,owned,sets);
 assert.equal(stats.owned,5);
 assert.ok(stats.total>stats.owned);
-assert.equal(stats.sets.length,16);
+assert.equal(stats.sets.length,17);
 console.log('showroom collection tests: PASS');

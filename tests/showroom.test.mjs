@@ -15,43 +15,50 @@ import { ACHIEVEMENT_ITEM_REWARDS_V2, normalizeAchievementTrophyRewardsV2, rewar
 import { fitMainPlotBounds } from '../js/chart-render.js';
 import {
   ALL_CATALOG_V2, V2_CATEGORIES, CATEGORY_META, normalizeLoadoutV2, getCatalogItemV2,
+  PORTRAIT_DISPLAY_MODES, normalizePortraitModeV2,
   COMPANION_LAYOUT_DEFAULTS, COMPANION_LAYOUT_LIMITS, normalizeCompanionLayoutV2,
   ownedItemIdsV2, unownedSelectionV2, persistableLoadoutV2, validateCatalogPurchaseV2,
   renderEmojiBorderV2, getChartDecorationsV2,
   contrastRatioV2, lineContrastAdviceV2,
   renderCompanionV2, renderTrophyV2, renderMarkerV2, renderProfileEmojiV2,
-  renderAmbientV2, renderCatalogPreviewV2, profileVisualForUserV2, applyCardV2,
+  renderAmbientV2, renderCatalogPreviewV2, profileVisualForUserV2, profileShowcaseForUserV2, applyCardV2,
 } from '../js/showroom-v2.js';
+
+assert.deepEqual(PORTRAIT_DISPLAY_MODES,['full','bust']);
+assert.equal(normalizePortraitModeV2('bust'),'bust');
+assert.equal(normalizePortraitModeV2('invalid'),'full');
+assert.equal(normalizeLoadoutV2({portraitMode:'bust'}).portraitMode,'bust');
+assert.equal(normalizeLoadoutV2({}).portraitMode,'full');
 
 assert.equal(assertShowroomCatalogV2(),true);
 assert.deepEqual(SHOWROOM_V4_ACTIVE_CATEGORIES,['graph_skin','line_style','ambient_effect','emoji_border']);
-assert.equal(SHOWROOM_CATALOG_V2.length,205);
+assert.equal(SHOWROOM_CATALOG_V2.length,212);
 assert.equal(TITLES_CATALOG_V2.length,30);
-assert.equal(ALL_CATALOG_V2.length,235);
+assert.equal(ALL_CATALOG_V2.length,242);
 assert.deepEqual(SHOWROOM_CATEGORIES,['graph_skin','line_style','card_theme','point_marker','companion','ambient_effect','trophy','profile_emoji','emoji_border']);
 assert.deepEqual(V2_CATEGORIES,[...SHOWROOM_CATEGORIES.filter(category=>category!=='companion'),'title']);
-assert.equal(new Set(ALL_CATALOG_V2.map(entry=>entry.id)).size,235);
-assert.equal(new Set(SHOWROOM_CATALOG_V2.filter(entry=>entry.asset).map(entry=>entry.asset)).size,152);
+assert.equal(new Set(ALL_CATALOG_V2.map(entry=>entry.id)).size,242);
+assert.equal(new Set(SHOWROOM_CATALOG_V2.filter(entry=>entry.asset).map(entry=>entry.asset)).size,157);
 
 const expectedRarityCounts={
-  graph_skin:{uncommon:10,rare:7,epic:8,mythic:11},
-  line_style:{uncommon:8,rare:5,epic:6,mythic:8},
-  card_theme:{uncommon:7,rare:6,epic:8,mythic:11},
-  point_marker:{uncommon:4,rare:1,epic:4,mythic:8},
+  graph_skin:{uncommon:10,rare:7,epic:8,mythic:11,legendary:1},
+  line_style:{uncommon:8,rare:5,epic:6,mythic:8,legendary:1},
+  card_theme:{uncommon:7,rare:6,epic:8,mythic:11,legendary:1},
+  point_marker:{uncommon:4,rare:1,epic:4,mythic:8,legendary:1},
   companion:{},
-  ambient_effect:{uncommon:7,rare:5,epic:6,mythic:8},
+  ambient_effect:{uncommon:7,rare:5,epic:6,mythic:8,legendary:1},
   trophy:{artifact:12},
-  profile_emoji:{uncommon:6,rare:4,epic:5,mythic:12},
-  emoji_border:{uncommon:7,rare:5,epic:7,mythic:9},
+  profile_emoji:{uncommon:6,rare:4,epic:5,mythic:12,legendary:1},
+  emoji_border:{uncommon:7,rare:5,epic:7,mythic:9,legendary:1},
 };
 for(const category of SHOWROOM_CATEGORIES){
   const entries=SHOWROOM_CATALOG_V2.filter(entry=>entry.category===category);
-  const expectedCount={graph_skin:36,line_style:27,card_theme:32,point_marker:17,companion:0,ambient_effect:26,trophy:12,profile_emoji:27,emoji_border:28}[category]??4;
+  const expectedCount={graph_skin:37,line_style:28,card_theme:33,point_marker:18,companion:0,ambient_effect:27,trophy:12,profile_emoji:28,emoji_border:29}[category]??4;
   assert.equal(entries.length,expectedCount,category);
   const rarityCounts=Object.fromEntries([...new Set(entries.map(entry=>entry.rarity))].map(rarity=>[rarity,entries.filter(entry=>entry.rarity===rarity).length]));
   assert.deepEqual(rarityCounts,expectedRarityCounts[category],`${category} rarity distribution`);
 }
-assert.equal(SHOWROOM_CATALOG_V2.filter(entry=>entry.category==='card_theme').length,32,'the expanded-header collection must include V13 coupled themes');
+assert.equal(SHOWROOM_CATALOG_V2.filter(entry=>entry.category==='card_theme').length,33,'the expanded-header collection must include V13 and V14 coupled themes');
 assert.equal(LINE_STYLE_ITEMS_V11.length,21);
 assert.equal(AMBIENT_EFFECT_ITEMS_V11.length,21);
 assert.deepEqual(LINE_STYLE_ITEMS_V11.map(entry=>entry.rarity),[
@@ -74,8 +81,8 @@ assert.equal(getChartDecorationsV2({line_style:'ls11_u_champion_stitch',lineColo
 assert.equal(getChartDecorationsV2({line_style:'ls11_e_thunder_current',lineColor:'#ff00ff'}).lineColor,'#9ddcff','fixed heroic line colors must ignore manual overrides');
 assert.equal(getChartDecorationsV2({line_style:'ls12_m_tidal_archmage_frost'}).lineFx,'ls12_m_tidal_archmage_frost');
 assert.equal(getChartDecorationsV2({ambient_effect:'ae12_m_tidal_archmage_blizzard'}).ambientFx,'ae12_m_tidal_archmage_blizzard');
-assert.ok(SHOWROOM_CATALOG_V2.filter(entry=>entry.category==='line_style').every(entry=>/^ls1[123]_/.test(entry.id)),'old line styles must be fully retired');
-assert.ok(SHOWROOM_CATALOG_V2.filter(entry=>entry.category==='ambient_effect').every(entry=>/^ae1[123]_/.test(entry.id)),'old ambient effects must be fully retired');
+assert.ok(SHOWROOM_CATALOG_V2.filter(entry=>entry.category==='line_style').every(entry=>/^ls1[1234]_/.test(entry.id)),'old line styles must be fully retired');
+assert.ok(SHOWROOM_CATALOG_V2.filter(entry=>entry.category==='ambient_effect').every(entry=>/^ae1[1234]_/.test(entry.id)),'old ambient effects must be fully retired');
 const legendaryProfiles=SHOWROOM_CATALOG_V2.filter(entry=>entry.category==='profile_emoji'&&entry.rarity==='mythic'&&entry.id.startsWith('pe_l_'));
 assert.equal(legendaryProfiles.length,10,'the first V6 legendary profile set must contain ten additive items');
 assert.ok(['빙관의 몰락 왕자','파도유리 대마도사','강철턱 대족장','까마귀탑 수호자'].every(name=>legendaryProfiles.some(entry=>entry.name===name)));
@@ -103,9 +110,10 @@ for(const entry of releasedGraphSkins.slice(0,12)){
 }
 for(const entry of releasedGraphSkins.slice(12)){
   assert.equal(entry.testOnly,false,entry.id);assert.equal(entry.purchasable,true,entry.id);assert.equal(entry.persistable,true,entry.id);
-  assert.equal(entry.price,GRAPH_SKIN_PRICE_BY_RARITY[entry.rarity==='mythic'?'legendary':entry.rarity],entry.id);
-  assert.equal(entry.plannedPrice,GRAPH_SKIN_PRICE_BY_RARITY[entry.rarity==='mythic'?'legendary':entry.rarity],entry.id);
-  assert.ok(entry.asset.startsWith('./assets/showroom-v12/graph_skin/')||entry.asset.startsWith('./assets/showroom-v13/graph_skin/'),entry.id);
+  const expectedGraphPrice=entry.id.startsWith('gs14_')?3900:GRAPH_SKIN_PRICE_BY_RARITY[entry.rarity==='mythic'?'legendary':entry.rarity];
+  assert.equal(entry.price,expectedGraphPrice,entry.id);
+  assert.equal(entry.plannedPrice,expectedGraphPrice,entry.id);
+  assert.ok(entry.asset.startsWith('./assets/showroom-v12/graph_skin/')||entry.asset.startsWith('./assets/showroom-v13/graph_skin/')||entry.asset.startsWith('./assets/showroom-v14/daesanghyeok/'),entry.id);
   assert.deepEqual(entry.safeArea,GRAPH_SKIN_SAFE_AREA,entry.id);
 }
 assert.deepEqual(GRANDFATHERED_RELEASED_ITEM_IDS,['ae_dust','ae_firefly','ae_bubble','ae_thunder']);
@@ -139,7 +147,7 @@ assert.equal(normalized.graph_skin,'gs_v4_uncommon_01');
 assert.equal(normalized.point_marker,null);
 assert.equal(normalized.title,null);
 assert.deepEqual(normalized.trophy,[]);
-assert.deepEqual(SHOWROOM_DEFAULTS,{graph_skin:null,line_style:null,card_theme:null,point_marker:null,companion:null,ambient_effect:null,trophy:[],profile_emoji:null,emoji_border:null});
+assert.deepEqual(SHOWROOM_DEFAULTS,{graph_skin:null,line_style:null,card_theme:null,point_marker:null,companion:null,ambient_effect:null,trophy:[],profile_emoji:null,emoji_border:null,portraitMode:'full'});
 assert.deepEqual(COMPANION_LAYOUT_DEFAULTS,{scale:1,opacity:1,x:90,y:15});
 assert.deepEqual(COMPANION_LAYOUT_LIMITS,{scale:{min:.5,max:5},opacity:{min:.2,max:1},x:{min:5,max:95},y:{min:5,max:95}});
 assert.deepEqual(normalizeCompanionLayoutV2({scale:99,opacity:-1,x:'bad',y:101}),{scale:5,opacity:.2,x:90,y:95});
@@ -167,6 +175,10 @@ assert.ok(profileVisualForUserV2({emoji:'🦁'},32).includes('🙂'),'unselected
 assert.equal(profileVisualForUserV2({emoji:'🦁'},32).includes('🦁'),false,'legacy user emoji must not leak into common profile surfaces');
 assert.equal(profileVisualForUserV2({emoji:'🦁',showroomLoadoutV2:{profile_emoji:'pe_archive_spirit',emoji_border:'eb_forged_iron'}},32).includes('pe_archive_spirit.png'),false);
 assert.equal(profileVisualForUserV2({emoji:'🦁',showroomLoadoutV2:{profile_emoji:'pe_archive_spirit',emoji_border:'eb_forged_iron'}},32).includes('eb_forged_iron.png'),false);
+assert.ok(profileVisualForUserV2({showroomLoadoutV2:{profile_emoji:'pe_l_ironjaw_warchief',portraitMode:'full'}},48).includes('data-portrait-mode="bust"'),'compact surfaces must use the readable bust treatment');
+assert.ok(profileShowcaseForUserV2({showroomLoadoutV2:{profile_emoji:'pe_l_ironjaw_warchief',portraitMode:'full'}},132).includes('data-portrait-mode="full"'),'showcase surfaces must honor the saved full-body mode');
+assert.ok(profileShowcaseForUserV2({showroomLoadoutV2:{profile_emoji:'pe_l_ironjaw_warchief',portraitMode:'bust'}},132).includes('data-portrait-mode="bust"'),'showcase surfaces must honor the saved bust mode');
+assert.equal(persistableLoadoutV2({profile_emoji:'pe_l_ironjaw_warchief',portraitMode:'bust'}).portraitMode,'bust','portrait mode must survive loadout persistence normalization');
 assert.deepEqual([...ownedItemIdsV2({achievementRewardItems:['tr_a_world_cup_orb']})],['tr_a_world_cup_orb']);
 assert.deepEqual([...ownedItemIdsV2({adminGrantedItems:['tr_a_big_ears']})],['tr_a_big_ears']);
 
@@ -243,6 +255,7 @@ for(const entry of SHOWROOM_CATALOG_V2.filter(item=>item.category==='ambient_eff
   assert.ok(preview.includes('v11-ambient-preview'),entry.id);
   if(entry.id==='ae12_m_tidal_archmage_blizzard')assert.ok(preview.includes('v12-blizzard-preview'),entry.id);
   else if(entry.id.startsWith('ae13_'))assert.ok(preview.includes('v13-ambient-preview'),entry.id);
+  else if(entry.id.startsWith('ae14_'))assert.ok(preview.includes('v14-ambient-preview'),entry.id);
   else assert.ok(preview.includes(`${entry.id}_01.png`),entry.id);
 }
 const fxSource=await readFile(new URL('../js/showroom-fx.js',import.meta.url),'utf8');
@@ -316,13 +329,15 @@ assert.ok(fitted.bottom<=430,'main plot host must not reach subgraph reservation
 assert.ok(Math.abs(fitted.width/fitted.height-16/9)<1e-9,'main plot host must remain exactly 16:9');
 assert.equal(mainPlotDecorator.includes('v2-trophies'),false,'trophies must leave the graph and render in the card header');
 const compareHeaderSource=await readFile(new URL('../compare.html',import.meta.url),'utf8');
+const achievementsSource=await readFile(new URL('../achievements.html',import.meta.url),'utf8');
+assert.ok(achievementsSource.includes('profileShowcaseForUserV2(user,160)'),'large achievement portrait must honor the saved full/bust mode');
 assert.ok(compareHeaderSource.includes('<div class="cmp-trophies">${trophies.map(renderTrophyV2).join(\'\')}</div>'),'trophies must render in the header medal rail');
 for(const token of ['grid-template-columns:repeat(7,34px)','grid-template-rows:repeat(2,34px)','direction:rtl','justify-content:right','max-height:72px'])assert.ok(compareHeaderSource.includes(token),token);
 assert.equal((visualLab.match(/drawMarker\(ctx,marker,/g)||[]).length,1,'visual lab must show the image marker only at the lowest point');
 assert.equal((visualLab.match(/drawMarker\(ctx,/g)||[]).length-1,1,'visual lab must render exactly one point marker');
 
 const sw=await readFile(new URL('../sw.js',import.meta.url),'utf8');
-assert.ok(sw.includes("weight-v137-nutrition-beta-imports"));assert.ok(sw.includes("c.addAll(CORE_ASSETS)"));assert.equal(sw.includes('c.addAll(ASSETS)'),false);
+assert.ok(sw.includes("weight-v138-daesanghyeok-legendary"));assert.ok(sw.includes("c.addAll(CORE_ASSETS)"));assert.equal(sw.includes('c.addAll(ASSETS)'),false);
 for(const entry of SHOWROOM_CATALOG_V2.filter(entry=>entry.asset&&entry.id!=='pe_r_roaring_tiger_general')){
   const cached=entry.asset.includes('/showroom-v13/')
     ?sw.includes(`'${entry.id}'`)

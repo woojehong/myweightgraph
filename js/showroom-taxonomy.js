@@ -2,6 +2,7 @@ export const SHOWROOM_SOURCE_CATEGORIES = Object.freeze({
   wow: Object.freeze({ id: 'wow', label: 'WoW' }),
   marvel: Object.freeze({ id: 'marvel', label: '마블' }),
   kbo: Object.freeze({ id: 'kbo', label: 'KBO' }),
+  esports: Object.freeze({ id: 'esports', label: 'e스포츠' }),
   three_kingdoms: Object.freeze({ id: 'three_kingdoms', label: '삼국지' }),
   other: Object.freeze({ id: 'other', label: '기타' }),
 });
@@ -51,6 +52,8 @@ export const SHOWROOM_MOTIFS = Object.freeze({
   lg_sub: motif('lg_sub', '루피', 'kbo', true),
   kia: motif('kia', '호걸이', 'kbo'),
   hanwha: motif('hanwha', '수리', 'kbo'),
+
+  daesanghyeok: motif('daesanghyeok', '대상혁', 'esports', true),
 });
 
 export const SHOWROOM_FULL_SET_CATEGORIES = Object.freeze([
@@ -83,6 +86,7 @@ export const SHOWROOM_CANONICAL_SET_ITEMS = Object.freeze({
   doosan_sub:Object.freeze(['gs13_u_softbear_ballpark','ct13_u_softbear_dugout','ae13_u_softbear_cheer','ls13_u_softbear_stitch','pe_u_soft_bear_fan','eb13_u_softbear','pm_u_softbear_signature']),
   lg_main:Object.freeze(['gs12_u_twin_night_stadium','ct8_u_twin_stadium','ae11_u_twin_night_game','ls13_u_twins_pinstripe','pe_u_twin_cheer_pair','eb_u_twin_stadium','pm_u_twins_signature']),
   lg_sub:Object.freeze(['gs13_u_loopy_twins_party','ct13_u_loopy_cheer_lounge','ae13_u_loopy_party','ls13_u_loopy_bounce','pe13_u_loopy_cheer','eb13_u_loopy','pm13_u_loopy_cheer']),
+  daesanghyeok:Object.freeze(['gs14_l_daesanghyeok_stage','ct14_l_daesanghyeok_goat','ae14_l_daesanghyeok_dynasty','ls14_l_daesanghyeok_legacy','pe14_l_daesanghyeok','eb14_l_daesanghyeok_hall','pm14_l_daesanghyeok_crown']),
 });
 
 const ids = (motifId, values) => values.map(id => [id, motifId]);
@@ -121,6 +125,8 @@ const ITEM_MOTIF_PAIRS = [
   ...ids('lg_sub', ['gs13_u_loopy_twins_party','ct13_u_loopy_cheer_lounge','ae13_u_loopy_party','ls13_u_loopy_bounce','pe13_u_loopy_cheer','eb13_u_loopy','pm13_u_loopy_cheer']),
   ...ids('kia', ['gs12_u_tiger_bullpen','ct8_u_tiger_clubhouse','ae11_u_tiger_homerun','pe_u_red_tiger_pitcher','eb_u_tiger_dugout']),
   ...ids('hanwha', ['gs12_u_orange_eagle_skybox','pe_u_orange_eagle_cheer']),
+
+  ...ids('daesanghyeok', ['gs14_l_daesanghyeok_stage','ct14_l_daesanghyeok_goat','ae14_l_daesanghyeok_dynasty','ls14_l_daesanghyeok_legacy','pe14_l_daesanghyeok','eb14_l_daesanghyeok_hall','pm14_l_daesanghyeok_crown']),
 ];
 
 export const SHOWROOM_ITEM_MOTIFS = Object.freeze(Object.fromEntries(ITEM_MOTIF_PAIRS));

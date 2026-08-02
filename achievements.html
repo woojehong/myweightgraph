@@ -238,7 +238,7 @@ import { ACHIEVEMENTS, ACHIEVEMENT_CATEGORIES,
          calculateProgress, calculateMetaProgress } from './js/achievements.js';
 import { syncAchievements, queueAchievementPopups } from './js/achievements-engine.js';
 import { ACHIEVEMENT_ITEM_REWARDS_V2 } from './js/achievement-item-rewards-v2.js';
-import { getCatalogItemV2, RARITY_META, profileVisualForUserV2, titleInfoV2 } from './js/showroom-v2.js?v=96';
+import { getCatalogItemV2, RARITY_META, profileVisualForUserV2, profileShowcaseForUserV2, titleInfoV2 } from './js/showroom-v2.js?v=96';
 import { esc } from './js/util.js';
 const VISIBLE_ACHIEVEMENTS = ACHIEVEMENTS.filter(a =>
   a.cat !== 'steps' && !a.id.startsWith('mood_') && !a.id.startsWith('journal_'));
@@ -364,7 +364,7 @@ async function render() {
       <div class="profile-glow" style="--tc-glow:${tier.color}30"></div>
       <div class="profile-lines"></div>
       <div class="profile-inner">
-        <div class="profile-emoji-stage" aria-label="${esc(user.name)} 프로필">${profileVisualForUserV2(user,160)}</div>
+        <div class="profile-emoji-stage" aria-label="${esc(user.name)} 프로필">${profileShowcaseForUserV2(user,160)}</div>
         ${user.selectedTitle ? `<div class="profile-title-badge">${esc(user.selectedTitle)}</div><br>` : ''}
         <div class="profile-name">${esc(user.name)}</div>
         <div class="profile-tier">

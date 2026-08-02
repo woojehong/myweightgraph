@@ -10,7 +10,7 @@ import {
 } from '../js/showroom-taxonomy.js';
 import { SHOWROOM_FULLSET_ITEMS_V13 } from '../js/showroom-fullsets-v13.js';
 
-assert.deepEqual(Object.keys(SHOWROOM_SOURCE_CATEGORIES),['wow','marvel','kbo','three_kingdoms','other']);
+assert.deepEqual(Object.keys(SHOWROOM_SOURCE_CATEGORIES),['wow','marvel','kbo','esports','three_kingdoms','other']);
 assert.deepEqual(SHOWROOM_FULL_SET_CATEGORIES,[
   'graph_skin','card_theme','ambient_effect','line_style','profile_emoji','emoji_border','point_marker',
 ]);
@@ -31,12 +31,13 @@ const expectedNames={
   iron_man:'강철 인간',thor:'천둥의 신',captain_america:'미국 대장',
   scarlet_witch:'진홍 마녀',doosan_main:'철웅이',doosan_sub:'망곰이',
   lg_main:'럭키 & 스타',lg_sub:'루피',
+  daesanghyeok:'대상혁',
 };
 for(const [id,name] of Object.entries(expectedNames)){
   assert.equal(SHOWROOM_MOTIFS[id].displayName,name,id);
   assert.equal(SHOWROOM_MOTIFS[id].fullSet,true,id);
 }
-assert.equal(Object.values(SHOWROOM_MOTIFS).filter(entry=>entry.fullSet).length,16);
+assert.equal(Object.values(SHOWROOM_MOTIFS).filter(entry=>entry.fullSet).length,17);
 assert.equal(SHOWROOM_MOTIFS.kia.displayName,'호걸이');
 assert.equal(SHOWROOM_MOTIFS.hanwha.displayName,'수리');
 assert.equal(SHOWROOM_MOTIFS.zhuge_liang.displayName,'와룡');
@@ -50,7 +51,7 @@ for(const item of ALL_CATALOG_V2){
 }
 
 const sets=showroomFullSets(ALL_CATALOG_V2);
-assert.equal(sets.length,16);
+assert.equal(sets.length,17);
 assert.equal(SHOWROOM_FULLSET_ITEMS_V13.length,38,'the approved full-set completion pack must remain intact');
 for(const set of sets){
   assert.equal(set.total,7,set.id);
