@@ -552,6 +552,22 @@ input  { font-family: inherit; outline: none; }
 .v2-profile-showcase.has-frame.v2-portrait-full .v2-profile-art>.v3-profile-emoji[data-profile-id^="pe13_m_"]{transform:scale(.95)}
 .v2-profile-showcase.has-frame.v2-portrait-bust .v2-profile-art>.v3-profile-emoji{transform:scale(1.42) translateY(17%)}
 .v2-profile-compact .v2-profile-art>.v3-profile-emoji[data-portrait-mode="bust"]{transform:scale(1.42) translateY(16%);transform-origin:50% 28%}
+.v14-daesanghyeok-profile{--v14-star:#ffd166;--v14-star-cool:#e9fffb}
+.v14-daesanghyeok-profile .v2-profile-art{animation:v14DaesanghyeokFloat 5.8s ease-in-out infinite;will-change:translate}
+.v14-daesanghyeok-profile .v3-profile-emoji{animation:v14DaesanghyeokBreathe 4.8s ease-in-out infinite;will-change:scale}
+.v14-daesanghyeok-profile::before,.v14-daesanghyeok-profile::after{content:'';position:absolute;z-index:3;inset:-5%;border-radius:50%;pointer-events:none;opacity:.48;will-change:transform,opacity}
+.v14-daesanghyeok-profile::before{background:radial-gradient(circle at 50% 1%,var(--v14-star) 0 2px,transparent 3px),radial-gradient(circle at 92% 72%,var(--v14-star-cool) 0 1.5px,transparent 2.8px),radial-gradient(circle at 9% 70%,var(--v14-star) 0 1.5px,transparent 2.8px);animation:v14DaesanghyeokStarOrbit 10.5s linear infinite}
+.v14-daesanghyeok-profile::after{inset:4%;background:radial-gradient(circle at 50% 0,var(--v14-star-cool) 0 1.5px,transparent 2.8px),radial-gradient(circle at 96% 58%,var(--v14-star) 0 1.3px,transparent 2.5px),radial-gradient(circle at 7% 60%,var(--v14-star-cool) 0 1.3px,transparent 2.5px);animation:v14DaesanghyeokStarOrbitReverse 7.8s linear infinite;opacity:.38}
+.v14-daesanghyeok-profile:hover .v2-profile-art{animation-duration:3.7s}
+.v14-daesanghyeok-profile:hover .v3-profile-emoji{animation-name:v14DaesanghyeokBreatheHover;animation-duration:2.9s;filter:drop-shadow(0 3px 5px #000b) drop-shadow(0 0 8px #ffd16670)}
+.v14-daesanghyeok-profile:hover::before,.v14-daesanghyeok-profile:hover::after{opacity:.82;animation-duration:5.2s}
+.v2-profile-compact.v14-daesanghyeok-profile::before,.v2-profile-compact.v14-daesanghyeok-profile::after{opacity:.3}
+@keyframes v14DaesanghyeokFloat{0%,100%{translate:0 0}50%{translate:0 -2.2%}}
+@keyframes v14DaesanghyeokBreathe{0%,100%{scale:1}50%{scale:1.018}}
+@keyframes v14DaesanghyeokBreatheHover{0%,100%{scale:1.008}50%{scale:1.04}}
+@keyframes v14DaesanghyeokStarOrbit{to{transform:rotate(360deg)}}
+@keyframes v14DaesanghyeokStarOrbitReverse{to{transform:rotate(-360deg)}}
+@media(prefers-reduced-motion:reduce){.v14-daesanghyeok-profile .v2-profile-art,.v14-daesanghyeok-profile .v3-profile-emoji,.v14-daesanghyeok-profile::before,.v14-daesanghyeok-profile::after{animation:none!important;transition:none!important;translate:0!important;scale:1!important}.v14-daesanghyeok-profile::before,.v14-daesanghyeok-profile::after{transform:none!important;opacity:.42!important}}
 .v3-profile-base,.v3-profile-emoji{position:relative;z-index:1;display:block;object-fit:contain;filter:drop-shadow(0 2px 3px #0009)}
 .v9-marker-pair{display:flex;align-items:center;justify-content:center;gap:2px;width:74px;height:48px}
 .v9-marker-pair .v3-marker-image{width:36px;height:36px;object-fit:contain;filter:drop-shadow(0 2px 3px #000a)}

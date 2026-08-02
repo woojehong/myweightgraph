@@ -166,7 +166,8 @@ export function profileVisualV2(raw,size=48,fallbackEmoji='🙂',mode='compact')
   const loadout=normalizeLoadoutV2(raw);
   const displayMode=mode==='showcase'?'showcase':'compact';
   const portraitMode=displayMode==='compact'?'bust':loadout.portraitMode;
-  return `<span class="v2-profile v2-profile-${displayMode} v2-portrait-${portraitMode} ${loadout.emoji_border?'has-frame':''}" data-portrait-mode="${portraitMode}" style="width:${size}px;height:${size}px">${renderEmojiBorderV2(loadout.emoji_border,size+14)}<span class="v2-profile-art">${renderProfileEmojiV2(loadout.profile_emoji,size-8,fallbackEmoji,portraitMode)}</span></span>`;
+  const profileClass=loadout.profile_emoji==='pe14_l_daesanghyeok'?'v14-daesanghyeok-profile':'';
+  return `<span class="v2-profile v2-profile-${displayMode} v2-portrait-${portraitMode} ${profileClass} ${loadout.emoji_border?'has-frame':''}" data-portrait-mode="${portraitMode}" data-profile-id="${loadout.profile_emoji||''}" style="width:${size}px;height:${size}px">${renderEmojiBorderV2(loadout.emoji_border,size+14)}<span class="v2-profile-art">${renderProfileEmojiV2(loadout.profile_emoji,size-8,fallbackEmoji,portraitMode)}</span></span>`;
 }
 export const profileVisualForUserV2=(user,size=48,loadout=user?.showroomLoadoutV2)=>profileVisualV2(loadout,size);
 export const profileShowcaseForUserV2=(user,size=116,loadout=user?.showroomLoadoutV2)=>profileVisualV2(loadout,size,'🙂','showcase');
@@ -237,8 +238,9 @@ export function applyCardV2(card,raw){
   frame.src=theme.cardAssets?.header||theme.asset;frame.alt='';frame.setAttribute('aria-hidden','true');
   profile.prepend(frame);
   if(theme.logoAsset){
-    const logo=document.createElement('img');
-    logo.className='v14-card-theme-logo';logo.src=theme.logoAsset;logo.alt='T1';
+    const logo=document.createElement('span');
+    logo.className='v14-card-theme-logo t1-logo-red';logo.setAttribute('role','img');logo.setAttribute('aria-label','T1');
+    logo.style?.setProperty?.('--v14-card-logo',`url("${theme.logoAsset}")`);
     profile.prepend(logo);
   }
   profile.dataset.cardPreset=theme.id;

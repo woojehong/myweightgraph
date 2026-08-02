@@ -149,6 +149,14 @@ export function enrichShowroomItem(item) {
   return Object.freeze({ ...item, ...showroomTaxonomyFor(item) });
 }
 
+const SHOWROOM_SET_RARITY_ORDER=Object.freeze([
+  'artifact','legendary','transcendent','mythic','epic','rare','uncommon','common',
+]);
+const showroomSetRarityRank=rarity=>{
+  const rank=SHOWROOM_SET_RARITY_ORDER.indexOf(rarity);
+  return rank<0?SHOWROOM_SET_RARITY_ORDER.length:rank;
+};
+
 export function showroomFullSets(catalog) {
   return Object.values(SHOWROOM_MOTIFS)
     .filter(entry => entry.fullSet)
@@ -164,6 +172,9 @@ export function showroomFullSets(catalog) {
         const expectedId=approved[index];
         return [category,categoryMap[category].find(item=>item.id===expectedId)||categoryMap[category][0]||null];
       }));
-      return Object.freeze({ ...entry, items:Object.freeze(items), categoryMap:Object.freeze(categoryMap), presetMap:Object.freeze(presetMap), filled, total:SHOWROOM_FULL_SET_CATEGORIES.length });
-    });
+      const rarity=Object.values(presetMap).filter(Boolean)
+        .map(item=>item.rarity).sort((a,b)=>showroomSetRarityRank(a)-showroomSetRarityRank(b))[0]||'common';
+      return Object.freeze({ ...entry, rarity, items:Object.freeze(items), categoryMap:Object.freeze(categoryMap), presetMap:Object.freeze(presetMap), filled, total:SHOWROOM_FULL_SET_CATEGORIES.length });
+    })
+    .sort((a,b)=>showroomSetRarityRank(a.rarity)-showroomSetRarityRank(b.rarity));
 }
