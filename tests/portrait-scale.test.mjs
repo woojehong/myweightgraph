@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {PROFILE_VISUAL_SCALE_V2,renderProfileEmojiV2} from '../js/showroom-v2.js';
+import {FRAME_SAFE_INSET_V2,PROFILE_VISUAL_SCALE_V2,profileVisualV2,renderProfileEmojiV2} from '../js/showroom-v2.js';
 
 const MYTHIC_PROFILE_IDS=[
   'pe_l_fallen_frost_prince','pe_l_tideglass_archmage','pe_l_ironjaw_warchief',
@@ -20,5 +20,15 @@ test('mythic portraits expose bounded per-asset scale calibration',()=>{
     assert.match(html,new RegExp(`--portrait-full-scale:${scale.full}`));
     assert.match(html,new RegExp(`--portrait-frame-scale:${scale.frame}`));
     assert.match(html,new RegExp(`--portrait-bust-scale:${scale.bust}`));
+  }
+});
+
+test('every collectible portrait frame has a bounded measured safe inset',()=>{
+  assert.equal(Object.keys(FRAME_SAFE_INSET_V2).length,28);
+  for(const [id,inset] of Object.entries(FRAME_SAFE_INSET_V2)){
+    assert.ok(inset>=9&&inset<=18,`${id}: inset`);
+    const html=profileVisualV2({profile_emoji:'pe_l_fallen_frost_prince',emoji_border:id},116,'🙂','showcase');
+    assert.match(html,new RegExp(`data-frame-id="${id}"`));
+    assert.match(html,new RegExp(`--portrait-frame-inset:${inset}%`));
   }
 });

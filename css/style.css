@@ -541,8 +541,8 @@ input  { font-family: inherit; outline: none; }
 .v2-profile-compact .v2-profile-art>.v3-profile-emoji{transform:scale(1.32) translateY(5%);transform-origin:50% 30%}
 .v2-profile-showcase .v2-profile-art{inset:2%;overflow:hidden;border-radius:10%}
 .v2-profile-showcase .v2-profile-art>.v3-profile-emoji{object-fit:contain;transform:none;transform-origin:50% 50%}
-.v2-profile-showcase.has-frame .v2-profile-art{inset:11%}
-.v2-profile-compact.has-frame .v2-profile-art{inset:13%}
+.v2-profile-showcase.has-frame .v2-profile-art{inset:var(--portrait-frame-inset,11%)}
+.v2-profile-compact.has-frame .v2-profile-art{inset:calc(var(--portrait-frame-inset,11%) + 2%)}
 .v2-profile-showcase.v2-portrait-full .v2-profile-art>.v3-profile-emoji{object-fit:contain;transform:none;transform-origin:50% 55%}
 .v2-profile-showcase.v2-portrait-full .v2-profile-art>.v3-profile-emoji[data-profile-id^="pe_l_"],.v2-profile-showcase.v2-portrait-full .v2-profile-art>.v3-profile-emoji[data-profile-id^="pe13_m_"]{transform:scale(var(--portrait-full-scale,.94))}
 .v2-profile-showcase.v2-portrait-bust .v2-profile-art>.v3-profile-emoji{object-fit:contain;transform:scale(var(--portrait-bust-scale,1.48)) translateY(18%);transform-origin:50% 28%}

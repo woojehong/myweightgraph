@@ -161,6 +161,15 @@ export const PROFILE_VISUAL_SCALE_V2=Object.freeze({
   pe13_m_tideborn_queen:Object.freeze({full:.97,frame:1.01,bust:1.45}),
   pe13_m_sunwell_prince:Object.freeze({full:.97,frame:1.01,bust:1.45}),
 });
+export const FRAME_SAFE_INSET_V2=Object.freeze({
+  eb13_e_crimson_hex:15,eb13_e_star_shield:12,
+  eb13_m_azshara_coral:16,eb13_m_banshee_valkyr:16,eb13_m_raven_timegate:15,eb13_m_tide_admiral:16,
+  eb13_u_loopy:12,eb13_u_softbear:11,
+  eb_e_black_vibration:11,eb_e_crimson_core:15,eb_e_dimensional_sanctum:16,eb_e_thunder_guard:16,eb_e_web_mobility:15,
+  eb_l_frozen_oath:16,eb_l_nether_twinblade:17,eb_l_rediron_warchief:16,eb_l_storm_lion_gate:18,eb_l_sunwell_bloodcrystal:16,
+  eb_r_crescent_dragon:16,eb_r_imperial_bronze:15,eb_r_moon_archive:12,eb_r_red_hare_armor:16,eb_r_wolong_trigram:15,
+  eb_u_bear_batter:15,eb_u_dawn_running:9,eb_u_morning_brew:13,eb_u_tiger_dugout:10,eb_u_twin_stadium:13,
+});
 const escapeProfileText=value=>String(value).replace(/[&<>"']/g,char=>({
   '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;',
 })[char]);
@@ -176,14 +185,15 @@ export function renderProfileEmojiV2(id,size=42,fallbackEmoji='🙂',portraitMod
 }
 export function renderEmojiBorderV2(id,size=52){
   const entry=getCatalogItemV2(id);
-  return entry?`<img class="v3-emoji-border" src="${entry.asset}" width="${size}" height="${size}" alt="" aria-hidden="true" draggable="false" decoding="async" loading="lazy">`:'';
+  return entry?`<img class="v3-emoji-border" data-frame-id="${entry.id}" src="${entry.asset}" width="${size}" height="${size}" alt="" aria-hidden="true" draggable="false" decoding="async" loading="lazy">`:'';
 }
 export function profileVisualV2(raw,size=48,fallbackEmoji='🙂',mode='compact'){
   const loadout=normalizeLoadoutV2(raw);
   const displayMode=mode==='showcase'?'showcase':'compact';
   const portraitMode=displayMode==='compact'?'bust':loadout.portraitMode;
   const profileClass=loadout.profile_emoji==='pe14_l_daesanghyeok'?'v14-daesanghyeok-profile':'';
-  return `<span class="v2-profile v2-profile-${displayMode} v2-portrait-${portraitMode} ${profileClass} ${loadout.emoji_border?'has-frame':''}" data-portrait-mode="${portraitMode}" data-profile-id="${loadout.profile_emoji||''}" style="width:${size}px;height:${size}px">${renderEmojiBorderV2(loadout.emoji_border,size+14)}<span class="v2-profile-art">${renderProfileEmojiV2(loadout.profile_emoji,size-8,fallbackEmoji,portraitMode)}</span></span>`;
+  const frameInset=FRAME_SAFE_INSET_V2[loadout.emoji_border]??11;
+  return `<span class="v2-profile v2-profile-${displayMode} v2-portrait-${portraitMode} ${profileClass} ${loadout.emoji_border?'has-frame':''}" data-portrait-mode="${portraitMode}" data-profile-id="${loadout.profile_emoji||''}" data-frame-id="${loadout.emoji_border||''}" style="width:${size}px;height:${size}px;--portrait-frame-inset:${frameInset}%">${renderEmojiBorderV2(loadout.emoji_border,size+14)}<span class="v2-profile-art">${renderProfileEmojiV2(loadout.profile_emoji,size-8,fallbackEmoji,portraitMode)}</span></span>`;
 }
 export const profileVisualForUserV2=(user,size=48,loadout=user?.showroomLoadoutV2)=>profileVisualV2(loadout,size);
 export const profileShowcaseForUserV2=(user,size=116,loadout=user?.showroomLoadoutV2)=>profileVisualV2(loadout,size,'🙂','showcase');
