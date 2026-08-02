@@ -260,7 +260,8 @@ for(const entry of SHOWROOM_CATALOG_V2.filter(item=>item.category==='ambient_eff
 }
 const fxSource=await readFile(new URL('../js/showroom-fx.js',import.meta.url),'utf8');
 for(const entry of AMBIENT_EFFECT_ITEMS_V11)assert.ok((fxSource.match(new RegExp(entry.id,'g'))||[]).length>=2,`${entry.id}: renderer allow-list and implementation must both exist`);
-for(const token of ['V11_AMBIENT_RENDERERS','v11Bolt','v11ProtectCenter','v11ArtCache','v11DrawArt','v11ArtStream','v11ArtOrbit','v11LayeredAmbient','v11Snowflake','frostTide(ctx,pts,acc,T,base)','ae12_m_tidal_archmage_blizzard(ctx,a,t)','ae11_m_frozen_crown(ctx,a,t)','ae11_m_black_sanctuary(ctx,a,t)','ae11_e_spider_rift(ctx,a,t)','ae11_m_banshee_dirge(ctx,a,t)'])assert.ok(fxSource.includes(token),token);
+for(const token of ['V11_AMBIENT_RENDERERS','v11Bolt','v11ProtectCenter','ambientSafeRectV11','ctx.clip(\'evenodd\')','v11ArtCache','v11DrawArt','v11ArtStream','v11ArtOrbit','v11Snowflake','frostTide(ctx,pts,acc,T,base)','ae12_m_tidal_archmage_blizzard(ctx,a,t)','ae11_m_frozen_crown(ctx,a,t)','ae11_m_black_sanctuary(ctx,a,t)','ae11_e_spider_rift(ctx,a,t)','ae11_m_banshee_dirge(ctx,a,t)'])assert.ok(fxSource.includes(token),token);
+assert.equal(fxSource.includes('v11LayeredAmbient'),false,'shared ambient shake template must stay retired');
 assert.equal(fxSource.includes('v11RuneRing'),false,'dotted procedural rune rings must be fully removed');
 assert.equal(fxSource.includes('function v11Ribbon'),false,'legacy sine-wave ribbon renderer must stay retired');
 for(const entry of SHOWROOM_CATALOG_V2.filter(item=>item.id!=='pe_r_roaring_tiger_general')){
