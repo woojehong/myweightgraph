@@ -1,4 +1,4 @@
-const CACHE = 'weight-v140-showroom-fx-bounds-and-set-markers';
+const CACHE = 'weight-v141-ambient-art-no-hard-center-clip';
 const ASSETS = [
   './index.html', './dashboard.html', './input.html', './import.html',
   './achievements.html', './compare.html', './dressroom.html', './diet.html', './shop.html', './guide.html', './visual-lab.html',

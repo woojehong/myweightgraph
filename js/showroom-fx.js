@@ -1497,14 +1497,6 @@ export function ambientSafeRectV11(area,widthRatio=.72,heightRatio=.68){
   const width=w*clamp(widthRatio,0,1),height=h*clamp(heightRatio,0,1);
   return Object.freeze({left:left+(w-width)/2,right:right-(w-width)/2,top:top+(h-height)/2,bottom:bottom-(h-height)/2,width,height});
 }
-function v11ProtectCenter(ctx,area){
-  const safe=ambientSafeRectV11(area);
-  ctx.beginPath();
-  ctx.rect(area.left,area.top,area.right-area.left,area.bottom-area.top);
-  ctx.rect(safe.left,safe.top,safe.width,safe.height);
-  ctx.clip('evenodd');
-}
-
 export const LEGENDARY_AMBIENT_STAR_COUNT_V14=6;
 export function legendaryPerimeterStarsV14(area,time=0){
   const width=Math.max(0,Number(area?.right)-Number(area?.left));
@@ -1816,7 +1808,10 @@ function drawV11Ambient(ctx, area, id, T, small) {
   v11Density=small||w<520?.55:w<760?.75:1;
   v11ActiveArea=area;
   ctx.save();
-  try{ctx.globalAlpha=small?.78:1;v11ProtectCenter(ctx,area);renderer(ctx,area,time,small);}
+  // Signature artwork is rendered below the datasets. Do not hard-clip the
+  // center: that cut large portals and figures in half. The chart line and
+  // markers remain legible because Chart.js paints them after this layer.
+  try{ctx.globalAlpha=small?.72:.92;renderer(ctx,area,time,small);}
   finally{ctx.restore();v11Density=priorDensity;v11ActiveArea=priorArea;}
 }
 function loop(ts) {

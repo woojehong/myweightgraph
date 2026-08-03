@@ -49,7 +49,7 @@ test('large ambient signature art is fitted fully inside the graph area',()=>{
   assert.ok(fitted.y+fitted.size/2<=area.bottom);
 });
 
-test('all differentiated ambient renderers apply an even-odd center exclusion clip',()=>{
+test('ambient artwork is not cut by the former hard center exclusion mask',()=>{
   const previousWindow=globalThis.window,previousImage=globalThis.Image;
   globalThis.window={matchMedia:()=>({matches:true})};
   globalThis.Image=class { complete=false;naturalWidth=0;set src(value){this._src=value;} };
@@ -57,7 +57,7 @@ test('all differentiated ambient renderers apply an even-odd center exclusion cl
     for(const ambientFx of ambientIds){
       const {ctx,calls}=canvasRecorder();
       assert.doesNotThrow(()=>showroomFxPlugin.beforeDatasetsDraw(chartFor(ctx),null,{ambientFx}),ambientFx);
-      assert.ok(calls.some(([method,rule])=>method==='clip'&&rule==='evenodd'),`${ambientFx}: missing center exclusion clip`);
+      assert.equal(calls.some(([method,rule])=>method==='clip'&&rule==='evenodd'),false,`${ambientFx}: hard center clipping must stay removed`);
     }
   }finally{
     if(previousWindow===undefined)delete globalThis.window;else globalThis.window=previousWindow;
@@ -82,7 +82,7 @@ test('replacement line renderers execute as layered continuous animations',()=>{
 test('quality source contracts prevent common ambient template and fixed-distance icon stamping',async()=>{
   const source=await readFile(new URL('../js/showroom-fx.js',import.meta.url),'utf8');
   assert.equal(source.includes('v11LayeredAmbient'),false);
-  assert.ok(source.includes("ctx.clip('evenodd')"));
+  assert.equal(source.includes("ctx.clip('evenodd')"),false);
   const lineRanges={
     spider:['  spider(ctx','  crimson(ctx'],
     arcaneSeam:['  arcaneSeam(ctx','  soulHarvest(ctx'],
