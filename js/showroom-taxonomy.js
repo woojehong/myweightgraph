@@ -178,3 +178,13 @@ export function showroomFullSets(catalog) {
     })
     .sort((a,b)=>showroomSetRarityRank(a.rarity)-showroomSetRarityRank(b.rarity));
 }
+
+export function showroomSetPreviewLoadout(current,set){
+  const next={...(current||{})};
+  for(const category of SHOWROOM_FULL_SET_CATEGORIES)next[category]=set?.presetMap?.[category]?.id||null;
+  const line=set?.presetMap?.line_style;
+  if(line?.renderSpec?.colorMode==='custom')next.lineColor=line.renderSpec.color||'#00e5aa';
+  else delete next.lineColor;
+  next.lineWidth=line?.renderSpec?.width||2.2;
+  return next;
+}

@@ -1,4 +1,4 @@
-const CACHE = 'weight-v139-daesanghyeok-legendary-remaster';
+const CACHE = 'weight-v140-showroom-fx-bounds-and-set-markers';
 const ASSETS = [
   './index.html', './dashboard.html', './input.html', './import.html',
   './achievements.html', './compare.html', './dressroom.html', './diet.html', './shop.html', './guide.html', './visual-lab.html',

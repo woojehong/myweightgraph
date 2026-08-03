@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { ambientSafeRectV11, showroomFxPlugin } from '../js/showroom-fx.js';
+import { ambientSafeRectV11, fitAmbientArtRectV11, showroomFxPlugin } from '../js/showroom-fx.js';
 
 const ambientIds=[
   'ae11_u_navy_bear_victory','ae11_u_twin_night_game','ae11_u_tiger_homerun',
@@ -38,6 +38,15 @@ function chartFor(ctx){
 test('ambient safe zone is an exact centered 72 by 68 percent exclusion',()=>{
   const safe=ambientSafeRectV11({left:0,top:0,right:640,bottom:360});
   assert.deepEqual(safe,{left:89.60000000000002,right:550.4,top:57.599999999999994,bottom:302.4,width:460.79999999999995,height:244.8});
+});
+
+test('large ambient signature art is fitted fully inside the graph area',()=>{
+  const area={left:52,right:612,top:20,bottom:335};
+  const fitted=fitAmbientArtRectV11(area,area.right-18,area.top+34,180);
+  assert.ok(fitted.x-fitted.size/2>=area.left);
+  assert.ok(fitted.x+fitted.size/2<=area.right);
+  assert.ok(fitted.y-fitted.size/2>=area.top);
+  assert.ok(fitted.y+fitted.size/2<=area.bottom);
 });
 
 test('all differentiated ambient renderers apply an even-odd center exclusion clip',()=>{

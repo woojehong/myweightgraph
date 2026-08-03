@@ -6,7 +6,7 @@ import {
   SHOWROOM_MOTIFS,
   SHOWROOM_FULL_SET_CATEGORIES,
   RETIRED_SHOWROOM_ITEM_IDS,
-  showroomFullSets,
+  showroomFullSets, showroomSetPreviewLoadout,
 } from '../js/showroom-taxonomy.js';
 import { SHOWROOM_FULLSET_ITEMS_V13 } from '../js/showroom-fullsets-v13.js';
 
@@ -58,6 +58,9 @@ for(const set of sets){
   assert.equal(set.filled,7,`${set.id}: every approved preset category must now have an item`);
   assert.deepEqual(Object.keys(set.categoryMap),SHOWROOM_FULL_SET_CATEGORIES,set.id);
   assert.ok(set.items.every(item=>item.setId===set.setId),set.id);
+  const preview=showroomSetPreviewLoadout({point_marker:'previous-marker',lineColor:'#123456'},set);
+  assert.equal(preview.point_marker,set.presetMap.point_marker.id,`${set.id}: set preview must replace the equipped marker`);
+  assert.notEqual(preview.point_marker,'previous-marker',`${set.id}: equipped marker must not leak into set preview`);
 }
 
 const showroom=await readFile(new URL('../dressroom.html',import.meta.url),'utf8');
@@ -67,7 +70,7 @@ for(const token of [
   '보유','미보유',"['common','uncommon','rare','epic','mythic','transcendent','legendary','artifact']",
   'SHOWROOM_SOURCE_CATEGORIES','showroomFullSets','renderSetGrid','sr-set-grid',
   'data-apply-set','세트 전체 미리보기','원클릭 전체 미리보기',
-  "for(const cat of SHOWROOM_FULL_SET_CATEGORIES)","draft[cat]=item?.id||null",
+  'showroomSetPreviewLoadout','draft=normalizeLoadoutV2(showroomSetPreviewLoadout(draft,set))',
   "const canonicalItems=SHOWROOM_FULL_SET_CATEGORIES.map(cat=>set.presetMap[cat]).filter(Boolean)",
   "const applied=SHOWROOM_FULL_SET_CATEGORIES.every(cat=>draft[cat]===(set.presetMap[cat]?.id||null))",
   '공식 구성품','추가 구매 없음',

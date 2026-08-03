@@ -1527,6 +1527,19 @@ export function legendaryPerimeterStarsV14(area,time=0){
   }));
 }
 const v11ArtCache=new Map();
+let v11ActiveArea=null;
+export function fitAmbientArtRectV11(area,x,y,size,padding=2){
+  const left=Number(area?.left),right=Number(area?.right),top=Number(area?.top),bottom=Number(area?.bottom);
+  if(![left,right,top,bottom,x,y,size].every(Number.isFinite)||right<=left||bottom<=top)return Object.freeze({x,y,size});
+  const pad=Math.max(0,Number(padding)||0);
+  const fittedSize=Math.max(1,Math.min(size,right-left-pad*2,bottom-top-pad*2));
+  const half=fittedSize/2;
+  return Object.freeze({
+    x:clamp(x,left+half+pad,right-half-pad),
+    y:clamp(y,top+half+pad,bottom-half-pad),
+    size:fittedSize,
+  });
+}
 function v11Art(id,index){
   const key=`${id}_${String(index).padStart(2,'0')}`;
   if(v11ArtCache.has(key))return v11ArtCache.get(key);
@@ -1536,6 +1549,7 @@ function v11Art(id,index){
 }
 function v11DrawArt(ctx,id,index,x,y,size,alpha,rotation=0,blend='screen'){
   const image=v11Art(id,index);if(!image.complete||!image.naturalWidth)return;
+  if(v11ActiveArea)({x,y,size}=fitAmbientArtRectV11(v11ActiveArea,x,y,size));
   ctx.save();ctx.globalCompositeOperation=blend;ctx.globalAlpha=clamp(alpha,0,1);
   ctx.translate(x,y);ctx.rotate(rotation);ctx.drawImage(image,-size/2,-size/2,size,size);ctx.restore();
 }
@@ -1798,10 +1812,12 @@ const V11_AMBIENT_RENDERERS = Object.freeze({
 function drawV11Ambient(ctx, area, id, T, small) {
   const renderer=V11_AMBIENT_RENDERERS[id];if(!renderer)return;
   const time=reduceMotion()?0:T/1000;
-  const priorDensity=v11Density,w=area.right-area.left;
+  const priorDensity=v11Density,priorArea=v11ActiveArea,w=area.right-area.left;
   v11Density=small||w<520?.55:w<760?.75:1;
-  ctx.save();ctx.globalAlpha=small?.78:1;v11ProtectCenter(ctx,area);renderer(ctx,area,time,small);ctx.restore();
-  v11Density=priorDensity;
+  v11ActiveArea=area;
+  ctx.save();
+  try{ctx.globalAlpha=small?.78:1;v11ProtectCenter(ctx,area);renderer(ctx,area,time,small);}
+  finally{ctx.restore();v11Density=priorDensity;v11ActiveArea=priorArea;}
 }
 function loop(ts) {
   rafId = requestAnimationFrame(loop);

@@ -42,7 +42,7 @@ body{background:#080c13}.sr-shell{max-width:1240px;margin:auto;padding:16px 14px
 <div class="sr-acquire" id="acquireReveal"><div class="sr-acquire-card" id="acquireCard"></div></div>
 <script type="module">
 import{getUser,getWeights,getSettings,updateUser,purchaseCatalogItemsV2,saveShowroomLoadoutV2}from'./js/db.js?v=96';import{isAuthed,clearAuth}from'./js/auth.js';import{renderChart}from'./js/chart-render.js';import{esc}from'./js/util.js';import{activeTodayMessage,normalizeTodayMessage,todayMessageDayKey}from'./js/today-message.js';import{SHOWROOM_DEFAULTS}from'./js/showroom-catalog-v2.js?v=96';import{ALL_CATALOG_V2,V2_CATEGORIES,CATEGORY_META,RARITY_META,compareShowroomRarityV2,normalizeLoadoutV2,ownedItemIdsV2,ownsItemV2,unownedSelectionV2,renderCatalogPreviewV2,profileShowcaseForUserV2,renderTrophyV2,renderMarkerV2,titleInfoV2,getChartDecorationsV2,applyCardV2,decorateMainPlotV2}from'./js/showroom-v2.js?v=96';
-import{SHOWROOM_SOURCE_CATEGORIES,SHOWROOM_FULL_SET_CATEGORIES,showroomFullSets}from'./js/showroom-taxonomy.js';
+import{SHOWROOM_SOURCE_CATEGORIES,SHOWROOM_FULL_SET_CATEGORIES,showroomFullSets,showroomSetPreviewLoadout}from'./js/showroom-taxonomy.js';
 import{SHOWROOM_PRESET_LIMIT,normalizeShowroomFavorites,normalizeShowroomPresets,showroomCollectionStats}from'./js/showroom-collection.js';
 const uid=new URLSearchParams(location.search).get('user')||localStorage.getItem('uid');if(!uid)location.href='index.html';const $=id=>document.getElementById(id);let user,records=[],settings={},saved=normalizeLoadoutV2(),draft=normalizeLoadoutV2(),category='graph_skin',timer,viewMode='items';
 const filters={ownership:'',rarities:new Set(),sources:new Set()};
@@ -180,14 +180,7 @@ function renderSetGrid(){
   grid.querySelectorAll('[data-apply-set]').forEach(button=>button.onclick=()=>{
     const set=FULL_SETS.find(entry=>entry.setId===button.dataset.applySet);
     if(!set)return;
-    for(const cat of SHOWROOM_FULL_SET_CATEGORIES){
-      const item=set.presetMap[cat];
-      draft[cat]=item?.id||null;
-    }
-    const line=set.presetMap.line_style;
-    if(line?.renderSpec?.colorMode==='custom')draft.lineColor=line.renderSpec.color||'#00e5aa';
-    else delete draft.lineColor;
-    draft.lineWidth=line?.renderSpec?.width||2.2;
+    draft=normalizeLoadoutV2(showroomSetPreviewLoadout(draft,set));
     renderGrid();
     renderPreview();
     sync();
