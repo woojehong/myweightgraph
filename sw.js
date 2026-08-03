@@ -1,4 +1,4 @@
-const CACHE = 'weight-v141-ambient-art-no-hard-center-clip';
+const CACHE = 'weight-v142-daesanghyeok-immortal-dynasty';
 const ASSETS = [
   './index.html', './dashboard.html', './input.html', './import.html',
   './achievements.html', './compare.html', './dressroom.html', './diet.html', './shop.html', './guide.html', './visual-lab.html',
@@ -206,6 +206,8 @@ const ASSETS = [
   './assets/showroom-v14/daesanghyeok/marker_high.webp',
   './assets/showroom-v14/daesanghyeok/marker_low.webp',
   './assets/showroom-v14/daesanghyeok/t1_logo.svg',
+  './assets/showroom-v14/daesanghyeok/ambient_dynasty_hall.webp',
+  './assets/showroom-v14/daesanghyeok/ambient_six_star_crown.webp',
 ];
 // Install only the application shell. Collection artwork is cached on first
 // view by the network-first fetch handler instead of forcing a ~78 MB install.

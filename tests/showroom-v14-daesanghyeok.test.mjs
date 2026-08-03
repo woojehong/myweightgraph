@@ -91,7 +91,11 @@ assert.deepEqual(marker.markerAssets,{
 
 assert.ok(LINE_FX_IDS.includes('ls14_l_daesanghyeok_legacy'));
 assert.ok(AMBIENT_FX_IDS.includes('ae14_l_daesanghyeok_dynasty'));
-assert.ok(renderAmbientV2('ae14_l_daesanghyeok_dynasty').includes('v14-ambient-preview'));
+const ambientPreview=renderAmbientV2('ae14_l_daesanghyeok_dynasty');
+assert.ok(ambientPreview.includes('v14-ambient-preview'));
+assert.ok(ambientPreview.includes('ambient_dynasty_hall.webp'));
+assert.ok(ambientPreview.includes('ambient_six_star_crown.webp'));
+assert.equal((ambientPreview.match(/<i style="--i:/g)||[]).length,6,'the preview must expose exactly six championship stars');
 assert.ok(renderCatalogPreviewV2(getCatalogItemV2('ls14_l_daesanghyeok_legacy')).includes('ls14_l_daesanghyeok_legacy'));
 assert.equal(LEGENDARY_AMBIENT_STAR_COUNT_V14,6);
 const starArea={left:0,top:0,right:640,bottom:360};
@@ -161,6 +165,15 @@ for(const token of [
   '.v14-daesanghyeok-profile:hover .v3-profile-emoji',
   '@media(prefers-reduced-motion:reduce){.v14-daesanghyeok-profile',
 ])assert.ok(baseCss.includes(token),token);
+for(const assetName of ['ambient_dynasty_hall.webp','ambient_six_star_crown.webp']){
+  const asset=await readFile(new URL(`../assets/showroom-v14/daesanghyeok/${assetName}`,import.meta.url));
+  assert.equal(asset.subarray(0,4).toString('ascii'),'RIFF',`${assetName} must be a WebP asset`);
+  assert.ok(asset.length>250000,`${assetName} must retain production-quality raster detail`);
+}
+const fxSource=await readFile(new URL('../js/showroom-fx.js',import.meta.url),'utf8');
+for(const token of ['v14DrawDynastyArt','ambient_dynasty_hall','ambient_six_star_crown','cycle=((t%12)+12)%12'])assert.ok(fxSource.includes(token),token);
+const serviceWorker=await readFile(new URL('../sw.js',import.meta.url),'utf8');
+for(const token of ['weight-v142-daesanghyeok-immortal-dynasty','ambient_dynasty_hall.webp','ambient_six_star_crown.webp'])assert.ok(serviceWorker.includes(token),token);
 const cardCss=await readFile(new URL('../css/showroom-card-themes.css',import.meta.url),'utf8');
 for(const token of ['t1-logo-red','background:#e2012d','mask:var(--v14-card-logo)','not(.v14-card-theme-logo)','data-card-theme="ct14_l_daesanghyeok_goat"','object-position:left center'])assert.ok(cardCss.includes(token),token);
 

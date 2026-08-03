@@ -1520,6 +1520,24 @@ export function legendaryPerimeterStarsV14(area,time=0){
 }
 const v11ArtCache=new Map();
 let v11ActiveArea=null;
+const v14DynastyArtCache=new Map();
+const V14_DYNASTY_ART_ROOT='./assets/showroom-v14/daesanghyeok';
+function v14DynastyArt(name){
+  if(v14DynastyArtCache.has(name))return v14DynastyArtCache.get(name);
+  if(typeof Image!=='function')return null;
+  const image=new Image();image.decoding='async';image.src=`${V14_DYNASTY_ART_ROOT}/${name}.webp`;
+  v14DynastyArtCache.set(name,image);return image;
+}
+function v14DrawDynastyArt(ctx,area,name,{x=.5,y=.5,width=.8,alpha=.3,scale=1,rotation=0,blend='screen'}={}){
+  const image=v14DynastyArt(name);if(!image?.complete||!image.naturalWidth)return;
+  const areaWidth=area.right-area.left,areaHeight=area.bottom-area.top,aspect=image.naturalWidth/image.naturalHeight;
+  let drawWidth=areaWidth*width*scale,drawHeight=drawWidth/aspect;
+  if(drawHeight>areaHeight*.94){drawHeight=areaHeight*.94;drawWidth=drawHeight*aspect;}
+  const cx=clamp(area.left+areaWidth*x,area.left+drawWidth/2,area.right-drawWidth/2);
+  const cy=clamp(area.top+areaHeight*y,area.top+drawHeight/2,area.bottom-drawHeight/2);
+  ctx.save();ctx.globalCompositeOperation=blend;ctx.globalAlpha=clamp(alpha,0,1);ctx.translate(cx,cy);ctx.rotate(rotation);
+  ctx.drawImage(image,-drawWidth/2,-drawHeight/2,drawWidth,drawHeight);ctx.restore();
+}
 export function fitAmbientArtRectV11(area,x,y,size,padding=2){
   const left=Number(area?.left),right=Number(area?.right),top=Number(area?.top),bottom=Number(area?.bottom);
   if(![left,right,top,bottom,x,y,size].every(Number.isFinite)||right<=left||bottom<=top)return Object.freeze({x,y,size});
@@ -1779,7 +1797,12 @@ const V11_AMBIENT_RENDERERS = Object.freeze({
     for(let i=0;i<5;i++){const x=a.left+w*(.12+i*.19),y=a.top+h*(.2+.55*rnd(i,2)),hop=Math.abs(Math.sin(t*.8+i))*h*.035;ctx.fillStyle=withAlpha('#fff5ea',.28);ctx.beginPath();ctx.roundRect(x-4,y-hop-3,3.2,6,1);ctx.roundRect(x+.8,y-hop-3,3.2,6,1);ctx.fill();}
   },
   ae14_l_daesanghyeok_dynasty(ctx,a,t){
-    const w=a.right-a.left,h=a.bottom-a.top,u=Math.min(w,h),pulse=.86+.14*Math.sin(t*.72);
+    const w=a.right-a.left,h=a.bottom-a.top,u=Math.min(w,h),cycle=((t%12)+12)%12,pulse=.86+.14*Math.sin(t*.72);
+    const hallRise=cycle<2?cycle/2:cycle>10?(12-cycle)/2:1;
+    const hallAlpha=(.08+.11*Math.sin(hallRise*Math.PI/2))*hallRise;
+    v14DrawDynastyArt(ctx,a,'ambient_dynasty_hall',{x:.5,y:.53,width:.96,alpha:hallAlpha,scale:.96+.025*hallRise,blend:'source-over'});
+    const crestWindow=cycle<5?0:cycle<7?(cycle-5)/2:cycle<10?1:(12-cycle)/2;
+    if(crestWindow>0)v14DrawDynastyArt(ctx,a,'ambient_six_star_crown',{x:.78,y:.34,width:.34,alpha:.18+.34*crestWindow,scale:.82+.12*crestWindow,rotation:Math.sin(t*.45)*.018});
     for(const side of [0,1]){
       const x=side?a.right:a.left,direction=side?-1:1;
       const beam=ctx.createLinearGradient(x,a.top,x+direction*w*.38,a.bottom);
@@ -1788,7 +1811,7 @@ const V11_AMBIENT_RENDERERS = Object.freeze({
     }
     const cx=a.left+w*.79,cy=a.top+h*.34;
     ctx.save();ctx.translate(cx,cy);for(let ring=0;ring<5;ring++){ctx.rotate((ring%2?-.09:.12)*t);ctx.strokeStyle=withAlpha(ring%2?'#e2012d':'#ffd166',.13+ring*.035);ctx.lineWidth=1+ring*.35;ctx.setLineDash(ring%2?[5,8]:[]);ctx.beginPath();ctx.ellipse(0,0,u*(.09+ring*.04),u*(.045+ring*.022),ring*.28,0,TAU);ctx.stroke();}ctx.restore();
-    for(let i=0;i<42;i++){
+    for(let i=0;i<56;i++){
       const p=(rnd(i,1)+t*(.018+rnd(i,2)*.024))%1,edge=i%2?1:-1;
       const x=edge<0?a.left+w*(.03+.22*rnd(i,3)):a.right-w*(.03+.22*rnd(i,3));
       const y=a.bottom-p*h*.92,size=1.3+rnd(i,4)*3.2;
@@ -1797,6 +1820,10 @@ const V11_AMBIENT_RENDERERS = Object.freeze({
     for(const star of legendaryPerimeterStarsV14(a,t)){
       ctx.save();ctx.translate(star.x,star.y);ctx.rotate(star.rotation+t*.12);ctx.fillStyle=withAlpha(star.index%2?'#fff5bd':'#ffd166',.78*pulse);ctx.shadowColor=star.index%2?'#ffffff':'#ffd166';ctx.shadowBlur=10;
       ctx.beginPath();for(let point=0;point<10;point++){const radius=point%2?2.2:5,starAngle=-Math.PI/2+point*Math.PI/5;ctx.lineTo(Math.cos(starAngle)*radius,Math.sin(starAngle)*radius);}ctx.closePath();ctx.fill();ctx.restore();
+    }
+    if(cycle>9.1){
+      const finale=Math.sin(Math.min(1,(cycle-9.1)/2.2)*Math.PI),sweepX=a.left+w*Math.min(1,(cycle-9.1)/2.4);
+      const beam=ctx.createLinearGradient(sweepX-w*.18,0,sweepX+w*.12,0);beam.addColorStop(0,'rgba(255,255,255,0)');beam.addColorStop(.55,withAlpha('#fff5bd',.28*finale));beam.addColorStop(1,'rgba(226,1,45,0)');ctx.fillStyle=beam;ctx.fillRect(a.left,a.top,w,h);
     }
     const glow=ctx.createRadialGradient(cx,cy,0,cx,cy,u*.34);glow.addColorStop(0,withAlpha('#e2012d',.13*pulse));glow.addColorStop(.48,withAlpha('#ffd166',.06));glow.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=glow;ctx.fillRect(a.left,a.top,w,h);
   },
