@@ -37,7 +37,7 @@ const compare = await readFile(new URL('../compare.html',import.meta.url),'utf8'
 const showroom = await readFile(new URL('../dressroom.html',import.meta.url),'utf8');
 const css=await readFile(new URL('../css/showroom-card-themes.css',import.meta.url),'utf8');
 const baseCss=await readFile(new URL('../css/style.css',import.meta.url),'utf8');
-for(const token of ['grid-template-columns:repeat(7,26px)','grid-template-rows:repeat(2,26px)','justify-content:right','direction:rtl','object-fit:cover','aspect-ratio:4.2/1',':empty{display:none!important}','min-height:60px!important'])assert.ok(css.includes(token),token);
+for(const token of ['grid-template-columns:repeat(12,minmax(0,1fr))','grid-template-rows:repeat(2,22px)','justify-content:stretch','direction:rtl','object-fit:cover','aspect-ratio:4.2/1',':empty{display:none!important}','min-height:60px!important','transform:translateY(-5px)'])assert.ok(css.includes(token),token);
 for(const [source,label] of [[showroom,'showroom'],[compare,'compare']]){
   for(const token of ['width:100%','max-width:none','min-width:0','aspect-ratio:4.2/1','min-height:160px','max-height:240px'])assert.ok(source.includes(token),`${label} responsive header: ${token}`);
 }
@@ -54,7 +54,7 @@ for(const token of [
 ])assert.ok(compare.includes(token),`responsive compare layout: ${token}`);
 
 const sw = await readFile(new URL('../sw.js',import.meta.url),'utf8');
-assert.ok(sw.includes('weight-v145-achievement-reward-backfill'));
+assert.ok(sw.includes('weight-v146-trophy-rail-24'));
 for(const item of CARD_THEME_ITEMS)assert.ok(sw.includes(item.asset),item.id);
 for(const item of PORTRAIT_FRAME_ITEMS_V7)assert.ok(sw.includes(item.asset),item.id);
 for(const item of [...CARD_THEME_ITEMS_V13,...PORTRAIT_FRAME_ITEMS_V13])assert.ok(sw.includes(item.id),item.id);

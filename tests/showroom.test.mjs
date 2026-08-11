@@ -334,12 +334,12 @@ const compareHeaderSource=await readFile(new URL('../compare.html',import.meta.u
 const achievementsSource=await readFile(new URL('../achievements.html',import.meta.url),'utf8');
 assert.ok(achievementsSource.includes('profileShowcaseForUserV2(user,160)'),'large achievement portrait must honor the saved full/bust mode');
 assert.ok(compareHeaderSource.includes('<div class="cmp-trophies">${trophies.map(renderTrophyV2).join(\'\')}</div>'),'trophies must render in the header medal rail');
-for(const token of ['grid-template-columns:repeat(7,34px)','grid-template-rows:repeat(2,34px)','direction:rtl','justify-content:right','max-height:72px'])assert.ok(compareHeaderSource.includes(token),token);
+for(const token of ['grid-template-columns:repeat(12,minmax(0,1fr))','grid-template-rows:repeat(2,22px)','direction:rtl','justify-content:stretch','max-height:46px','transform:translateY(-5px)'])assert.ok(compareHeaderSource.includes(token),token);
 assert.equal((visualLab.match(/drawMarker\(ctx,marker,/g)||[]).length,1,'visual lab must show the image marker only at the lowest point');
 assert.equal((visualLab.match(/drawMarker\(ctx,/g)||[]).length-1,1,'visual lab must render exactly one point marker');
 
 const sw=await readFile(new URL('../sw.js',import.meta.url),'utf8');
-assert.ok(sw.includes("weight-v145-achievement-reward-backfill"));assert.ok(sw.includes("c.addAll(CORE_ASSETS)"));assert.equal(sw.includes('c.addAll(ASSETS)'),false);
+assert.ok(sw.includes("weight-v146-trophy-rail-24"));assert.ok(sw.includes("c.addAll(CORE_ASSETS)"));assert.equal(sw.includes('c.addAll(ASSETS)'),false);
 for(const entry of SHOWROOM_CATALOG_V2.filter(entry=>entry.asset&&entry.id!=='pe_r_roaring_tiger_general')){
   const cached=entry.asset.includes('/showroom-v13/')
     ?sw.includes(`'${entry.id}'`)
@@ -350,8 +350,9 @@ for(const entry of POINT_MARKER_ITEMS_V9)for(const asset of Object.values(entry.
 for(const entry of AMBIENT_EFFECT_ITEMS_V11.filter(entry=>entry.id!=='ae12_m_tidal_archmage_blizzard'))assert.ok(sw.includes(entry.id),`${entry.id}: V11 sprite family must be pre-cached`);
 
 const showroom=await readFile(new URL('../dressroom.html',import.meta.url),'utf8');
-for(const token of ['purchaseCatalogItemsV2','saveShowroomLoadoutV2','현재 수집품 검색','unownedSelectionV2','decorateMainPlotV2','data-main-weight-plot="true"','data-chart-subgraphs="diet exercise"','mainPlotAspectRatio:16/9','테스트 중 · 구매 불가','item.purchasable!==false&&!item.testOnly','테스트 아이템은 세션 미리보기 전용이며 저장할 수 없습니다','id="trophyOrder"','renderTrophyOrder','data-trophy-move','data-trophy-drag','dragstart','dragover','drop','드래그 또는 화살표로 전시 순서 변경','/14 전시','draft.trophy.length>=14','id="lineControls"','renderLineControls','id="lineColor"','id="lineWidth"','3:1 미만 경고','추천색'])assert.ok(showroom.includes(token),token);
-assert.equal(CATEGORY_META.trophy.max,14,'header trophy showcase capacity must be 7 × 2');
+for(const token of ['purchaseCatalogItemsV2','saveShowroomLoadoutV2','현재 수집품 검색','unownedSelectionV2','decorateMainPlotV2','data-main-weight-plot="true"','data-chart-subgraphs="diet exercise"','mainPlotAspectRatio:16/9','테스트 중 · 구매 불가','item.purchasable!==false&&!item.testOnly','테스트 아이템은 세션 미리보기 전용이며 저장할 수 없습니다','id="trophyOrder"','renderTrophyOrder','data-trophy-move','data-trophy-drag','dragstart','dragover','drop','드래그 또는 화살표로 전시 순서 변경','CATEGORY_META.trophy.max','id="lineControls"','renderLineControls','id="lineColor"','id="lineWidth"','3:1 미만 경고','추천색'])assert.ok(showroom.includes(token),token);
+assert.equal(CATEGORY_META.trophy.max,24,'header trophy showcase capacity must be 12 × 2');
+assert.ok(showroom.includes('grid-template-columns:repeat(12,minmax(0,1fr))'),'showroom trophies must align to the full marker rail width');
 for(const retiredToken of ['id="companionControls"','renderCompanionControls','data-companion-layout','동반자 없음'])assert.equal(showroom.includes(retiredToken),false,retiredToken);
 assert.ok(showroom.includes('.sr-cats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))'));
 assert.ok(showroom.includes('@media(max-width:520px){.sr-cats{grid-template-columns:repeat(2,minmax(0,1fr))}}'));
@@ -363,6 +364,7 @@ for(const token of [
 ])assert.ok(showroom.includes(token),`mobile showroom profile layout: ${token}`);
 assert.equal(showroom.includes('id="logoutBtn"'),false,'dressroom header must not render the large logout button');
 const compare=await readFile(new URL('../compare.html',import.meta.url),'utf8');
+assert.ok(compare.includes('grid-template-columns:repeat(12,minmax(0,1fr))'),'compare trophies must align to the full marker rail width');
 assert.ok(compare.includes("window.matchMedia('(min-width:768px)').matches"),'desktop and tablet-width compare must keep two columns');
 assert.equal(compare.includes("window.matchMedia('(min-width:1500px)').matches"),false,'compare must not collapse to one column in a narrowed desktop window');
 for(const token of ['decorateMainPlotV2','getChartDecorationsV2','data-main-weight-plot="true"','mainPlotAspectRatio: 16 / 9','id="dietToggle" type="checkbox"','id="exerciseToggle" type="checkbox"','for="dietToggle"','for="exerciseToggle"',"localStorage.getItem('compare_show_diet') === 'true'","localStorage.getItem('compare_show_exercise') === 'true'","persistSubgraphToggle('compare_show_diet'","persistSubgraphToggle('compare_show_exercise'",'showDietGraph,','showExerciseGraph,','renderGrid()'])assert.ok(compare.includes(token),token);

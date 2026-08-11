@@ -30,7 +30,7 @@ export function compareShowroomRarityV2(a,b){
 export const CATEGORY_META=Object.freeze({
   graph_skin:{name:'그래프 스킨',icon:'📈'}, line_style:{name:'그래프 선',icon:'〰️'}, card_theme:{name:'카드 테마',icon:'🖼️'},
   point_marker:{name:'포인트 마커',icon:'📍'}, companion:{name:'동반자',icon:'🐾'},
-  ambient_effect:{name:'공간 효과',icon:'✨'}, trophy:{name:'트로피',icon:'🏆',multi:true,max:14},
+  ambient_effect:{name:'공간 효과',icon:'✨'}, trophy:{name:'트로피',icon:'🏆',multi:true,max:24},
   profile_emoji:{name:'프로필 초상화',icon:'🙂'}, emoji_border:{name:'초상화 프레임',icon:'▣'},
   title:{name:'칭호',icon:'🏷️'},
 });

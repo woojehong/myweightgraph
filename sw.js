@@ -1,4 +1,4 @@
-const CACHE = 'weight-v145-achievement-reward-backfill';
+const CACHE = 'weight-v146-trophy-rail-24';
 const ASSETS = [
   './index.html', './dashboard.html', './input.html', './import.html',
   './achievements.html', './compare.html', './dressroom.html', './diet.html', './shop.html', './guide.html', './visual-lab.html',

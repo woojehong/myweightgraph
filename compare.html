@@ -123,9 +123,9 @@
     .cmp-score{ display:none; }
 
     /* ── 최고/최저/현재 배지 (프로필 줄 오른쪽 정렬) ───────────── */
-    .cmp-trophies{grid-column:3;grid-row:1;display:grid;grid-template-columns:repeat(7,34px);grid-template-rows:repeat(2,34px);grid-auto-flow:row;direction:rtl;justify-content:right;justify-self:stretch;justify-items:center;align-content:start;gap:4px 5px;max-height:72px;overflow:hidden}
+    .cmp-trophies{grid-column:3;grid-row:1;display:grid;grid-template-columns:repeat(12,minmax(0,1fr));grid-template-rows:repeat(2,22px);grid-auto-flow:row;direction:rtl;justify-content:stretch;justify-self:stretch;justify-items:center;align-content:start;gap:2px;max-height:46px;overflow:hidden;transform:translateY(-5px)}
     .cmp-trophies:empty{display:none!important}
-    .cmp-trophies .v3-trophy-image{width:34px;height:34px;object-fit:contain;filter:drop-shadow(0 3px 4px #000b)}
+    .cmp-trophies .v3-trophy-image{width:22px;height:22px;object-fit:contain;filter:drop-shadow(0 1px 1.5px #000b)}
     .cmp-markers{grid-column:3;grid-row:2;align-self:end;height:76px;max-height:76px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:stretch;gap:8px;min-width:0}
     .cmp-profile[data-card-theme] .cmp-markers{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:end;gap:8px;width:100%;min-width:100%;justify-self:stretch!important;margin:0;padding:0;border:0;background:transparent;box-shadow:none}
     .cmp-profile[data-card-theme] .cmp-markers .mk{width:100%;min-width:0!important;min-height:60px;padding:7px 8px;border:1px solid rgba(255,255,255,.14);border-radius:9px;box-sizing:border-box}
@@ -376,18 +376,18 @@
         width:100%;
         height:auto;
         min-height:0;
-        max-height:68px;
-        grid-template-columns:repeat(7,30px);
-        grid-template-rows:repeat(2,30px);
-        justify-content:end;
+        max-height:46px;
+        grid-template-columns:repeat(12,minmax(0,1fr));
+        grid-template-rows:repeat(2,22px);
+        justify-content:stretch;
         align-content:start;
-        gap:4px;
+        gap:2px;
         padding:0!important;
       }
       body.compare .cmp-trophies:empty{display:none!important}
       body.compare .cmp-profile[data-card-theme] .cmp-trophies .v3-trophy-image{
-        width:30px!important;
-        height:30px!important;
+        width:22px!important;
+        height:22px!important;
       }
       body.compare .cmp-markers,
       body.compare .cmp-profile[data-card-theme] .cmp-markers{
@@ -481,13 +481,13 @@
       body.compare .cmp-message-actions button{min-height:26px}
       body.compare .cmp-trophies,
       body.compare .cmp-profile[data-card-theme] .cmp-trophies{
-        grid-template-columns:repeat(7,24px);
-        grid-template-rows:repeat(2,24px);
-        max-height:54px;
+        grid-template-columns:repeat(12,minmax(0,1fr));
+        grid-template-rows:repeat(2,20px);
+        max-height:42px;
       }
       body.compare .cmp-profile[data-card-theme] .cmp-trophies .v3-trophy-image{
-        width:24px!important;
-        height:24px!important;
+        width:20px!important;
+        height:20px!important;
       }
     }
   </style>
