@@ -19,7 +19,7 @@ const completeRecord=(offset,weight=90)=>({
 });
 
 assert.equal(RETIRED_PERFORMANCE_ACHIEVEMENT_IDS.length,43);
-assert.equal(RECORD_META_ACHIEVEMENTS.length,30);
+assert.equal(RECORD_META_ACHIEVEMENTS.length,51);
 assert.equal(RECORD_META_TITLES.length,30);
 assert.equal(RECORD_META_TROPHIES.length,12);
 for(const trophy of RECORD_META_TROPHIES){
@@ -53,6 +53,37 @@ assert.equal(earned.has('meta_3m_returner'),false,'continuous logging must not f
 const comeback=[0,8,16,24].map(i=>completeRecord(i));
 assert.equal(extractRecordMetaData(comeback).returns,3);
 assert.ok(calculateRecordMetaEarnedIds(comeback).has('meta_3m_returner'));
+
+// 하위 기록 업적은 저장 시점이 아니라 전체 과거 기록으로 판정되어야 한다.
+const firstMonth=Array.from({length:30},(_,i)=>completeRecord(i));
+const starterEarned=calculateRecordMetaEarnedIds(firstMonth);
+for(const id of [
+  'meta_3m_active_3','meta_3m_active_7','meta_3m_active_14','meta_3m_active_30',
+  'meta_3m_weeks_2','meta_3m_weeks_4','meta_3m_multi_14',
+  'meta_3m_entries_150','meta_3m_weight_30','meta_3m_meals_60',
+  'meta_3m_water_30','meta_3m_training_10',
+])assert.ok(starterEarned.has(id),`${id} must be backfilled from historical records`);
+const starterIds=new Set([
+  'meta_3m_active_3','meta_3m_active_7','meta_3m_active_14','meta_3m_active_30',
+  'meta_3m_weeks_2','meta_3m_weeks_4','meta_3m_weeks_8',
+  'meta_3m_multi_3','meta_3m_multi_7','meta_3m_multi_14',
+  'meta_3m_entries_25','meta_3m_entries_75','meta_3m_entries_150',
+  'meta_3m_weight_7','meta_3m_weight_30','meta_3m_meals_15','meta_3m_meals_60',
+  'meta_3m_water_7','meta_3m_water_30','meta_3m_training_3','meta_3m_training_10',
+]);
+const starterScore=RECORD_META_ACHIEVEMENTS
+  .filter(a=>starterIds.has(a.id)).reduce((sum,a)=>sum+a.score,0);
+assert.equal(starterIds.size,21);
+assert.equal(starterScore,315,'starter recovery achievements must restore roughly one tier without reviving retired loss score');
+
+assert.equal(rewardItemsForAchievementsV2(starterIds).length,0,
+  'starter achievements do not mint unintended titles or trophies');
+const engineSource=fs.readFileSync(new URL('../js/achievements-engine.js',import.meta.url),'utf8');
+for(const token of [
+  'calculateRecordMetaEarnedIds(records || [])',
+  '...recordMetaShouldEarn',
+  "const newlyEarned = [...validEarned].filter(id => !storedIds.has(id))",
+])assert.ok(engineSource.includes(token),`historical backfill pipeline missing: ${token}`);
 
 const baseEarned=calculateEarnedIds(records,{referenceWeight:90,goal:70,height:180});
 assert.ok(RETIRED_PERFORMANCE_ACHIEVEMENT_IDS.every(id=>!baseEarned.has(id)),'weight change can no longer earn performance achievements');
@@ -92,7 +123,7 @@ for(const token of ['achievementTitleRewards','achievementTrophyRewards','업적
   assert.ok(adminSource.includes(token),`admin reward editor missing: ${token}`);
 }
 const swSource=fs.readFileSync(new URL('../sw.js',import.meta.url),'utf8');
-assert.ok(swSource.includes('weight-v147-trophy-rail-centered'));
+assert.ok(swSource.includes('weight-v148-record-tier-recovery'));
 for(const trophy of RECORD_META_TROPHIES)assert.ok(swSource.includes(trophy.asset.replace('./','')));
 const showroomSource=fs.readFileSync(new URL('../dressroom.html',import.meta.url),'utf8');
 assert.ok(showroomSource.includes("import{syncAchievements}from'./js/achievements-engine.js'"));

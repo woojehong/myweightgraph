@@ -1,4 +1,4 @@
-const CACHE = 'weight-v147-trophy-rail-centered';
+const CACHE = 'weight-v148-record-tier-recovery';
 const ASSETS = [
   './index.html', './dashboard.html', './input.html', './import.html',
   './achievements.html', './compare.html', './dressroom.html', './diet.html', './shop.html', './guide.html', './visual-lab.html',

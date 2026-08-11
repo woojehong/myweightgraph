@@ -13,6 +13,33 @@ const meta=(id,horizon,name,desc,score,icon,titleId,trophyId=null)=>Object.freez
 });
 
 export const RECORD_META_ACHIEVEMENTS = Object.freeze([
+  // 입문 구간은 과거 기록 전체를 다시 읽어 소급 달성된다. 기존 감량 중심
+  // 업적을 기록 중심으로 전환하면서 생긴 초반 점수 공백만 메우도록 각
+  // 업적을 각각 15점으로 제한했다(전부 달성해도 합계 315점). 현재
+  // 티어 간격 120~250점을 고려해 꾸준한 기존 사용자가 보통 한 티어를
+  // 회복하되, 폐기된 감량 업적 1,340점을 그대로 되살리지는 않는 규모다.
+  meta('meta_3m_active_3','3m','사흘의 첫 장','서로 다른 3일에 한 가지 이상 기록',15,'📝',null),
+  meta('meta_3m_active_7','3m','일주일의 흔적','서로 다른 7일에 한 가지 이상 기록',15,'📅',null),
+  meta('meta_3m_active_14','3m','보름의 기록','서로 다른 14일에 한 가지 이상 기록',15,'📖',null),
+  meta('meta_3m_active_30','3m','서른 날의 장부','서로 다른 30일에 한 가지 이상 기록',15,'📚',null),
+  meta('meta_3m_weeks_2','3m','두 주의 발자국','서로 다른 2주에 한 가지 이상 기록',15,'👣',null),
+  meta('meta_3m_weeks_4','3m','네 주의 달력','서로 다른 4주에 한 가지 이상 기록',15,'🗓️',null),
+  meta('meta_3m_weeks_8','3m','여덟 주의 습관','서로 다른 8주에 한 가지 이상 기록',15,'🧭',null),
+  meta('meta_3m_multi_3','3m','생활 기록 첫걸음','하루에 서로 다른 3개 범주를 기록한 날 3일',15,'🔹',null),
+  meta('meta_3m_multi_7','3m','생활 기록 일주일','하루에 서로 다른 3개 범주를 기록한 날 7일',15,'🔷',null),
+  meta('meta_3m_multi_14','3m','생활 기록 보름','하루에 서로 다른 3개 범주를 기록한 날 14일',15,'💠',null),
+  meta('meta_3m_entries_25','3m','스물다섯 번의 손길','전체 입력 항목을 합계 25건 기록',15,'✒️',null),
+  meta('meta_3m_entries_75','3m','일흔다섯 줄의 기록','전체 입력 항목을 합계 75건 기록',15,'🖊️',null),
+  meta('meta_3m_entries_150','3m','백오십 줄의 기록','전체 입력 항목을 합계 150건 기록',15,'🖋️',null),
+  meta('meta_3m_weight_7','3m','일곱 번의 관찰','체중을 7회 기록',15,'⚖️',null),
+  meta('meta_3m_weight_30','3m','몸의 한 달 일지','체중을 30회 기록',15,'📋',null),
+  meta('meta_3m_meals_15','3m','열다섯 끼의 기억','식단을 15끼 기록',15,'🥣',null),
+  meta('meta_3m_meals_60','3m','예순 끼의 식탁','식단을 60끼 기록',15,'🍱',null),
+  meta('meta_3m_water_7','3m','일곱 잔의 나날','물을 한 잔 이상 기록한 날 7일',15,'💧',null),
+  meta('meta_3m_water_30','3m','한 달의 물결','물을 한 잔 이상 기록한 날 30일',15,'🌊',null),
+  meta('meta_3m_training_3','3m','세 번의 훈련 기록','운동 여부를 기록한 날 3일',15,'🏃',null),
+  meta('meta_3m_training_10','3m','열 번의 훈련 기록','운동 여부를 기록한 날 10일',15,'🏋️',null),
+
   meta('meta_3m_first_season','3m','첫 번째 계절','서로 다른 60일에 한 가지 이상 기록',30,'🌱','title_today_logged','tr_a_season_hourglass'),
   meta('meta_3m_twelve_weeks','3m','열두 주의 발자국','서로 다른 12주에 한 가지 이상 기록',30,'🗓️','title_calendar_sentinel','tr_a_twelve_week_compass'),
   meta('meta_3m_three_calendars','3m','세 장의 달력','3개월 동안 매월 12일 이상 기록',35,'📆','title_three_season_witness','tr_a_three_month_recordstone'),
@@ -96,6 +123,12 @@ export function extractRecordMetaData(records=[]){
 }
 
 const RULES=Object.freeze({
+  meta_3m_active_3:['activeDays',3],meta_3m_active_7:['activeDays',7],meta_3m_active_14:['activeDays',14],meta_3m_active_30:['activeDays',30],
+  meta_3m_weeks_2:['activeWeeks',2],meta_3m_weeks_4:['activeWeeks',4],meta_3m_weeks_8:['activeWeeks',8],
+  meta_3m_multi_3:['multiCategoryDays',3],meta_3m_multi_7:['multiCategoryDays',7],meta_3m_multi_14:['multiCategoryDays',14],
+  meta_3m_entries_25:['totalEntries',25],meta_3m_entries_75:['totalEntries',75],meta_3m_entries_150:['totalEntries',150],
+  meta_3m_weight_7:['weightDays',7],meta_3m_weight_30:['weightDays',30],meta_3m_meals_15:['mealEntries',15],meta_3m_meals_60:['mealEntries',60],
+  meta_3m_water_7:['waterDays',7],meta_3m_water_30:['waterDays',30],meta_3m_training_3:['exerciseLogDays',3],meta_3m_training_10:['exerciseLogDays',10],
   meta_3m_first_season:['activeDays',60],meta_3m_twelve_weeks:['activeWeeks',12],meta_3m_three_calendars:['months12',3],
   meta_3m_life_triangle:['multiCategoryDays',30],meta_3m_weight_journal:['weightDays',60],meta_3m_table_chronicle:['mealEntries',150],
   meta_3m_water_history:['waterDays',60],meta_3m_training_log:['exerciseLogDays',24],meta_3m_daily_annotation:['annotationDays',30],
