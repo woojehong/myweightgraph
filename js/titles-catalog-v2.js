@@ -1,3 +1,5 @@
+import { RECORD_META_TITLES } from './record-meta-rewards.js';
+
 export const TITLE_RARITY_COLORS = Object.freeze({
   common: "#FFFFFF",
   uncommon: "#1EFF00",
@@ -42,4 +44,5 @@ export const TITLES_CATALOG_V2 = Object.freeze([
   { id: "title_dead_god_witness", name: "죽은 신의 증언자", rarity: "legendary", price: 4000, acquisition: "achievement_only", achievementRecommendation: "최상위 공격대의 최종 우두머리를 처치하는 업적", description: "신의 마지막 숨을 보고도 이성을 잃지 않은 유일한 목격자." },
   { id: "title_last_beacon_bearer", name: "마지막 봉화를 든 자", rarity: "legendary", price: 4500, acquisition: "achievement_only", achievementRecommendation: "불리한 전투에서 다수의 파티원을 생환시키는 영웅적 업적", description: "모든 불빛이 꺼진 뒤에도 홀로 귀환의 신호를 들었다." },
   { id: "title_infinite_hall_returnee", name: "무한회랑의 귀환자", rarity: "legendary", price: 5000, acquisition: "achievement_only", achievementRecommendation: "반복 심화형 던전의 최고 단계 또는 장기 연속 완주 업적", description: "끝없이 되감기는 전장을 뚫고 현실로 돌아온 생존자." },
+  ...RECORD_META_TITLES,
 ]);

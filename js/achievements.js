@@ -1,5 +1,9 @@
 // achievements.js
 import { MEAL_TIMES, isMealLogged, isFullMealDay } from './meal-status.js';
+import {
+  RECORD_META_ACHIEVEMENTS, RETIRED_PERFORMANCE_ACHIEVEMENT_IDS,
+  calculateRecordMetaProgress,
+} from './record-meta-achievements.js';
 
 export const RECORD_START_DATE = '2026-06-01'; // 기록 누적 기준일 (체중/식단/운동 횟수)
 export const LOSS_START_DATE   = '2026-01-01'; // 감량/갱신 기준일
@@ -11,16 +15,17 @@ export const ACHIEVEMENT_CATEGORIES = [
   { id:'exercise',  label:'운동',  icon:'💪' },
   { id:'steps',     label:'걸음',  icon:'🚶' },
   { id:'life',      label:'라이프', icon:'🌱' },
-  { id:'loss',      label:'감량',  icon:'📉' },
-  { id:'goal',      label:'목표',  icon:'🎯' },
   { id:'daily',     label:'일간',  icon:'📆' },
   { id:'weekly',    label:'주간',  icon:'📅' },
   { id:'monthly',   label:'월간',  icon:'🗓️' },
   { id:'grade',     label:'등급',  icon:'🏅' },
   { id:'milestone', label:'업적',  icon:'🎖️' },
+  { id:'meta_3m',   label:'3개월 메타', icon:'🌱' },
+  { id:'meta_6m',   label:'6개월 메타', icon:'⛵' },
+  { id:'meta_1y',   label:'1년 메타',   icon:'🏛️' },
 ];
 
-export const ACHIEVEMENTS = [
+const LEGACY_ACHIEVEMENTS = [
 
   // ── 체중 기록 (6월 1일~) ─────────────────────────────────────────────
   { id:'record_1',   cat:'record', name:'첫 측정',    desc:'처음으로 체중을 기록했어요',        score:10,  icon:'⚖️' },
@@ -252,8 +257,13 @@ export const ACHIEVEMENTS = [
   { id:'ach_125', cat:'milestone', name:'업적 125개 달성',  desc:'업적을 125개 달성했어요',                     score:70,  icon:'👑', legendary:true },
 ];
 
+export const ACHIEVEMENTS = Object.freeze([
+  ...LEGACY_ACHIEVEMENTS.filter(a=>!RETIRED_PERFORMANCE_ACHIEVEMENT_IDS.includes(a.id)),
+  ...RECORD_META_ACHIEVEMENTS,
+]);
+
 // 과거 버전에서 제거된 업적 id (달성 불가능 업적 정리)
-export const RETIRED_ACHIEVEMENT_IDS = new Set(['ach_150', 'ach_200']);
+export const RETIRED_ACHIEVEMENT_IDS = new Set(['ach_150', 'ach_200', ...RETIRED_PERFORMANCE_ACHIEVEMENT_IDS]);
 const PAUSED_ACHIEVEMENT_IDS = new Set(
   ACHIEVEMENTS.filter(a => a.cat === 'steps' || a.id.startsWith('mood_') || a.id.startsWith('journal_')).map(a => a.id)
 );
@@ -573,6 +583,7 @@ export function calculateEarnedIds(records, user) {
   // Paused features cannot create new achievements. Previously stored awards
   // remain valid in the engine, preserving their score and wallet history.
   PAUSED_ACHIEVEMENT_IDS.forEach(id => earned.delete(id));
+  RETIRED_PERFORMANCE_ACHIEVEMENT_IDS.forEach(id => earned.delete(id));
   return earned;
 }
 
@@ -719,6 +730,7 @@ export function calculateProgress(records, user) {
     journal_clean_10:p(journalCleanDays,10), journal_clean_30:p(journalCleanDays,30),
     // 기분
     mood_first:p(moodDays,1), mood_10:p(moodDays,10), mood_30:p(moodDays,30), mood_100:p(moodDays,100),
+    ...calculateRecordMetaProgress(records),
   };
 }
 

@@ -26,14 +26,16 @@ assert.deepEqual(normalizeMealRecord(serialized), serialized, '과거 3상태와
 assert.equal(mealEntryCount(serialized), 3);
 assert.equal(isFullMealDay(serialized), true);
 assert.equal(isDailyComplete(serialized), true);
-assert.equal(isDailyComplete({ ...serialized, meal:{ morning:'skip', lunch:'blue', dinner:'red' } }), false,
-  '알 수 없는 non-null 값은 기록으로 인정하지 않는다');
+assert.equal(isDailyComplete({ ...serialized, meal:{ morning:'skip', lunch:'blue', dinner:'red' } }), true,
+  '유효한 두 끼를 기록하면 하루 완주로 인정한다');
+assert.equal(isDailyComplete({ ...serialized, meal:{ morning:'skip', lunch:'blue' } }), false,
+  '유효한 한 끼만 기록하면 아직 하루 완주가 아니다');
 
 const daily = dailyProgress({
   weight:80, exercise:false,
   meal:{ morning:'skip', lunch:'skip', dinner:'skip' },
 });
-assert.equal(daily.find(q => q.id === 'd_meals').value, 3);
+assert.equal(daily.find(q => q.id === 'd_meals').value, 2);
 assert.equal(daily.find(q => q.id === 'd_complete').done, true);
 
 const skipWeek = Array.from({ length:4 }, (_, i) => ({

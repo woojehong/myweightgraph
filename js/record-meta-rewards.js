@@ -1,0 +1,78 @@
+const title=(id,name,rarity,description)=>Object.freeze({
+  id,name,rarity,price:null,acquisition:'achievement_only',achievementRecommendation:'기록 메타업적 전용',description,
+});
+
+export const RECORD_META_TITLES = Object.freeze([
+  title('title_today_logged','오늘도 적었다','uncommon','결과보다 오늘의 기록을 남긴 사람.'),
+  title('title_calendar_sentinel','달력의 파수꾼','uncommon','빈 달력을 꾸준한 기록으로 지켜 낸 파수꾼.'),
+  title('title_three_season_witness','세 계절의 증인','rare','세 번의 달이 바뀌는 동안 자신의 시간을 기록했다.'),
+  title('title_life_recorder','생활 기록자','uncommon','몸과 식탁과 하루를 함께 기록하는 사람.'),
+  title('title_body_observer','몸의 관찰자','uncommon','판단보다 관찰을 먼저 선택한 기록자.'),
+  title('title_table_scribe','식탁의 서기관','uncommon','수많은 끼니를 빠짐없이 장부에 남긴 서기관.'),
+  title('title_water_quartermaster','수분 보급관','uncommon','매일의 한 잔까지 챙겨 기록하는 보급 담당자.'),
+  title('title_training_logkeeper','훈련일지 작성자','uncommon','운동한 날과 쉬는 날을 모두 솔직하게 남긴 사람.'),
+  title('title_daily_librarian','일상의 사서','rare','평범한 하루를 보존 가치 있는 기록으로 만든 사서.'),
+  title('title_versatile_recorder','다재다능한 기록가','rare','서로 다른 기록을 한 권의 생활사로 엮어 낸 기록가.'),
+  title('title_always_returns','끊겨도 돌아온다','rare','공백을 실패로 부르지 않고 다시 기록을 시작한 사람.'),
+  title('title_ink_unspared','잉크를 아끼지 않는 자','rare','일상의 세부를 남기는 데 기록을 아끼지 않았다.'),
+  title('title_halfyear_voyager','여섯 달의 항해자','epic','반년의 파도를 지나 기록의 항로를 이어 온 항해자.'),
+  title('title_weekly_supervisor','주간 기록 감독관','rare','매주 기록의 현장을 확인한 냉정한 감독관.'),
+  title('title_halfyear_attendee','반년 출석자','rare','거창한 선언 없이 반년 동안 자리를 지킨 사람.'),
+  title('title_life_data_manager','생활 데이터 관리자','epic','흩어진 생활 기록을 질서 있는 데이터로 관리한다.'),
+  title('title_change_witness','변화의 목격자','rare','좋고 나쁨을 재단하지 않고 변화 자체를 지켜본 사람.'),
+  title('title_grand_table_scribe','식탁의 대서기관','epic','수백 번의 식사를 거대한 식탁 연대기로 완성했다.'),
+  title('title_spring_guardian','샘물의 수호자','epic','마르지 않는 샘처럼 기록의 흐름을 지켰다.'),
+  title('title_record_ironman','기록의 철인','epic','성과가 아니라 반복되는 기록으로 완주를 증명했다.'),
+  title('title_many_path_archivist','기록의 오색술사','epic','여러 갈래의 일상을 하나의 기록 마법으로 엮는다.'),
+  title('title_infinite_threeday','작심삼일 무한연장','epic','작심삼일을 끝없이 다시 시작해 결국 습관으로 만들었다.'),
+  title('title_four_season_recorder','사계의 기록자','mythic','네 계절의 변화를 모두 기록으로 통과한 사람.'),
+  title('title_time_walker','시간을 걷는 자','mythic','마흔여덟 주의 시간 위에 자신의 발자국을 남겼다.'),
+  title('title_still_recording','올해도 기록 중','mythic','완료가 아닌 지속을 자신의 가장 큰 성과로 삼았다.'),
+  title('title_almanac_editor','생활연감 편집장','mythic','한 해의 생활을 빠짐없이 편찬한 기록의 편집장.'),
+  title('title_long_breath_observer','긴 호흡의 관찰자','mythic','단기 변화에 흔들리지 않고 오랫동안 몸을 관찰했다.'),
+  title('title_thousand_tables','천 개의 식탁을 기록한 자','mythic','천 번의 식탁을 기억이 아닌 기록으로 남긴 사람.'),
+  title('title_record_network_master','기록망의 지배자','mythic','몸과 생활을 잇는 모든 기록망을 완성했다.'),
+  title('title_eternal_archivist','영원의 기록보관자','mythic','천오백 개의 순간을 시간의 보관소에 봉인했다.'),
+]);
+
+export const RECORD_META_REWARD_ITEMS = Object.freeze({
+  meta_3m_first_season:['title_today_logged','title_campfire_beacon','tr_a_season_hourglass'],
+  meta_3m_twelve_weeks:['title_calendar_sentinel','tr_a_twelve_week_compass'],
+  meta_3m_three_calendars:['title_three_season_witness','tr_a_three_month_recordstone'],
+  meta_3m_life_triangle:['title_life_recorder'],meta_3m_weight_journal:['title_body_observer'],
+  meta_3m_table_chronicle:['title_table_scribe'],meta_3m_water_history:['title_water_quartermaster'],
+  meta_3m_training_log:['title_training_logkeeper'],meta_3m_daily_annotation:['title_daily_librarian'],
+  meta_3m_versatile:['title_versatile_recorder','title_stormstring_marksman','tr_a_record_prism'],
+  meta_3m_returner:['title_always_returns','tr_a_returning_phoenix'],meta_3m_hundred_ink:['title_ink_unspared'],
+  meta_6m_half_year_voyage:['title_halfyear_voyager','tr_a_halfyear_chalice'],meta_6m_twentyfour_weeks:['title_weekly_supervisor'],
+  meta_6m_six_calendars:['title_halfyear_attendee','tr_a_six_month_astrolabe'],meta_6m_observation_net:['title_life_data_manager'],
+  meta_6m_weight_chronicle:['title_change_witness'],meta_6m_table_epic:['title_grand_table_scribe'],
+  meta_6m_never_dry:['title_spring_guardian'],meta_6m_iron_notebook:['title_record_ironman','tr_a_iron_notebook'],
+  meta_6m_five_paths:['title_many_path_archivist'],meta_6m_infinite_threeday:['title_infinite_threeday'],
+  meta_1y_four_seasons:['title_four_season_recorder','tr_a_four_season_worldtree'],meta_1y_fortyeight_weeks:['title_time_walker'],
+  meta_1y_twelve_calendars:['title_still_recording','tr_a_golden_almanac'],meta_1y_grand_compilation:['title_almanac_editor'],
+  meta_1y_body_observer:['title_long_breath_observer'],meta_1y_thousand_tables:['title_thousand_tables','tr_a_thousand_table_chalice'],
+  meta_1y_complete_network:['title_record_network_master'],
+  meta_1y_time_archive:['title_eternal_archivist','title_last_beacon_bearer','tr_a_eternal_archive'],
+});
+
+const trophy=(id,name,visual)=>Object.freeze({
+  id,category:'trophy',name,rarity:'artifact',price:null,
+  asset:`./assets/showroom-v15/trophy/${id}.webp`,visual,
+  implKey:`trophy:${id}`,testOnly:false,purchasable:false,persistable:true,acquisition:'achievement_only',
+});
+
+export const RECORD_META_TROPHIES = Object.freeze([
+  trophy('tr_a_season_hourglass','계절의 모래시계','네 계절의 빛이 흐르는 황금 모래시계'),
+  trophy('tr_a_twelve_week_compass','열두 주 나침반','열두 개의 주각을 가진 기록 항해 나침반'),
+  trophy('tr_a_three_month_recordstone','삼월의 기록석','세 겹 달 문양이 새겨진 고대 기록석'),
+  trophy('tr_a_record_prism','기록의 프리즘','여러 기록 범주를 빛으로 분리하는 유물 프리즘'),
+  trophy('tr_a_returning_phoenix','귀환의 불사조','다시 시작하는 기록자를 상징하는 황금 불사조'),
+  trophy('tr_a_halfyear_chalice','반년 항해의 성배','여섯 달의 항로가 새겨진 항해 성배'),
+  trophy('tr_a_six_month_astrolabe','여섯 달 천문반','여섯 개 달 궤도를 품은 황금 천문반'),
+  trophy('tr_a_iron_notebook','철필과 강철 수첩','철필이 꽂힌 룬 각인 강철 기록 수첩'),
+  trophy('tr_a_four_season_worldtree','사계절 세계수','사계절 빛을 동시에 피운 황금 세계수'),
+  trophy('tr_a_golden_almanac','황금 연감','열두 보석이 박힌 한 해의 황금 연감'),
+  trophy('tr_a_thousand_table_chalice','천 개 식탁의 성배','수많은 식탁의 문양이 둘린 풍요의 성배'),
+  trophy('tr_a_eternal_archive','영원의 기록보관소','시간의 두루마리를 수호하는 미니어처 황금 기록전당'),
+]);

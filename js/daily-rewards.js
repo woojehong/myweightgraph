@@ -1,5 +1,5 @@
 // Daily engagement rewards. The activity day changes at 06:00 local time.
-import { isFullMealDay } from './meal-status.js';
+import { mealEntryCount } from './meal-status.js';
 export const DAILY_REWARD_POINTS = Object.freeze({
   ATTENDANCE: 10,
   WEIGHT: 10,
@@ -43,6 +43,6 @@ export function rewardMaxForLedger(dateStr, ledger = {}, now = new Date()) {
 
 export function isDailyComplete(record) {
   return record?.weight != null
-    && isFullMealDay(record)
+    && mealEntryCount(record) >= 2
     && (record?.exercise === true || record?.exercise === false);
 }

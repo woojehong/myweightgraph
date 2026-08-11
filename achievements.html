@@ -143,6 +143,12 @@
     .ac-row-bot { display:flex; justify-content:space-between; align-items:flex-end; gap:10px; }
     .ac-info { flex:1; min-width:0; }
     .ac-name { font-size:13px; font-weight:700; margin-bottom:3px; }
+    .meta-horizon {
+      display:inline-flex; align-items:center; margin-right:6px; padding:2px 6px;
+      border:1px solid rgba(255,215,0,.32); border-radius:999px;
+      color:#f6d56b; background:rgba(255,215,0,.07); font-size:9px;
+      font-weight:800; letter-spacing:.04em; vertical-align:1px;
+    }
     .ac-desc { font-size:11px; color:var(--muted); line-height:1.4; }
     .ac-date { font-size:10px; color:var(--muted); margin-top:4px; }
     .ac-rewards { flex-shrink:0; text-align:right; display:flex; flex-direction:column; gap:3px; }
@@ -501,6 +507,7 @@ function renderAchievements(cat) {
       </div>` : '';
     const legEarned = isEarned && a.legendary;
     const rewards=(ACHIEVEMENT_ITEM_REWARDS_V2[a.id]||[]).map(getCatalogItemV2).filter(Boolean);
+    const horizonLabel = a.horizon === '3m' ? '3개월' : a.horizon === '6m' ? '6개월' : a.horizon === '1y' ? '1년' : '';
     return `<div class="ach-card ${isEarned?'earned':''} ${legEarned?'leg-earned':''} ${isEarned?'':'locked'}">
       <div class="ac-row-top">
         <div class="ac-icon">${a.icon}</div>
@@ -508,7 +515,7 @@ function renderAchievements(cat) {
       </div>
       <div class="ac-row-bot">
         <div class="ac-info">
-          <div class="ac-name">${a.name}</div>
+          <div class="ac-name">${horizonLabel?`<span class="meta-horizon">${horizonLabel} 메타</span>`:''}${a.name}</div>
           <div class="ac-desc">${a.desc}</div>
           ${isEarned && stored?.earnedAt ? `<div class="ac-date">${fmtDate(stored.earnedAt)} 달성</div>` : ''}
           ${progHtml}

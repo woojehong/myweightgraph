@@ -6,6 +6,7 @@ import { PROFILE_EMOJI_ITEMS_V6 } from './showroom-profile-emojis-v6.js';
 import { PORTRAIT_FRAME_ITEMS_V7 } from './showroom-portrait-frames-v7.js';
 import { POINT_MARKER_ITEMS_V9 } from './showroom-point-markers-v9.js';
 import { TROPHY_ITEMS_V10 } from './showroom-trophies-v10.js';
+import { RECORD_META_TROPHIES } from './record-meta-rewards.js';
 import { SHOWROOM_FULLSET_ITEMS_V13 } from './showroom-fullsets-v13.js';
 import { SHOWROOM_FULLSET_ITEMS_V14 } from './showroom-fullsets-v14.js';
 
@@ -149,6 +150,7 @@ const SHOWROOM_V5_ADDITIONS=Object.freeze([
   ...CARD_THEME_ITEMS,
   ...POINT_MARKER_ITEMS_V9,
   ...TROPHY_ITEMS_V10,
+  ...RECORD_META_TROPHIES,
   ...SHOWROOM_FULLSET_ITEMS_V13,
   ...SHOWROOM_FULLSET_ITEMS_V14,
 ]);
@@ -268,7 +270,7 @@ export function assertShowroomCatalogV2(catalog=SHOWROOM_CATALOG_V2){
       }
       if(ids.has(entry.id))throw new Error(`duplicate catalog id: ${entry.id}`);ids.add(entry.id);
       if(entry.asset!==null){if(assets.has(entry.asset))throw new Error(`duplicate catalog asset: ${entry.asset}`);assets.add(entry.asset)}
-      const expectedRoot=SHOWROOM_FULLSET_ITEMS_V13.some(item=>item.id===entry.id)?'./assets/showroom-v13':entry.id.startsWith('gs12_')?'./assets/showroom-v12':TROPHY_ITEMS_V10.some(item=>item.id===entry.id)?'./assets/showroom-v10':POINT_MARKER_ITEMS_V9.some(item=>item.id===entry.id)?'./assets/showroom-v9':CARD_THEME_ITEMS.some(item=>item.id===entry.id)?(entry.asset.startsWith('./assets/showroom-v12/')?'./assets/showroom-v12':'./assets/showroom-v8'):PORTRAIT_FRAME_ITEMS_V7.some(item=>item.id===entry.id)?'./assets/showroom-v7':PROFILE_EMOJI_ITEMS_V6.some(item=>item.id===entry.id)?(entry.asset.startsWith('./assets/showroom-v8/')?'./assets/showroom-v8':'./assets/showroom-v6'):showroomV5Ids.has(entry.id)?'./assets/showroom-v5':(isV4Tier||expandedGraphSkins)?'./assets/showroom-v4':'./assets/showroom-v3';
+      const expectedRoot=SHOWROOM_FULLSET_ITEMS_V13.some(item=>item.id===entry.id)?'./assets/showroom-v13':RECORD_META_TROPHIES.some(item=>item.id===entry.id)?'./assets/showroom-v15':entry.id.startsWith('gs12_')?'./assets/showroom-v12':TROPHY_ITEMS_V10.some(item=>item.id===entry.id)?'./assets/showroom-v10':POINT_MARKER_ITEMS_V9.some(item=>item.id===entry.id)?'./assets/showroom-v9':CARD_THEME_ITEMS.some(item=>item.id===entry.id)?(entry.asset.startsWith('./assets/showroom-v12/')?'./assets/showroom-v12':'./assets/showroom-v8'):PORTRAIT_FRAME_ITEMS_V7.some(item=>item.id===entry.id)?'./assets/showroom-v7':PROFILE_EMOJI_ITEMS_V6.some(item=>item.id===entry.id)?(entry.asset.startsWith('./assets/showroom-v8/')?'./assets/showroom-v8':'./assets/showroom-v6'):showroomV5Ids.has(entry.id)?'./assets/showroom-v5':(isV4Tier||expandedGraphSkins)?'./assets/showroom-v4':'./assets/showroom-v3';
       if(isCodeNative(category)&&entry.asset===null){
         if(!entry.renderSpec)throw new Error(`${entry.id}: invalid code-native item`);
       }else if(showroomV14Ids.has(entry.id)){

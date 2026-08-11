@@ -21,7 +21,7 @@ assert.equal(isDailyComplete({
   weight: 80,
   meal: { morning: 'red', lunch: 'yellow' },
   exercise: true,
-}), false);
+}), true);
 assert.equal(isDailyComplete({
   weight: 80,
   meal: { morning: 'skip', lunch: 'yellow', dinner: 'green' },
@@ -29,7 +29,7 @@ assert.equal(isDailyComplete({
 }), true);
 assert.equal(isDailyComplete({
   weight: 80,
-  meal: { morning: 'unknown', lunch: 'yellow', dinner: 'green' },
+  meal: { morning: 'unknown', lunch: 'yellow' },
   exercise: false,
 }), false);
 assert.deepEqual(DAILY_REWARD_POINTS, {

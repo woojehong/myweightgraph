@@ -32,13 +32,13 @@ assert.equal(normalizeLoadoutV2({}).portraitMode,'full');
 
 assert.equal(assertShowroomCatalogV2(),true);
 assert.deepEqual(SHOWROOM_V4_ACTIVE_CATEGORIES,['graph_skin','line_style','ambient_effect','emoji_border']);
-assert.equal(SHOWROOM_CATALOG_V2.length,212);
-assert.equal(TITLES_CATALOG_V2.length,30);
-assert.equal(ALL_CATALOG_V2.length,242);
+assert.equal(SHOWROOM_CATALOG_V2.length,224);
+assert.equal(TITLES_CATALOG_V2.length,60);
+assert.equal(ALL_CATALOG_V2.length,284);
 assert.deepEqual(SHOWROOM_CATEGORIES,['graph_skin','line_style','card_theme','point_marker','companion','ambient_effect','trophy','profile_emoji','emoji_border']);
 assert.deepEqual(V2_CATEGORIES,[...SHOWROOM_CATEGORIES.filter(category=>category!=='companion'),'title']);
-assert.equal(new Set(ALL_CATALOG_V2.map(entry=>entry.id)).size,242);
-assert.equal(new Set(SHOWROOM_CATALOG_V2.filter(entry=>entry.asset).map(entry=>entry.asset)).size,157);
+assert.equal(new Set(ALL_CATALOG_V2.map(entry=>entry.id)).size,284);
+assert.equal(new Set(SHOWROOM_CATALOG_V2.filter(entry=>entry.asset).map(entry=>entry.asset)).size,169);
 
 const expectedRarityCounts={
   graph_skin:{uncommon:10,rare:7,epic:8,mythic:11,legendary:1},
@@ -47,13 +47,13 @@ const expectedRarityCounts={
   point_marker:{uncommon:4,rare:1,epic:4,mythic:8,legendary:1},
   companion:{},
   ambient_effect:{uncommon:7,rare:5,epic:6,mythic:8,legendary:1},
-  trophy:{artifact:12},
+  trophy:{artifact:24},
   profile_emoji:{uncommon:6,rare:4,epic:5,mythic:12,legendary:1},
   emoji_border:{uncommon:7,rare:5,epic:7,mythic:9,legendary:1},
 };
 for(const category of SHOWROOM_CATEGORIES){
   const entries=SHOWROOM_CATALOG_V2.filter(entry=>entry.category===category);
-  const expectedCount={graph_skin:37,line_style:28,card_theme:33,point_marker:18,companion:0,ambient_effect:27,trophy:12,profile_emoji:28,emoji_border:29}[category]??4;
+  const expectedCount={graph_skin:37,line_style:28,card_theme:33,point_marker:18,companion:0,ambient_effect:27,trophy:24,profile_emoji:28,emoji_border:29}[category]??4;
   assert.equal(entries.length,expectedCount,category);
   const rarityCounts=Object.fromEntries([...new Set(entries.map(entry=>entry.rarity))].map(rarity=>[rarity,entries.filter(entry=>entry.rarity===rarity).length]));
   assert.deepEqual(rarityCounts,expectedRarityCounts[category],`${category} rarity distribution`);
@@ -289,7 +289,7 @@ const achIds=new Set(ACHIEVEMENTS.map(achievement=>achievement.id));
 for(const [achId,ids] of Object.entries(ACHIEVEMENT_ITEM_REWARDS_V2)){
   assert.ok(achIds.has(achId),achId);for(const id of ids)assert.ok(getCatalogItemV2(id),`${achId}:${id}`);
 }
-assert.deepEqual(normalizeAchievementTrophyRewardsV2({record_1:'tr_a_world_series_constellation',bad:'not-a-trophy'}),{record_1:['tr_a_world_series_constellation']});
+assert.deepEqual(normalizeAchievementTrophyRewardsV2({record_1:'tr_a_world_series_constellation',bad:'not-a-trophy'}),{record_1:['tr_a_world_series_constellation'],bad:[]});
 assert.ok(rewardItemsForAchievementsV2(new Set(['record_1']),{record_1:'tr_a_world_series_constellation'}).includes('tr_a_world_series_constellation'));
 
 const visualLab=await readFile(new URL('../visual-lab.html',import.meta.url),'utf8');
@@ -339,7 +339,7 @@ assert.equal((visualLab.match(/drawMarker\(ctx,marker,/g)||[]).length,1,'visual 
 assert.equal((visualLab.match(/drawMarker\(ctx,/g)||[]).length-1,1,'visual lab must render exactly one point marker');
 
 const sw=await readFile(new URL('../sw.js',import.meta.url),'utf8');
-assert.ok(sw.includes("weight-v142-daesanghyeok-immortal-dynasty"));assert.ok(sw.includes("c.addAll(CORE_ASSETS)"));assert.equal(sw.includes('c.addAll(ASSETS)'),false);
+assert.ok(sw.includes("weight-v144-record-friendly-quests"));assert.ok(sw.includes("c.addAll(CORE_ASSETS)"));assert.equal(sw.includes('c.addAll(ASSETS)'),false);
 for(const entry of SHOWROOM_CATALOG_V2.filter(entry=>entry.asset&&entry.id!=='pe_r_roaring_tiger_general')){
   const cached=entry.asset.includes('/showroom-v13/')
     ?sw.includes(`'${entry.id}'`)

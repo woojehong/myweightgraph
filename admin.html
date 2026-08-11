@@ -119,6 +119,7 @@ import { onAuthChange, adminSignOut, ADMIN_UID,
 import { ACHIEVEMENTS, ACHIEVEMENT_CATEGORIES, DEFAULT_TIERS } from './js/achievements.js';
 import { computeAchievementState, syncAchievements } from './js/achievements-engine.js';
 import { ALL_CATALOG_V2, V2_CATEGORIES, CATEGORY_META, RARITY_META, getCatalogItemV2, ownedItemIdsV2, profileVisualForUserV2, titleInfoV2 } from './js/showroom-v2.js?v=96';
+import { RECORD_META_REWARD_ITEMS } from './js/record-meta-rewards.js';
 
 let allUsers=[], selectedUid=null, settings={};
 
@@ -1031,6 +1032,8 @@ let titleList = []; // [{ id, name, achId }]
 let borderAssign = {}; // { borderId: achId }
 let achievementTrophyRewards = {}; // { achievementId: [trophyId] }
 let trophyRewardDraft = {};
+let achievementTitleRewards = {}; // { achievementId: [titleId] }
+let titleRewardDraft = {};
 let selectedTrophyAchievementId = ACHIEVEMENTS[0]?.id || '';
 
 // titles & border assignments are stored as extra fields in tierSettings
@@ -1076,7 +1079,10 @@ function renderDataroom() {
   titleList    = tierSettings?.titles    || [];
   borderAssign = tierSettings?.borderAssign || {};
   achievementTrophyRewards = normalizeActiveTrophyRewards(tierSettings?.achievementTrophyRewards || {});
-  trophyRewardDraft = structuredClone(achievementTrophyRewards);
+  achievementTitleRewards = normalizeActiveTitleRewards(tierSettings?.achievementTitleRewards || {});
+  const defaults=defaultRecordMetaRewards();
+  trophyRewardDraft = structuredClone({...defaults.trophies,...achievementTrophyRewards});
+  titleRewardDraft = structuredClone({...defaults.titles,...achievementTitleRewards});
 
   // DEFAULT_TIERS를 기준으로, 저장된 설정(minScore/color)을 덮어씌움
   // → 새 티어(에메랄드 등)가 자동으로 포함됨
@@ -1142,7 +1148,7 @@ function renderDataroom() {
     collapsibleSection('border',    '🖼️ 테두리 관리',   borderContent) +
     collapsibleSection('title',     '🏷️ 칭호 관리',    titleContent) +
     collapsibleSection('achreward', '🎖️ 업적별 보상',   buildAchRewardContent()) +
-    collapsibleSection('trophylink', '🏆 업적 ↔ 트로피 연결', buildTrophyConnector());
+    collapsibleSection('trophylink', '🎁 업적 ↔ 칭호·트로피 연결', buildTrophyConnector());
 }
 
 function achRewardRow(a) {
@@ -1217,14 +1223,32 @@ window.saveAchTitle = async sel => {
   await saveDrSettings(); showToast('칭호 보상 저장됨','ok');
 };
 const activeTrophies = () => ALL_CATALOG_V2.filter(item=>item.category==='trophy');
+const activeRewardTitles = () => ALL_CATALOG_V2.filter(item=>item.category==='title'&&item.acquisition==='achievement_only');
+function defaultRecordMetaRewards(){
+  const trophies={},titles={};
+  Object.entries(RECORD_META_REWARD_ITEMS).forEach(([achId,ids])=>{
+    trophies[achId]=ids.filter(id=>id.startsWith('tr_'));
+    titles[achId]=ids.filter(id=>id.startsWith('title_'));
+  });
+  return {trophies,titles};
+}
 function normalizeActiveTrophyRewards(raw) {
   const valid = new Set(activeTrophies().map(item=>item.id));
   return Object.fromEntries(Object.entries(raw || {}).map(([achId, ids])=>[
     achId, [...new Set(Array.isArray(ids) ? ids : [ids])].filter(id=>valid.has(id)),
-  ]).filter(([,ids])=>ids.length));
+  ]));
+}
+function normalizeActiveTitleRewards(raw) {
+  const valid = new Set(activeRewardTitles().map(item=>item.id));
+  return Object.fromEntries(Object.entries(raw || {}).map(([achId, ids])=>[
+    achId, [...new Set(Array.isArray(ids) ? ids : [ids])].filter(id=>valid.has(id)),
+  ]));
 }
 function trophyAssignmentCount(trophyId) {
   return Object.values(trophyRewardDraft).filter(ids=>ids.includes(trophyId)).length;
+}
+function titleAssignmentCount(titleId) {
+  return Object.values(titleRewardDraft).filter(ids=>ids.includes(titleId)).length;
 }
 const escapeTrophyUi=value=>String(value).replace(/[&<>"']/g,char=>({
   '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;',
@@ -1235,19 +1259,23 @@ function buildTrophyConnector(query='') {
   if(!ACHIEVEMENTS.some(a=>a.id===selectedTrophyAchievementId))selectedTrophyAchievementId=ACHIEVEMENTS[0]?.id||'';
   const selected=ACHIEVEMENTS.find(a=>a.id===selectedTrophyAchievementId);
   const picked=new Set(trophyRewardDraft[selectedTrophyAchievementId]||[]);
+  const pickedTitles=new Set(titleRewardDraft[selectedTrophyAchievementId]||[]);
   return `<div style="display:flex;gap:7px;margin-bottom:10px">
       <input class="input-field" id="trophyAchSearch" value="${escapeTrophyUi(query)}" placeholder="업적 이름·설명·ID 검색" oninput="renderTrophyConnector(this.value)" style="flex:1">
-      <span style="font-size:11px;color:#e6cc80;align-self:center">유물급 12종 · 업적 전용 · 구매 불가</span>
+      <span style="font-size:11px;color:#e6cc80;align-self:center">칭호·트로피 모두 업적 전용 · 구매 불가</span>
     </div>
     <div class="trophy-linker">
       <div class="trophy-ach-list">${achievements.map(a=>{
-        const count=(trophyRewardDraft[a.id]||[]).length;
-        return `<button type="button" class="trophy-ach-card ${a.id===selectedTrophyAchievementId?'active':''}" onclick="selectTrophyAchievement('${a.id}')"><b>${a.icon} ${a.name}</b><small>${count?`트로피 ${count}종 연결됨`:'연결된 트로피 없음'} · ${a.id}</small></button>`;
+        const count=(trophyRewardDraft[a.id]||[]).length,titleCount=(titleRewardDraft[a.id]||[]).length;
+        return `<button type="button" class="trophy-ach-card ${a.id===selectedTrophyAchievementId?'active':''}" onclick="selectTrophyAchievement('${a.id}')"><b>${a.icon} ${a.name}</b><small>칭호 ${titleCount}종 · 트로피 ${count}종 · ${a.id}</small></button>`;
       }).join('')||'<p style="color:var(--muted)">검색 결과가 없습니다.</p>'}</div>
       <div>
-        <div style="font-size:12px;margin-bottom:8px"><b>${selected?.name||'업적을 선택하세요'}</b><span style="color:var(--muted)"> 달성 시 지급할 트로피를 복수 선택할 수 있습니다.</span></div>
+        <div style="font-size:12px;margin-bottom:8px"><b>${selected?.name||'업적을 선택하세요'}</b><span style="color:var(--muted)"> 달성 시 지급할 칭호와 트로피를 복수 선택할 수 있습니다.</span></div>
+        <div style="font-size:11px;font-weight:800;color:var(--teal);margin:8px 0">🏷️ 칭호</div>
+        <div class="trophy-gallery">${activeRewardTitles().map(t=>`<button type="button" class="trophy-pick ${pickedTitles.has(t.id)?'selected':''}" onclick="toggleTitleReward('${t.id}')" aria-pressed="${pickedTitles.has(t.id)}"><span style="display:grid;place-items:center;width:78px;height:78px;margin:0 auto 5px;font-size:30px;color:${RARITY_META[t.rarity]?.color||'#fff'}">🏷️</span><b style="color:${RARITY_META[t.rarity]?.color||'#fff'}">${t.name}</b><small>${titleAssignmentCount(t.id)}개 업적에 연결</small></button>`).join('')}</div>
+        <div style="font-size:11px;font-weight:800;color:#e6cc80;margin:12px 0 8px">🏆 트로피</div>
         <div class="trophy-gallery">${activeTrophies().map(t=>`<button type="button" class="trophy-pick ${picked.has(t.id)?'selected':''}" onclick="toggleTrophyReward('${t.id}')" aria-pressed="${picked.has(t.id)}"><img src="${t.asset}" alt=""><b>${t.name}</b><small>${trophyAssignmentCount(t.id)}개 업적에 연결</small></button>`).join('')}</div>
-        <div class="trophy-link-actions"><span class="status">선택 업적에 ${picked.size}종 · 저장하면 기존 달성자에게도 즉시 소급 지급됩니다.</span><button class="btn btn-secondary btn-sm" onclick="revertTrophyRewards()">되돌리기</button><button id="saveTrophyRewardsBtn" class="btn btn-primary btn-sm" onclick="saveTrophyRewards()">저장·전체 계정 반영</button></div>
+        <div class="trophy-link-actions"><span class="status">칭호 ${pickedTitles.size}종 · 트로피 ${picked.size}종 · 저장하면 기존 달성자에게도 즉시 소급 지급됩니다.</span><button class="btn btn-secondary btn-sm" onclick="revertTrophyRewards()">되돌리기</button><button id="saveTrophyRewardsBtn" class="btn btn-primary btn-sm" onclick="saveTrophyRewards()">저장·전체 계정 반영</button></div>
       </div>
     </div>`;
 }
@@ -1256,16 +1284,29 @@ window.selectTrophyAchievement=id=>{selectedTrophyAchievementId=id;renderTrophyC
 window.toggleTrophyReward=id=>{
   const current=new Set(trophyRewardDraft[selectedTrophyAchievementId]||[]);
   current.has(id)?current.delete(id):current.add(id);
-  if(current.size)trophyRewardDraft[selectedTrophyAchievementId]=[...current];else delete trophyRewardDraft[selectedTrophyAchievementId];
+  trophyRewardDraft[selectedTrophyAchievementId]=[...current];
   renderTrophyConnector(document.getElementById('trophyAchSearch')?.value||'');
 };
-window.revertTrophyRewards=()=>{trophyRewardDraft=structuredClone(achievementTrophyRewards);renderTrophyConnector(document.getElementById('trophyAchSearch')?.value||'');showToast('저장 전 변경을 되돌렸습니다.','ok')};
+window.toggleTitleReward=id=>{
+  const current=new Set(titleRewardDraft[selectedTrophyAchievementId]||[]);
+  current.has(id)?current.delete(id):current.add(id);
+  titleRewardDraft[selectedTrophyAchievementId]=[...current];
+  renderTrophyConnector(document.getElementById('trophyAchSearch')?.value||'');
+};
+window.revertTrophyRewards=()=>{
+  const defaults=defaultRecordMetaRewards();
+  trophyRewardDraft=structuredClone({...defaults.trophies,...achievementTrophyRewards});
+  titleRewardDraft=structuredClone({...defaults.titles,...achievementTitleRewards});
+  renderTrophyConnector(document.getElementById('trophyAchSearch')?.value||'');showToast('저장 전 변경을 되돌렸습니다.','ok')
+};
 window.saveTrophyRewards=async()=>{
   const button=document.getElementById('saveTrophyRewardsBtn');
   if(button?.disabled)return;
   if(button){button.disabled=true;button.textContent='저장·반영 중...'}
   achievementTrophyRewards=normalizeActiveTrophyRewards(trophyRewardDraft);
+  achievementTitleRewards=normalizeActiveTitleRewards(titleRewardDraft);
   trophyRewardDraft=structuredClone(achievementTrophyRewards);
+  titleRewardDraft=structuredClone(achievementTitleRewards);
   let synced=0,failed=0,recipients=0,granted=0;
   try{
     await saveDrSettings();
@@ -1286,7 +1327,7 @@ window.saveTrophyRewards=async()=>{
       }
     }
     renderTrophyConnector(document.getElementById('trophyAchSearch')?.value||'');
-    showToast(`트로피 연결 저장 · ${synced}명 동기화 · ${recipients}명에게 ${granted}종 지급${failed?` · ${failed}명 실패`:''}`,failed?'err':'ok');
+    showToast(`업적 보상 연결 저장 · ${synced}명 동기화 · ${recipients}명에게 ${granted}종 지급${failed?` · ${failed}명 실패`:''}`,failed?'err':'ok');
   }finally{
     const current=document.getElementById('saveTrophyRewardsBtn');
     if(current){current.disabled=false;current.textContent='저장·전체 계정 반영'}
@@ -1327,8 +1368,8 @@ window.removeTitle = async i => {
 window.updateTitleName = async (i,v) => { titleList[i].name=v; await saveDrSettings(); };
 
 async function saveDrSettings() {
-  await saveTierSettings({ titles: titleList, borderAssign, achievementTrophyRewards });
-  tierSettings = { ...tierSettings, titles: titleList, borderAssign, achievementTrophyRewards };
+  await saveTierSettings({ titles: titleList, borderAssign, achievementTrophyRewards, achievementTitleRewards });
+  tierSettings = { ...tierSettings, titles: titleList, borderAssign, achievementTrophyRewards, achievementTitleRewards };
 }
 
 window.updateTierColor = (input) => {

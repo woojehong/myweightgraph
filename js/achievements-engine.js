@@ -15,10 +15,11 @@ import { ACHIEVEMENTS, RETIRED_ACHIEVEMENT_IDS, calculateEarnedIds,
          calculateMetaEarnedIds, calcTotalScore, DEFAULT_TIERS,
          getTierForScore } from './achievements.js';
 import { rewardItemsForAchievementsV2 } from './achievement-item-rewards-v2.js';
+import { calculateRecordMetaEarnedIds } from './record-meta-achievements.js';
 import { getUser, getWeights, getEarnedAchievements,
          settleAchievementsAtomically, getTierSettings } from './db.js';
 
-const META_CATS = new Set(['grade', 'milestone']);
+const META_CATS = new Set(['grade', 'milestone', 'meta_3m', 'meta_6m', 'meta_1y']);
 export const ACH_MAP = Object.fromEntries(ACHIEVEMENTS.map(a => [a.id, a]));
 export const isMetaAchievement = id => META_CATS.has(ACH_MAP[id]?.cat);
 
@@ -41,6 +42,7 @@ export function computeAchievementState({ user, records, storedRaw, tierData }) 
   const storedIds = new Set(validStored.map(a => a.id));
 
   const shouldEarn = calculateEarnedIds(records || [], user);
+  const recordMetaShouldEarn = calculateRecordMetaEarnedIds(records || []);
 
   // Base achievements: stored (permanent) ∪ currently satisfied
   const baseEarned = new Set([
@@ -53,7 +55,10 @@ export function computeAchievementState({ user, records, storedRaw, tierData }) 
   let metaEarned = new Set([...storedIds].filter(isMetaAchievement));
   for (let i = 0; i < 6; i++) {
     const score  = calcTotalScore(new Set([...baseEarned, ...metaEarned]));
-    const next   = calculateMetaEarnedIds(baseEarned, score, tiers);
+    const next   = new Set([
+      ...calculateMetaEarnedIds(baseEarned, score, tiers),
+      ...recordMetaShouldEarn,
+    ]);
     const merged = new Set([...metaEarned, ...next]);
     const grew   = merged.size !== metaEarned.size;
     metaEarned   = merged;
@@ -66,7 +71,10 @@ export function computeAchievementState({ user, records, storedRaw, tierData }) 
   const tier        = getTierForScore(totalScore, tiers);
   const newlyEarned = [...validEarned].filter(id => !storedIds.has(id));
 
-  const achievementRewardItems=[...new Set([...(user?.achievementRewardItems||[]),...rewardItemsForAchievementsV2(validEarned,tierData?.achievementTrophyRewards)])];
+  const achievementRewardItems=[...new Set([
+    ...(user?.achievementRewardItems||[]),
+    ...rewardItemsForAchievementsV2(validEarned,tierData?.achievementTrophyRewards,tierData?.achievementTitleRewards),
+  ])];
 
   const baseCount = [...validEarned].filter(id => !isMetaAchievement(id)).length;
 
@@ -102,7 +110,8 @@ export async function syncAchievements(uid, opts = {}) {
     // may lower the derived score. Regular syncs keep the transaction-time
     // score as a floor so concurrent evaluations cannot overwrite each other.
     allowScoreDecrease: Object.values(adminOverrides)
-      .some(override => override?.override === 'not_earned'),
+      .some(override => override?.override === 'not_earned') ||
+      (storedRaw||[]).some(entry=>RETIRED_ACHIEVEMENT_IDS.has(entry.id)),
   });
 
   const newAchievements = settlement.newlyEarnedIds
