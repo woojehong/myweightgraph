@@ -1,4 +1,4 @@
-const CACHE = 'weight-v144-record-friendly-quests';
+const CACHE = 'weight-v145-achievement-reward-backfill';
 const ASSETS = [
   './index.html', './dashboard.html', './input.html', './import.html',
   './achievements.html', './compare.html', './dressroom.html', './diet.html', './shop.html', './guide.html', './visual-lab.html',

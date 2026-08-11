@@ -6,7 +6,9 @@ import {
   calculateRecordMetaEarnedIds, extractRecordMetaData,
 } from '../js/record-meta-achievements.js';
 import { RECORD_META_REWARD_ITEMS, RECORD_META_TITLES, RECORD_META_TROPHIES } from '../js/record-meta-rewards.js';
-import { rewardItemsForAchievementsV2 } from '../js/achievement-item-rewards-v2.js';
+import { ACHIEVEMENT_ITEM_REWARDS_V2, rewardItemsForAchievementsV2 } from '../js/achievement-item-rewards-v2.js';
+import { TITLES_CATALOG_V2 } from '../js/titles-catalog-v2.js';
+import { SHOWROOM_CATALOG_V2 } from '../js/showroom-catalog-v2.js';
 
 const ds=offset=>{
   const d=new Date('2025-01-01T00:00:00');d.setDate(d.getDate()+offset);return d.toISOString().slice(0,10);
@@ -72,12 +74,28 @@ for(const [id,items] of Object.entries(RECORD_META_REWARD_ITEMS)){
   assert.ok(items.some(item=>item.startsWith('title_')),`${id} needs a title reward`);
 }
 
+const automaticallyGranted=new Set(Object.values(ACHIEVEMENT_ITEM_REWARDS_V2).flat());
+for(const title of TITLES_CATALOG_V2){
+  assert.equal(title.acquisition,'achievement_only',`${title.id} must be achievement-only`);
+  assert.equal(title.price,null,`${title.id} must not have a purchase price`);
+  assert.ok(automaticallyGranted.has(title.id),`${title.id} needs a default achievement link`);
+}
+for(const trophy of SHOWROOM_CATALOG_V2.filter(item=>item.category==='trophy')){
+  assert.equal(trophy.acquisition,'achievement_only',`${trophy.id} must be achievement-only`);
+  assert.equal(trophy.purchasable,false,`${trophy.id} must not be purchasable`);
+  assert.equal(trophy.price,null,`${trophy.id} must not have a purchase price`);
+  assert.ok(automaticallyGranted.has(trophy.id),`${trophy.id} needs a default achievement link`);
+}
+
 const adminSource=fs.readFileSync(new URL('../admin.html',import.meta.url),'utf8');
 for(const token of ['achievementTitleRewards','achievementTrophyRewards','업적 ↔ 칭호·트로피 연결']){
   assert.ok(adminSource.includes(token),`admin reward editor missing: ${token}`);
 }
 const swSource=fs.readFileSync(new URL('../sw.js',import.meta.url),'utf8');
-assert.ok(swSource.includes('weight-v144-record-friendly-quests'));
+assert.ok(swSource.includes('weight-v145-achievement-reward-backfill'));
 for(const trophy of RECORD_META_TROPHIES)assert.ok(swSource.includes(trophy.asset.replace('./','')));
+const showroomSource=fs.readFileSync(new URL('../dressroom.html',import.meta.url),'utf8');
+assert.ok(showroomSource.includes("import{syncAchievements}from'./js/achievements-engine.js'"));
+assert.ok(showroomSource.includes('achievement reward backfill failed'));
 
 console.log('record-centered meta achievements tests: PASS');

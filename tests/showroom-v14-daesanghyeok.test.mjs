@@ -173,7 +173,7 @@ for(const assetName of ['ambient_dynasty_hall.webp','ambient_six_star_crown.webp
 const fxSource=await readFile(new URL('../js/showroom-fx.js',import.meta.url),'utf8');
 for(const token of ['v14DrawDynastyArt','ambient_dynasty_hall','ambient_six_star_crown','cycle=((t%12)+12)%12'])assert.ok(fxSource.includes(token),token);
 const serviceWorker=await readFile(new URL('../sw.js',import.meta.url),'utf8');
-for(const token of ['weight-v144-record-friendly-quests','ambient_dynasty_hall.webp','ambient_six_star_crown.webp'])assert.ok(serviceWorker.includes(token),token);
+for(const token of ['weight-v145-achievement-reward-backfill','ambient_dynasty_hall.webp','ambient_six_star_crown.webp'])assert.ok(serviceWorker.includes(token),token);
 const cardCss=await readFile(new URL('../css/showroom-card-themes.css',import.meta.url),'utf8');
 for(const token of ['t1-logo-red','background:#e2012d','mask:var(--v14-card-logo)','not(.v14-card-theme-logo)','data-card-theme="ct14_l_daesanghyeok_goat"','object-position:left center'])assert.ok(cardCss.includes(token),token);
 

@@ -9,7 +9,7 @@ export const TITLE_RARITY_COLORS = Object.freeze({
   legendary: "#FF8000",
 });
 
-export const TITLES_CATALOG_V2 = Object.freeze([
+const TITLE_DEFINITIONS_V2 = [
   { id: "title_dawn_watch", name: "새벽 경계병", rarity: "common", price: 200, acquisition: "purchasable", achievementRecommendation: null, description: "긴 밤의 마지막 보초를 홀로 견딘 이에게 붙는 이름." },
   { id: "title_runeflame_apprentice", name: "룬불꽃 견습생", rarity: "common", price: 250, acquisition: "purchasable", achievementRecommendation: null, description: "아직 서툴지만 첫 주문에 불꽃을 피워 낸 마도 수련자." },
   { id: "title_shieldline_rookie", name: "방패줄의 막내", rarity: "common", price: 250, acquisition: "purchasable", achievementRecommendation: null, description: "거대한 적 앞에서도 방패 대열을 떠나지 않은 신병." },
@@ -45,4 +45,11 @@ export const TITLES_CATALOG_V2 = Object.freeze([
   { id: "title_last_beacon_bearer", name: "마지막 봉화를 든 자", rarity: "legendary", price: 4500, acquisition: "achievement_only", achievementRecommendation: "불리한 전투에서 다수의 파티원을 생환시키는 영웅적 업적", description: "모든 불빛이 꺼진 뒤에도 홀로 귀환의 신호를 들었다." },
   { id: "title_infinite_hall_returnee", name: "무한회랑의 귀환자", rarity: "legendary", price: 5000, acquisition: "achievement_only", achievementRecommendation: "반복 심화형 던전의 최고 단계 또는 장기 연속 완주 업적", description: "끝없이 되감기는 전장을 뚫고 현실로 돌아온 생존자." },
   ...RECORD_META_TITLES,
-]);
+];
+
+// 칭호는 상점 상품이 아니다. 연결된 업적 달성 시 자동 지급되는 전시 보상이다.
+export const TITLES_CATALOG_V2 = Object.freeze(TITLE_DEFINITIONS_V2.map(entry => Object.freeze({
+  ...entry,
+  price: null,
+  acquisition: 'achievement_only',
+})));
