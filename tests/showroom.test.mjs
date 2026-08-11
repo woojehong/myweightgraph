@@ -334,12 +334,12 @@ const compareHeaderSource=await readFile(new URL('../compare.html',import.meta.u
 const achievementsSource=await readFile(new URL('../achievements.html',import.meta.url),'utf8');
 assert.ok(achievementsSource.includes('profileShowcaseForUserV2(user,160)'),'large achievement portrait must honor the saved full/bust mode');
 assert.ok(compareHeaderSource.includes('<div class="cmp-trophies">${trophies.map(renderTrophyV2).join(\'\')}</div>'),'trophies must render in the header medal rail');
-for(const token of ['grid-template-columns:repeat(12,minmax(0,1fr))','grid-template-rows:repeat(2,22px)','direction:rtl','justify-content:stretch','max-height:46px','transform:translateY(-5px)'])assert.ok(compareHeaderSource.includes(token),token);
+for(const token of ['grid-template-columns:repeat(12,minmax(0,1fr))','grid-template-rows:repeat(2,22px)','direction:rtl','justify-content:stretch','max-height:46px','align-self:center','align-content:center','transform:none'])assert.ok(compareHeaderSource.includes(token),token);
 assert.equal((visualLab.match(/drawMarker\(ctx,marker,/g)||[]).length,1,'visual lab must show the image marker only at the lowest point');
 assert.equal((visualLab.match(/drawMarker\(ctx,/g)||[]).length-1,1,'visual lab must render exactly one point marker');
 
 const sw=await readFile(new URL('../sw.js',import.meta.url),'utf8');
-assert.ok(sw.includes("weight-v146-trophy-rail-24"));assert.ok(sw.includes("c.addAll(CORE_ASSETS)"));assert.equal(sw.includes('c.addAll(ASSETS)'),false);
+assert.ok(sw.includes("weight-v147-trophy-rail-centered"));assert.ok(sw.includes("c.addAll(CORE_ASSETS)"));assert.equal(sw.includes('c.addAll(ASSETS)'),false);
 for(const entry of SHOWROOM_CATALOG_V2.filter(entry=>entry.asset&&entry.id!=='pe_r_roaring_tiger_general')){
   const cached=entry.asset.includes('/showroom-v13/')
     ?sw.includes(`'${entry.id}'`)

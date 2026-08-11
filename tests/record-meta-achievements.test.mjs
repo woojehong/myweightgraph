@@ -92,7 +92,7 @@ for(const token of ['achievementTitleRewards','achievementTrophyRewards','업적
   assert.ok(adminSource.includes(token),`admin reward editor missing: ${token}`);
 }
 const swSource=fs.readFileSync(new URL('../sw.js',import.meta.url),'utf8');
-assert.ok(swSource.includes('weight-v146-trophy-rail-24'));
+assert.ok(swSource.includes('weight-v147-trophy-rail-centered'));
 for(const trophy of RECORD_META_TROPHIES)assert.ok(swSource.includes(trophy.asset.replace('./','')));
 const showroomSource=fs.readFileSync(new URL('../dressroom.html',import.meta.url),'utf8');
 assert.ok(showroomSource.includes("import{syncAchievements}from'./js/achievements-engine.js'"));
