@@ -1,0 +1,85 @@
+.profile-settings-host,
+.profile-settings-modal,
+.profile-settings-modal * {
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+body.profile-settings-open { overflow: hidden; }
+
+.user-chip[data-profile-settings-trigger] {
+  transition: border-color .18s, background-color .18s, transform .18s;
+}
+.user-chip[data-profile-settings-trigger]:not(.profile-settings-disabled):hover,
+.user-chip[data-profile-settings-trigger]:not(.profile-settings-disabled):focus-visible {
+  border-color: rgba(0,229,170,.55);
+  background: rgba(0,229,170,.08);
+}
+.user-chip[data-profile-settings-trigger]:not(.profile-settings-disabled):active { transform: translateY(1px); }
+.user-chip.profile-settings-disabled { cursor: default !important; }
+
+.profile-settings-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(2,6,12,.78);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .18s ease;
+}
+.profile-settings-backdrop.open { opacity: 1; pointer-events: auto; }
+.profile-settings-modal {
+  width: min(440px,100%);
+  max-height: min(720px,calc(100vh - 36px));
+  overflow-y: auto;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 16px;
+  padding: 18px;
+  background: #111821;
+  color: var(--text);
+  box-shadow: 0 24px 80px rgba(0,0,0,.5);
+  transform: translateY(8px);
+  transition: transform .18s ease;
+}
+.profile-settings-backdrop.open .profile-settings-modal { transform: none; }
+.profile-settings-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+.profile-settings-heading h2 { margin: 0; font-size: 18px; letter-spacing: -.02em; text-wrap: balance; }
+.profile-settings-heading p { margin: 5px 0 0; color: var(--muted); font-size: 11px; line-height: 1.45; text-wrap: pretty; }
+.profile-settings-close { flex: 0 0 auto; padding: 6px 8px; border: 0; background: transparent; color: var(--muted); font-size: 11px; }
+.profile-settings-close:hover { color: var(--text); }
+.profile-settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.profile-settings-field { min-width: 0; }
+.profile-settings-field + .profile-settings-field { margin-top: 0; }
+.profile-settings-wide { margin-bottom: 10px; }
+.profile-settings-field label { display: block; margin-bottom: 5px; color: var(--muted); font-size: 11px; font-weight: 700; }
+.profile-settings-field .input-field { min-width: 0; }
+.profile-settings-field .input-field[aria-invalid="true"] { border-color: var(--red); }
+.profile-settings-unit { position: relative; }
+.profile-settings-unit .input-field { padding-right: 42px; }
+.profile-settings-unit span { position: absolute; top: 50%; right: 13px; transform: translateY(-50%); color: var(--muted); font-size: 11px; pointer-events: none; }
+.profile-settings-password { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); }
+.profile-settings-password-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.profile-settings-password-head strong { font-size: 12px; }
+.profile-settings-password-head span { color: var(--teal); font-size: 10px; font-weight: 700; }
+.profile-settings-password > p { margin: 4px 0 10px; color: var(--muted); font-size: 10px; line-height: 1.45; }
+.profile-settings-remove { width: 100%; margin-top: 9px; padding: 8px 10px; border: 1px solid rgba(239,83,80,.28); border-radius: 8px; background: rgba(239,83,80,.06); color: #ff8a87; font-size: 11px; }
+.profile-settings-remove.selected { border-color: rgba(239,83,80,.6); background: rgba(239,83,80,.14); color: #ffb0ae; }
+.profile-settings-error { min-height: 18px; margin: 10px 0 0; color: var(--red); font-size: 11px; line-height: 1.45; }
+.profile-settings-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+.profile-settings-actions .btn { width: 100%; }
+
+@media (max-width: 520px) {
+  .profile-settings-backdrop { align-items: end; padding: 0; }
+  .profile-settings-modal { width: 100%; max-height: 92vh; border-radius: 16px 16px 0 0; padding: 18px 16px calc(18px + env(safe-area-inset-bottom)); }
+}
+@media (max-width: 360px) {
+  .profile-settings-grid { grid-template-columns: 1fr; }
+  .profile-settings-grid .profile-settings-field + .profile-settings-field { margin-top: 2px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .profile-settings-backdrop,
+  .profile-settings-modal { transition: none; }
+}

@@ -1,0 +1,142 @@
+/* 우리 그래프 기록 최신성. 그래프 캔버스와 차트 레이어에는 적용하지 않는다. */
+.cmp-cell[class*="record-status--"]{
+  position:relative;
+  isolation:isolate;
+  overflow:hidden;
+  word-break:keep-all;
+  overflow-wrap:break-word;
+}
+.record-status-rail,
+.record-status-cracks{
+  position:absolute;
+  pointer-events:none;
+  z-index:7;
+}
+.record-status-rail{
+  inset:8px auto 8px 0;
+  width:3px;
+  border-radius:0 4px 4px 0;
+  background:var(--record-status-color,#657080);
+  box-shadow:0 0 9px color-mix(in srgb,var(--record-status-color,#657080) 45%,transparent);
+}
+.record-status-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  max-width:100%;
+  min-height:22px;
+  padding:3px 9px;
+  border:1px solid color-mix(in srgb,var(--record-status-color,#657080) 58%,transparent);
+  border-radius:999px;
+  background:color-mix(in srgb,var(--record-status-color,#657080) 13%,rgba(8,13,20,.91));
+  color:var(--record-status-text,#d8dee9);
+  box-shadow:0 2px 8px rgba(0,0,0,.22);
+  font-size:10px;
+  font-weight:800;
+  line-height:1.25;
+  letter-spacing:-.01em;
+  white-space:nowrap;
+}
+.cmp-info>.record-status-badge{
+  flex:0 0 auto;
+  align-self:flex-start;
+  margin-top:2px;
+  position:relative;
+  z-index:8;
+  pointer-events:none;
+}
+.record-status-icon{
+  flex:0 0 auto;
+  min-width:14px;
+  height:14px;
+  display:grid;
+  place-items:center;
+  border-radius:50%;
+  background:var(--record-status-color,#657080);
+  color:#07100d;
+  font-size:9px;
+  font-weight:950;
+  line-height:1;
+}
+.record-status--empty{--record-status-color:#657080;--record-status-text:#c4cbd4}
+.record-status--done{--record-status-color:#2fe0ad;--record-status-text:#aff7df}
+.record-status--normal{--record-status-color:#7d8998;--record-status-text:#d0d6de}
+.record-status--warning{--record-status-color:#f2a93b;--record-status-text:#ffd797}
+.record-status--critical{--record-status-color:#e33f57;--record-status-text:#ffb0bd}
+.record-status--warning .record-status-icon,
+.record-status--critical .record-status-icon{color:#fff}
+.record-status--critical>.record-status-rail{
+  width:4px;
+  box-shadow:5px 0 0 color-mix(in srgb,var(--record-status-color) 48%,transparent),0 0 14px rgba(227,63,87,.62);
+  animation:record-status-pressure 3.6s ease-in-out infinite;
+}
+.record-status--critical .cmp-profile{
+  filter:saturate(.82);
+}
+.record-status--critical .record-status-cracks{
+  display:block;
+  top:28px;
+  right:0;
+  width:58px;
+  height:46px;
+  opacity:.42;
+  background:
+    linear-gradient(137deg,transparent 0 48%,var(--record-status-color) 49% 51%,transparent 52%) 8px 2px/28px 20px no-repeat,
+    linear-gradient(43deg,transparent 0 48%,var(--record-status-color) 49% 51%,transparent 52%) 25px 17px/26px 17px no-repeat,
+    linear-gradient(112deg,transparent 0 48%,var(--record-status-color) 49% 51%,transparent 52%) 17px 20px/20px 24px no-repeat;
+}
+.record-status--done>.record-status-rail{
+  animation:record-status-complete 1.1s ease-out 1;
+}
+.cmp-graph-only-name{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+}
+.cmp-graph-only-name .record-status-badge{
+  min-height:19px;
+  padding:2px 7px;
+  font-size:9px;
+}
+.pick-status-dot{
+  position:absolute;
+  right:3px;
+  bottom:15px;
+  z-index:6;
+  width:15px;
+  height:15px;
+  display:grid;
+  place-items:center;
+  border-radius:50%;
+  border:2px solid var(--bg);
+  background:var(--record-status-color,#657080);
+  color:#07100d;
+  font-size:8px;
+  font-weight:950;
+  line-height:1;
+  pointer-events:none;
+}
+.pick-status-dot.record-status--warning,
+.pick-status-dot.record-status--critical{color:#fff}
+@keyframes record-status-pressure{
+  0%,100%{opacity:.72;box-shadow:5px 0 0 rgba(227,63,87,.32),0 0 7px rgba(227,63,87,.34)}
+  50%{opacity:1;box-shadow:7px 0 0 rgba(227,63,87,.52),0 0 16px rgba(227,63,87,.72)}
+}
+@keyframes record-status-complete{
+  0%{opacity:.45;box-shadow:0 0 2px rgba(47,224,173,.2)}
+  45%{opacity:1;box-shadow:0 0 18px rgba(47,224,173,.82)}
+  100%{box-shadow:0 0 9px rgba(47,224,173,.45)}
+}
+@media(max-width:767px){
+  .record-status-badge{min-height:19px;padding:2px 7px;font-size:8px;gap:4px}
+  .record-status-icon{min-width:12px;height:12px;font-size:7px}
+  .record-status-label-full{display:none}
+  .record-status-label-compact{display:inline}
+  .pick-status-dot{right:2px;bottom:14px;width:13px;height:13px;font-size:7px}
+}
+@media(min-width:768px){.record-status-label-compact{display:none}}
+@media(prefers-reduced-motion:reduce){
+  .record-status--critical>.record-status-rail,
+  .record-status--done>.record-status-rail{animation:none!important}
+}

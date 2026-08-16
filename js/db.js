@@ -2,7 +2,7 @@ import { initializeApp }                              from "https://www.gstatic.
 import { getFirestore, collection, doc, setDoc,
          getDoc, getDocs, deleteDoc, query,
          orderBy, writeBatch, serverTimestamp,
-         deleteField, runTransaction }                 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+         deleteField, runTransaction, onSnapshot }     from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, signInAnonymously,
          signOut, onAuthStateChanged }                 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { firebaseConfig, DEFAULT_GOAL }               from "./firebase-config.js";
@@ -503,6 +503,24 @@ function recordsRef(uid) { return collection(db, 'weights', uid, 'records'); }
 export async function getWeights(userId) {
   const snap = await getDocsR(query(recordsRef(userId), orderBy('date','asc')));
   return snap.docs.map(d => normalizeMealRecord(d.data()));
+}
+// 우리 그래프에서 현재 선택된 사용자만 구독한다. 호출 직후 반환되는 정리
+// 함수를 실행하면 인증 대기 중이어도 이후 리스너가 생성되지 않는다.
+export function subscribeWeights(userId, onRecords, onError = console.warn) {
+  let stopped = false;
+  let unsubscribe = () => {};
+  _ready.then(() => {
+    if (stopped) return;
+    unsubscribe = onSnapshot(
+      query(recordsRef(userId), orderBy('date', 'asc')),
+      snap => onRecords(snap.docs.map(d => normalizeMealRecord(d.data()))),
+      error => onError(error),
+    );
+  }).catch(onError);
+  return () => {
+    stopped = true;
+    unsubscribe();
+  };
 }
 export async function setWeight(userId, dateStr, weight) {
   if (weight === null) {

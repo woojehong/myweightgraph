@@ -1,13 +1,13 @@
-const CACHE = 'weight-v148-record-tier-recovery';
+const CACHE = 'weight-v150-record-status';
 const ASSETS = [
   './index.html', './dashboard.html', './input.html', './import.html',
   './achievements.html', './compare.html', './dressroom.html', './diet.html', './shop.html', './guide.html', './visual-lab.html',
-  './css/style.css', './css/showroom-card-themes.css', './css/nutrition.css',
+  './css/style.css', './css/profile-settings.css', './css/record-status.css', './css/showroom-card-themes.css', './css/nutrition.css',
   './js/firebase-config.js', './js/db.js', './js/auth.js',
   './js/chart-render.js', './js/achievements.js', './js/achievements-engine.js', './js/record-meta-achievements.js', './js/record-meta-rewards.js',
   './js/quests.js', './js/quest-panel.js', './js/showroom-fx.js', './js/showroom-fx-v11.js',
   './js/util.js', './js/daily-rewards.js', './js/meal-status.js', './js/showroom-v2.js',
-  './js/today-message.js', './js/nutrition.js',
+  './js/today-message.js', './js/nutrition.js', './js/profile-settings.js', './js/record-status.js',
   './js/showroom-catalog-v2.js', './js/showroom-catalog-v4.generated.js', './js/showroom-graph-skins.js', './js/showroom-graph-skins-v12.js', './js/showroom-card-themes.js', './js/showroom-card-themes-v12.js', './js/showroom-profile-emojis-v6.js', './js/showroom-portrait-frames-v7.js', './js/showroom-point-markers-v9.js', './js/showroom-trophies-v10.js', './js/showroom-taxonomy.js', './js/showroom-fullsets-v13.js', './js/showroom-fullsets-v14.js', './js/showroom-collection.js', './js/titles-catalog-v2.js', './js/achievement-item-rewards-v2.js',
   './assets/showroom-v15/trophy/tr_a_season_hourglass.webp',
   './assets/showroom-v15/trophy/tr_a_twelve_week_compass.webp',

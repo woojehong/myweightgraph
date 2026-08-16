@@ -9,6 +9,7 @@
   <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
   <title>가져오기 | 마웨그</title>
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/profile-settings.css">
   <!-- SheetJS (Excel 파싱) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
@@ -17,7 +18,7 @@
 <header class="top-bar">
   <span class="title">📥 데이터 가져오기</span>
   <div></div>
-  <div class="user-chip" style="cursor:default;justify-self:end">
+  <div class="user-chip" id="userChip" data-profile-settings-trigger style="justify-self:end">
     <span id="chipEmoji">⚖️</span><span id="chipName" class="chip-name">-</span>
   </div>
 </header>
@@ -77,10 +78,12 @@
 import { getUser, batchMergeWeights, parseWeight, toDateStr } from './js/db.js';
 import { isAuthed } from './js/auth.js';
 import { profileVisualForUserV2 } from './js/showroom-v2.js?v=96';
+import { installProfileSettings } from './js/profile-settings.js';
 
 const uid = new URLSearchParams(location.search).get('user') || localStorage.getItem('uid');
 if (!uid) location.href = 'index.html';
 document.getElementById('dashLink').href = `dashboard.html?user=${uid}`;
+let currentUser=null, profileSettings=null;
 
 // 네비 (전 페이지 공통 5탭)
 function buildNav() {
@@ -104,8 +107,10 @@ function buildNav() {
 getUser(uid).then(u => {
   if (!u) { localStorage.removeItem('uid'); location.href = 'index.html?select=1'; return; }
   if (u.passwordHash && !isAuthed(uid, u.passwordHash)) { location.href = 'index.html?select=1'; return; }
+  currentUser=u;
   document.getElementById('chipName').textContent  = u.name;
   document.getElementById('chipEmoji').innerHTML = profileVisualForUserV2(u,30);
+  profileSettings ||= installProfileSettings({uid,getUser:()=>currentUser,onSaved:updated=>{currentUser=updated;document.getElementById('chipName').textContent=updated.name},notify:showToast});
 });
 buildNav();
 

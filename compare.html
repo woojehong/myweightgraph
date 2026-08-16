@@ -13,6 +13,8 @@
   <meta property="og:type" content="website">
   <meta property="og:image" content="https://woojehong.github.io/myweightgraph/favicon.png">
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/profile-settings.css">
+  <link rel="stylesheet" href="css/record-status.css">
   <link rel="stylesheet" href="css/borders.css">
   <link rel="stylesheet" href="css/avatar-v2.css">
   <link rel="stylesheet" href="css/showroom-card-themes.css?v=2">
@@ -168,8 +170,8 @@
         flex-direction:row !important; align-items:center !important;
         justify-content:space-between !important; padding:6px 14px !important; gap:8px;
       }
-      body.compare .top-bar #todayAlert,
-      body.compare .top-bar #userChip{ display:none !important; }
+      body.compare .top-bar #todayAlert{ display:none !important; }
+      body.compare .top-bar #userChip{ display:flex !important; }
       body.compare .top-bar .mweg-header-wrap{
         order:0 !important; flex:1; align-items:flex-start !important; justify-self:unset !important;
       }
@@ -204,8 +206,8 @@
         padding:8px var(--mobile-page-gutter)!important;
         gap:10px;
       }
-      body.compare .top-bar #todayAlert,
-      body.compare .top-bar #userChip{display:none!important}
+      body.compare .top-bar #todayAlert{display:none!important}
+      body.compare .top-bar #userChip{display:flex!important}
       body.compare .top-bar .mweg-header-wrap{
         order:0!important;
         flex:1;
@@ -497,7 +499,7 @@
   <div id="todayAlert" style="min-width:0"></div>
   <a href="index.html?select=1" class="mweg-header-wrap" style="justify-self:center"><span class="mweg-title">마웨그</span><span class="mweg-subtitle">My Weight Graph</span></a>
   <div style="display:flex;align-items:center;gap:8px;justify-content:flex-end">
-    <div class="user-chip" id="userChip" style="cursor:default">
+    <div class="user-chip" id="userChip" data-profile-settings-trigger>
       <div id="chipAvatarWrap" class="avatar-frame chip-avatar">
         <div class="chip-avatar-inner"><span id="chipEmoji">⚖️</span></div>
       </div>
@@ -537,13 +539,15 @@
 <div class="toast" id="toast"></div>
 
 <script type="module">
-import { getUser, getUsers, getWeights, getSettings, getTierSettings, updateUser } from './js/db.js';
+import { getUser, getUsers, getWeights, getSettings, getTierSettings, subscribeWeights, updateUser } from './js/db.js';
 import { isAuthed, clearAuth } from './js/auth.js';
 import { renderChart, aggregateRecords, periodLabel } from './js/chart-render.js';
 import { getTierForScore, DEFAULT_TIERS } from './js/achievements.js';
 import { esc } from './js/util.js';
 import { applyCardV2, decorateMainPlotV2, getChartDecorationsV2, normalizeLoadoutV2, profileVisualForUserV2, profileShowcaseForUserV2, renderTrophyV2, titleInfoV2 } from './js/showroom-v2.js?v=96';
 import { activeTodayMessage, normalizeTodayMessage, todayMessageDayKey } from './js/today-message.js';
+import { installProfileSettings } from './js/profile-settings.js';
+import { classifyRecordStatus, millisecondsUntilNextActivityBoundary, recordStatusClass } from './js/record-status.js';
 
 const uid = new URLSearchParams(location.search).get('user') || localStorage.getItem('uid');
 if (!uid) location.href = 'index.html';
@@ -569,9 +573,11 @@ function buildNav() {
   });
 }
 
-let allUsers = [], TIERS = DEFAULT_TIERS, S = {}, curUser = null;
+let allUsers = [], TIERS = DEFAULT_TIERS, S = {}, curUser = null, profileSettings = null;
 let selected = [];       // 선택된 uid 배열 (표시 순서 유지)
 const weightsCache = {}; // uid -> records
+const weightSubscriptions = new Map(); // 선택된 사용자에게만 실시간 리스너 유지
+let initialized = false, refreshPromise = null, boundaryTimer = null, lastReturnRefreshAt = 0;
 
 // 일간/주간/월간 — 항상 '일간'으로 시작 (새로고침 시 초기화, 저장 안 함)
 let viewMode = 'day';
@@ -613,6 +619,42 @@ function loadSelected() {
 }
 function saveSelected() {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(selected)); } catch (e) {}
+}
+
+function statusFor(id) {
+  return classifyRecordStatus(weightsCache[id] || []);
+}
+
+function statusBadge(status, { compactOnly = false } = {}) {
+  return `<span class="record-status-badge" role="status" aria-label="${status.label}" title="${status.label}">
+    <span class="record-status-icon" aria-hidden="true">${status.icon}</span>
+    ${compactOnly ? `<span>${status.compactLabel}</span>` : `<span class="record-status-label-full">${status.label}</span><span class="record-status-label-compact">${status.compactLabel}</span>`}
+  </span>`;
+}
+
+function syncWeightSubscriptions() {
+  const wanted = new Set(selected);
+  for (const [id, unsubscribe] of weightSubscriptions) {
+    if (!wanted.has(id)) {
+      unsubscribe();
+      weightSubscriptions.delete(id);
+    }
+  }
+  for (const id of wanted) {
+    if (weightSubscriptions.has(id)) continue;
+    const unsubscribe = subscribeWeights(id, records => {
+      if (!selected.includes(id)) return;
+      weightsCache[id] = records;
+      renderPicker();
+      renderGrid();
+    }, error => console.warn('weight snapshot failed for', id, error));
+    weightSubscriptions.set(id, unsubscribe);
+  }
+}
+
+function clearWeightSubscriptions() {
+  for (const unsubscribe of weightSubscriptions.values()) unsubscribe();
+  weightSubscriptions.clear();
 }
 
 // 우리 그래프 차트 옵션: 메인 체중 + 사용자가 켠 식단/운동만 (주간막대 제외).
@@ -693,11 +735,14 @@ function renderPicker() {
     const idx = selected.indexOf(u.id);
     const sel = idx >= 0;
     const title=titleInfoV2(u.showroomLoadoutV2);
+    const status=statusFor(u.id);
+    const statusClass=recordStatusClass(status);
     return `
-      <button class="pick-chip ${sel ? 'sel' : ''}" data-id="${u.id}">
+      <button class="pick-chip ${sel ? 'sel' : ''}" data-id="${u.id}" aria-label="${esc(u.name)}, ${status.label}">
         ${sel ? `<span class="pick-num">${idx + 1}</span>` : ''}
         <div class="pick-avatar">${profileVisualForUserV2(u,40)}</div>
         <span class="pick-name">${esc(u.name)}</span>
+        <span class="pick-status-dot ${statusClass}" aria-hidden="true" title="${status.label}">${status.icon}</span>
       </button>`;
   }).join('');
   el.querySelectorAll('.pick-chip').forEach(btn => {
@@ -711,6 +756,7 @@ function togglePick(id) {
   else selected.push(id);
   saveSelected();
   renderPicker();
+  syncWeightSubscriptions();
   renderGrid();
 }
 
@@ -729,6 +775,8 @@ function cellHTML(u) {
   const isMine=u.id===uid;
   const trophies=normalizeLoadoutV2(u.showroomLoadoutV2).trophy;
   const recs = aggregateRecords(weightsCache[u.id] || [], viewMode);
+  const status = statusFor(u.id);
+  const statusClass = recordStatusClass(status);
   const hasData = recs.filter(r => r.weight != null).length >= 2;
   const body = hasData
     ? `<div class="cmp-chart" data-main-weight-plot="true" data-chart-subgraphs="diet exercise"><canvas id="cv_${u.id}"></canvas></div>`
@@ -750,13 +798,16 @@ function cellHTML(u) {
 
   // 사용자 프로필 이모지
   return `
-    <div class="cmp-cell ${graphOnlyMode?'graph-only':''}">
-      ${graphOnlyMode?`<div class="cmp-graph-only-name">${esc(u.name)}</div>`:`
+    <div class="cmp-cell ${graphOnlyMode?'graph-only':''} ${statusClass}" data-record-status="${status.key}">
+      <span class="record-status-rail" aria-hidden="true"></span>
+      ${graphOnlyMode?`<div class="cmp-graph-only-name"><span>${esc(u.name)}</span>${statusBadge(status,{compactOnly:true})}</div>`:`
+      <span class="record-status-cracks" aria-hidden="true"></span>
       <div class="cmp-profile">
         <div class="cmp-avatar">${profileShowcaseForUserV2(u,132)}</div>
         <div class="cmp-info">
           ${title ? `<span class="cmp-title" style="color:${title.color}">${esc(title.name)}</span>` : ''}
           <span class="cmp-name" style="color:${tc}">${esc(u.name)}</span>
+          ${statusBadge(status)}
         </div>
         ${isMine||todayMessage?`<div class="cmp-message-panel">${isMine?`<textarea class="cmp-message-input" data-today-message maxlength="160" placeholder="오늘의 한마디를 입력해보세요">${esc(todayMessage)}</textarea><div class="cmp-message-actions"><button data-message-reset>초기화</button><button class="save" data-message-save>저장</button></div>`:`<p class="cmp-message">${esc(todayMessage)}</p>`}</div>`:''}
         <div class="cmp-trophies">${trophies.map(renderTrophyV2).join('')}</div>
@@ -802,6 +853,53 @@ async function renderGrid() {
     }
   });
 }
+
+async function refreshAllData({ render = true } = {}) {
+  if (refreshPromise) return refreshPromise;
+  refreshPromise = (async () => {
+    const users = await getUsers();
+    const rows = await Promise.all(users.map(async user => [
+      user.id,
+      await getWeights(user.id).catch(() => weightsCache[user.id] || []),
+    ]));
+    allUsers = users;
+    rows.forEach(([id, records]) => { weightsCache[id] = records; });
+    const validIds = new Set(users.map(user => user.id));
+    selected = selected.filter(id => validIds.has(id));
+    curUser = users.find(user => user.id === uid) || curUser;
+    if (curUser) setChip(curUser);
+    syncWeightSubscriptions();
+    if (render) {
+      renderPicker();
+      await renderGrid();
+    }
+  })().finally(() => { refreshPromise = null; });
+  return refreshPromise;
+}
+
+function scheduleActivityBoundary() {
+  clearTimeout(boundaryTimer);
+  boundaryTimer = setTimeout(async () => {
+    try { await refreshAllData(); }
+    catch (error) { console.warn('activity-day refresh failed', error); }
+    scheduleActivityBoundary();
+  }, millisecondsUntilNextActivityBoundary() + 25);
+}
+
+function refreshOnReturn() {
+  if (!initialized || document.hidden) return;
+  const now = Date.now();
+  if (now - lastReturnRefreshAt < 750) return;
+  lastReturnRefreshAt = now;
+  refreshAllData().catch(error => console.warn('return refresh failed', error));
+}
+
+window.addEventListener('focus', refreshOnReturn);
+window.addEventListener('pageshow', refreshOnReturn);
+window.addEventListener('beforeunload', () => {
+  clearTimeout(boundaryTimer);
+  clearWeightSubscriptions();
+});
 
 async function saveMessage(raw){
   const todayMessage=normalizeTodayMessage(raw);
@@ -851,6 +949,18 @@ async function init() {
 
   document.getElementById('logoutBtn').style.display = '';
   setChip(curUser);
+  profileSettings ||= installProfileSettings({
+    uid,
+    getUser: () => curUser,
+    onSaved: updated => {
+      curUser = updated;
+      allUsers = allUsers.map(item => item.id === uid ? updated : item);
+      setChip(curUser);
+      renderPicker();
+      return renderGrid();
+    },
+    notify: showToast,
+  });
   document.title = '우리 그래프 | 마웨그';
 
   // 선택 복원: 저장된 목록(존재하는 유저만) → 없으면 현재 사용자 기본 선택
@@ -864,10 +974,17 @@ async function init() {
   }
   saveSelected();
 
+  // 피커의 모든 사용자가 첫 화면부터 정확한 최신성 상태를 갖도록 한 번만
+  // 전체 기록을 읽는다. 이후 실시간 리스너는 현재 선택된 사용자에게만 둔다.
+  await refreshAllData({ render:false });
+
   syncAvatarToggle();
   bindSubgraphToggles();
   renderPicker();
-  renderGrid();
+  syncWeightSubscriptions();
+  await renderGrid();
+  initialized = true;
+  scheduleActivityBoundary();
 }
 
 init().catch(e => {

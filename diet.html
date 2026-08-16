@@ -7,6 +7,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="favicon.png">
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/profile-settings.css">
   <link rel="stylesheet" href="css/nutrition.css">
   <title>식단 | 마웨그</title>
 </head>
@@ -16,7 +17,13 @@
   <a href="index.html?select=1" class="mweg-header-wrap" style="justify-self:center">
     <span class="mweg-title">마웨그</span><span class="mweg-subtitle">Nutrition Lab</span>
   </a>
-  <button class="btn btn-ghost btn-sm" id="logoutBtn">로그아웃</button>
+  <div style="display:flex;align-items:center;gap:8px;justify-content:flex-end">
+    <div class="user-chip" id="userChip" data-profile-settings-trigger>
+      <div id="chipAvatarWrap" class="chip-avatar"><div class="chip-avatar-inner"><span id="chipEmoji"></span></div></div>
+      <div class="chip-info"><span id="chipTitle" class="chip-title"></span><span id="chipName" class="chip-name">-</span></div>
+    </div>
+    <button class="btn btn-ghost btn-sm" id="logoutBtn">로그아웃</button>
+  </div>
 </header>
 
 <main class="nutrition-page">
@@ -223,14 +230,17 @@
 
 <script type="module">
 import { getUser,getWeights,getNutritionProfile,saveNutritionProfile,getNutritionEntries,saveNutritionEntry,saveNutritionEntries,softDeleteNutritionEntry,getNutritionPresets,saveNutritionPreset,getSharedNutritionFoods,getInbodyRecords,saveInbodyRecord } from './js/db.js?v=137';
-import { clearAuth } from './js/auth.js?v=137';
+import { clearAuth,isAuthed } from './js/auth.js?v=137';
 import { esc } from './js/util.js?v=137';
 import { ACTIVITY_LEVELS,suggestNutritionTargets,validateNutritionTargets,nutritionDayFor,sumNutrition,targetStatus,STARTER_FOODS,PHOTO_DESCRIPTION_MIN_LENGTH,compressNutritionPhoto,createPhotoAnalysisAdapter,photoAnalysisUsage,validatePhotoDescription,MAX_FAVORITE_FOODS,foodAssemblyKey,foodAssemblyTotals,foodWeightUnit,nutritionForSelection,setFoodAssemblyGrams,sortFavoriteFoods,updateFoodAssembly } from './js/nutrition.js?v=137';
+import { profileVisualForUserV2,titleInfoV2 } from './js/showroom-v2.js?v=96';
+import { installProfileSettings } from './js/profile-settings.js';
 
 const uid=new URLSearchParams(location.search).get('user')||localStorage.getItem('uid');
 if(!uid)location.href='index.html';
 const $=id=>document.getElementById(id);
 let user,profile,entries=[],presets=[],sharedFoods=[],inbody=[],editing=null,ratio=1,day=nutritionDayFor();
+let profileSettings=null;
 let assembly=[],favoriteSort='manual',assemblySaving=false;
 let photoState={compressed:null,fileName:'',previewUrl:null,stage:'select',pending:false};
 let currentPhotoUsage=photoAnalysisUsage(0);
@@ -240,6 +250,7 @@ const mealNames={breakfast:'아침',lunch:'점심',dinner:'저녁',snack:'간식
 const nutrientMeta={calories:['칼로리','kcal','--nut-cal'],carbs:['탄수화물','g','--nut-carb'],protein:['단백질','g','--nut-protein'],fat:['지방','g','--nut-fat']};
 
 function toast(message,type='ok'){const t=$('toast');t.textContent=message;t.className=`toast show ${type}`;setTimeout(()=>t.classList.remove('show'),2200)}
+function setHeaderChip(value){$('chipEmoji').innerHTML=profileVisualForUserV2(value,30);$('chipName').textContent=value?.name||'-';const title=titleInfoV2(value?.showroomLoadoutV2),titleEl=$('chipTitle');titleEl.textContent=title?.name||'';titleEl.style.color=title?.color||'var(--teal)';titleEl.style.display=title?'inline':'none'}
 function nav(){const links=[['input','✏️','데이터 입력'],['dashboard','📊','내 그래프'],['compare','👥','우리 그래프'],['diet','🥗','식단 <span class="nav-beta">BETA</span>'],['achievements','🏆','업적'],['dressroom','✨','쇼룸']];$('bottomNav').innerHTML=links.map(([id,icon,label])=>`<a href="${id}.html?user=${encodeURIComponent(uid)}" class="${id==='diet'?'active':''}"><span class="icon">${icon}</span>${label}</a>`).join('')}
 function target(){return {...defaultTargets,...profile?.targets}}
 function dayEntries(){return entries.filter(e=>e.day===day)}
@@ -580,6 +591,9 @@ async function init(){
   nav();$('activityLevel').innerHTML=Object.entries(ACTIVITY_LEVELS).map(([id,v])=>`<option value="${id}">${v.label} · ${v.note}</option>`).join('');
   [user,profile,entries,presets,sharedFoods,inbody]=await Promise.all([getUser(uid),getNutritionProfile(uid),getNutritionEntries(uid),getNutritionPresets(uid),getSharedNutritionFoods(),getInbodyRecords(uid)]);
   if(!user){localStorage.removeItem('uid');location.href='index.html?select=1';return}
+  if(user.passwordHash&&!isAuthed(uid,user.passwordHash)){location.href=`index.html?auth_required=${encodeURIComponent(uid)}`;return}
+  setHeaderChip(user);
+  profileSettings ||= installProfileSettings({uid,getUser:()=>user,onSaved:updated=>{user=updated;setHeaderChip(user)},notify:toast});
   const weights=await getWeights(uid);window.currentWeight=[...weights].reverse().find(r=>r.weight!=null)?.weight||null;
   $('activityLevel').value=profile?.activityLevel||'moderate';fillTargets(target());$('ibDate').value=new Date().toISOString().slice(0,10);renderAll();await refreshPhotoUsage();
 }

@@ -13,6 +13,7 @@
   <meta property="og:type" content="website">
   <meta property="og:image" content="https://woojehong.github.io/myweightgraph/favicon.png">
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/profile-settings.css">
   <link rel="stylesheet" href="css/borders.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
@@ -68,7 +69,7 @@
   <a href="index.html?select=1" class="mweg-header-wrap" style="justify-self:center"><span class="mweg-title">마웨그</span><span class="mweg-subtitle">My Weight Graph</span></a>
   <!-- 우: 유저칩 + 로그아웃 -->
   <div style="display:flex;align-items:center;gap:8px;justify-content:flex-end">
-    <div class="user-chip" onclick="openProfileEdit()" id="userChip">
+    <div class="user-chip" id="userChip" data-profile-settings-trigger>
       <div id="chipAvatarWrap" class="avatar-frame chip-avatar">
         <div class="chip-avatar-inner"><span id="chipEmoji">⚖️</span></div>
       </div>
@@ -77,67 +78,10 @@
         <span id="chipName" class="chip-name">-</span>
         <span id="chipScore" class="chip-score"></span>
       </div>
-      <span id="chipEdit" style="font-size:10px;color:var(--muted)"></span>
     </div>
     <button class="btn btn-ghost btn-sm" id="logoutBtn" style="display:none" onclick="doLogout()">로그아웃</button>
   </div>
 </header>
-
-<!-- 프로필 수정 모달 -->
-<div class="modal-bg" id="profileModal">
-  <div class="modal" style="max-height:90vh;overflow-y:auto">
-    <h3>✏️ 프로필 수정</h3>
-    <a class="btn btn-primary btn-full" href="dressroom.html" style="margin-bottom:12px">✨ 쇼룸 입장</a>
-
-    <!-- 이모지 -->
-    <div class="input-group">
-      <label class="input-label">이모지</label>
-      <div id="profileEmojiGrid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-bottom:8px"></div>
-      <input class="input-field" id="profileCustomEmoji" placeholder="직접 입력 (예: 🦁)" maxlength="4">
-    </div>
-
-    <!-- 칭호 -->
-    <div class="input-group mt-8" id="profileTitleGroup">
-      <label class="input-label">칭호</label>
-      <div id="profileTitleSection"></div>
-    </div>
-
-    <!-- 테두리 -->
-    <div class="input-group mt-8">
-      <label class="input-label">테두리</label>
-      <div class="border-grid" id="profileBorderGrid"></div>
-    </div>
-
-    <!-- 이름 -->
-    <div class="input-group mt-8">
-      <label class="input-label">이름</label>
-      <input class="input-field" id="profileName" placeholder="이름" maxlength="12">
-    </div>
-
-    <!-- 키 / 생년월일 -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
-      <div class="input-group">
-        <label class="input-label">키 (cm) *</label>
-        <input class="input-field" id="profileHeight" type="number" placeholder="175" min="100" max="250">
-      </div>
-      <div class="input-group">
-        <label class="input-label">출생연도 *</label>
-        <input class="input-field" id="profileBirthYear" type="number" placeholder="1990" min="1930" max="2010">
-      </div>
-    </div>
-
-    <!-- 비밀번호 -->
-    <div class="input-group mt-12">
-      <label class="input-label" id="profilePwLabel">비밀번호</label>
-      <div id="profilePwSection"></div>
-    </div>
-
-    <div class="flex-row gap-8 mt-12">
-      <button class="btn btn-ghost btn-full" onclick="closeProfileEdit()">취소</button>
-      <button class="btn btn-primary btn-full" onclick="saveProfileEdit()">저장</button>
-    </div>
-  </div>
-</div>
 
 <div class="page">
   <div id="content">
@@ -149,14 +93,13 @@
 <div class="toast" id="toast"></div>
 
 <script type="module">
-import { getUser, getWeights, getSettings, updateSettings, toDateStr, updateUser, setUserPassword, getTierSettings, grantDailyReward } from './js/db.js';
+import { getUser, getWeights, getSettings, updateSettings, toDateStr, getTierSettings, grantDailyReward } from './js/db.js';
 import { activityDay } from './js/daily-rewards.js';
-import { isAuthed, clearAuth, saveAuth } from './js/auth.js';
+import { isAuthed, clearAuth } from './js/auth.js';
 import { renderChart, calcStats, aggregateRecords, periodLabel } from './js/chart-render.js';
 import { getTierForScore, DEFAULT_TIERS } from './js/achievements.js';
-import { BORDER_NAMES } from './js/borders-data.js';
-import { esc } from './js/util.js';
 import { decorateMainPlotV2, getChartDecorationsV2, profileVisualForUserV2, titleInfoV2 } from './js/showroom-v2.js?v=96';
+import { installProfileSettings } from './js/profile-settings.js';
 
 let toastTimer;
 function showToast(message, type = 'ok') {
@@ -192,7 +135,7 @@ function buildNav(uid) {
   });
 }
 
-let S={}, user=null, records=[], stats=null;
+let S={}, user=null, records=[], stats=null, profileSettings=null;
 const DASHBOARD_SHOWROOM_CATEGORIES = Object.freeze([
   'graph_skin', 'line_style', 'point_marker', 'ambient_effect',
 ]);
@@ -269,7 +212,6 @@ async function render() {
   const _tier = getTierForScore(user?.totalScore || 0, _tiers);
   if (!isAdminView) {
     document.getElementById('logoutBtn').style.display='';
-    document.getElementById('chipEdit').textContent = '✏️';
   }
 
   // 비밀번호 인증 체크 (관리자뷰 제외)
@@ -283,6 +225,13 @@ async function render() {
   }
 
   setChipData(user, _tier.color);
+  profileSettings ||= installProfileSettings({
+    uid,
+    canEdit: !isAdminView && localStorage.getItem('uid') === uid,
+    getUser: () => user,
+    onSaved: updated => { user = updated; setChipData(user, _tier.color); },
+    notify: showToast,
+  });
   document.title = `${user.name} | 마웨그`;
 
   stats = calcStats(records, user);
@@ -367,126 +316,6 @@ async function render() {
   bindToggles();
   checkTodayAlert();
 }
-
-// ── 프로필 이모지 수정 ────────────────────────────────────────────────
-const EMOJIS = ['⚖️','💪','🔥','👑','🏃','🌟','🎯','🦁','🐯','🦊','🐼','🦋','🍎','🥗','🏋️','🚴','💎','⚡','🎖️','🏆','✨'];
-let selectedProfileEmoji = '';
-
-window.openProfileEdit = () => {
-  location.href=`dressroom.html?user=${encodeURIComponent(uid)}`;return;
-  if(isAdminView) return;
-  selectedProfileEmoji = document.getElementById('chipEmoji').textContent;
-  const grid = document.getElementById('profileEmojiGrid');
-  grid.innerHTML = EMOJIS.map(e =>
-    `<button style="font-size:22px;padding:4px;border-radius:7px;cursor:pointer;background:${e===selectedProfileEmoji?'rgba(0,229,170,.15)':'transparent'};border:2px solid ${e===selectedProfileEmoji?'var(--teal)':'transparent'};transition:all .15s" onclick="pickProfileEmoji('${e}')">${e}</button>`
-  ).join('');
-  document.getElementById('profileCustomEmoji').value = '';
-  document.getElementById('profileName').value      = user.name     || '';
-  document.getElementById('profileHeight').value    = user.height    || '';
-  document.getElementById('profileBirthYear').value = user.birthYear || '';
-
-
-  // 테두리 시각 그리드
-  const _unlBorders = user?.unlockedBorders || [];
-  const _curBorder = user?.selectedBorder || '';
-  window._selectedBorder = _curBorder;
-  const _bGrid = document.getElementById('profileBorderGrid');
-  if (_bGrid) {
-    const _slots = ['', ..._unlBorders];
-    _bGrid.innerHTML = _slots.map(b => `
-      <button class="border-slot ${b===_curBorder?'sel':''}" data-border="${b}" onclick="pickBorder('${b}')" title="${b?BORDER_NAMES[b]||b:'없음'}">
-        <div class="avatar-frame${b?' border-'+b:''}" style="--tier-color:#00e5aa;width:36px;height:36px">
-          <div class="border-slot-inner">👤</div>
-        </div>
-      </button>`).join('');
-  }
-
-  // 칭호 — 항상 표시
-  const earnedTitles = user.earnedTitles || [];
-  const titleGroup = document.getElementById('profileTitleGroup');
-  const titleSection = document.getElementById('profileTitleSection');
-  if (titleGroup) titleGroup.style.display = '';
-  if (titleSection) titleSection.innerHTML = `
-    <select class="input-field" id="profileTitleSelect">
-      <option value="">칭호 없음</option>
-      ${earnedTitles.map(t => `<option value="${esc(t)}" ${t===user.selectedTitle?'selected':''}>${esc(t)}</option>`).join('')}
-    </select>`;
-
-  // 비밀번호 섹션
-  const hasPw = !!user.passwordHash;
-  document.getElementById('profilePwLabel').textContent = hasPw ? '비밀번호 변경' : '비밀번호 설정 (선택)';
-  document.getElementById('profilePwSection').innerHTML = `
-    <input class="input-field" id="profileNewPw" type="password" inputmode="numeric"
-      maxlength="4" placeholder="${hasPw?'새 비밀번호 4자리':'비워두면 공개'}" style="margin-bottom:8px">
-    <input class="input-field" id="profileNewPwC" type="password" inputmode="numeric"
-      maxlength="4" placeholder="확인">
-    ${hasPw ? `<button class="btn btn-ghost btn-sm mt-8" onclick="removeProfilePw()" style="color:var(--red);width:100%">🗑 비밀번호 제거</button>` : ''}
-  `;
-
-  document.getElementById('profileModal').classList.add('open');
-};
-window.closeProfileEdit = () => document.getElementById('profileModal').classList.remove('open');
-
-// 프로필 모달 바깥 클릭 시 닫기
-document.getElementById('profileModal').addEventListener('click', e => {
-  if (e.target === document.getElementById('profileModal')) closeProfileEdit();
-});
-window.pickProfileEmoji = e => {
-  selectedProfileEmoji = e;
-  document.getElementById('profileCustomEmoji').value = '';
-  document.getElementById('profileEmojiGrid').querySelectorAll('button').forEach(b => {
-    const isSelected = b.textContent === e;
-    b.style.background = isSelected ? 'rgba(0,229,170,.15)' : 'transparent';
-    b.style.border = `2px solid ${isSelected ? 'var(--teal)' : 'transparent'}`;
-  });
-};
-
-window.pickBorder = b => {
-  window._selectedBorder = b;
-  document.querySelectorAll('.border-slot').forEach(s => s.classList.toggle('sel', s.dataset.border === b));
-};
-window.saveProfileEdit = async () => {
-  const custom    = document.getElementById('profileCustomEmoji').value.trim();
-  const emoji     = custom || selectedProfileEmoji;
-  if(!emoji) return;
-
-  const height    = parseInt(document.getElementById('profileHeight')?.value) || null;
-  const birthYear = parseInt(document.getElementById('profileBirthYear')?.value) || null;
-  if (!height)    { showToast('키를 입력해주세요','err'); return; }
-  if (!birthYear) { showToast('출생연도를 입력해주세요','err'); return; }
-
-  const pw  = document.getElementById('profileNewPw')?.value || '';
-  const pwC = document.getElementById('profileNewPwC')?.value || '';
-  if (pw && pw !== pwC) { showToast('비밀번호가 일치하지 않아요','err'); return; }
-  if (pw && !/^\d{4}$/.test(pw)) { showToast('숫자 4자리로 입력해주세요','err'); return; }
-
-  const name = document.getElementById('profileName')?.value.trim() || user.name;
-  if (!name) { showToast('이름을 입력해주세요','err'); return; }
-  const _tSel = document.getElementById('profileTitleSelect'); const selectedTitle = _tSel != null ? (_tSel.value || null) : (user.selectedTitle || null);
-  const selectedBorder = window._selectedBorder ?? user.selectedBorder ?? null;
-  await updateUser(uid, { emoji, name, selectedTitle, selectedBorder, height, birthYear });
-  user = { ...user, emoji, name, selectedTitle, selectedBorder, height, birthYear };
-  setChipData(user, document.getElementById('chipName')?.style.color || '#00e5aa');
-
-  if (pw) {
-    const newHash = await setUserPassword(uid, pw);
-    saveAuth(uid, newHash);
-    user = { ...user, passwordHash: newHash };
-    showToast('프로필 및 비밀번호 변경됨 ✓', 'ok');
-  } else {
-    showToast('프로필 변경됨 ✓', 'ok');
-  }
-  closeProfileEdit();
-};
-
-window.removeProfilePw = async () => {
-  await setUserPassword(uid, null);
-  clearAuth();
-  user = { ...user, passwordHash: null };
-  closeProfileEdit();
-  showToast('비밀번호가 제거됐어요', 'ok');
-};
-
 
 window.resetZoom = () => {
   const mc = document.getElementById('mainC');

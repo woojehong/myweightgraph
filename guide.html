@@ -18,6 +18,7 @@
   <meta property="og:type" content="website">
   <meta property="og:image" content="https://woojehong.github.io/myweightgraph/favicon.png">
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/profile-settings.css">
   <style>
     .guide-page { max-width: 640px; margin: 0 auto; padding: 16px 16px 48px; }
     .back-link {
@@ -83,7 +84,12 @@
 <header class="top-bar">
   <div><a class="back-link" id="backLink" href="dashboard.html">← 대시보드</a></div>
   <div class="mweg-header-wrap" style="justify-self:center"><span class="mweg-title">마웨그</span><span class="mweg-subtitle">My Weight Graph</span></div>
-  <div></div>
+  <div style="display:flex;justify-content:flex-end">
+    <div class="user-chip" id="userChip" data-profile-settings-trigger>
+      <div class="chip-avatar"><div class="chip-avatar-inner"><span id="chipEmoji"></span></div></div>
+      <div class="chip-info"><span id="chipName" class="chip-name">-</span></div>
+    </div>
+  </div>
 </header>
 
 <div class="guide-page">
@@ -189,6 +195,9 @@ const WORKER_URL = 'https://mwg-steps-sync.YOUR-SUBDOMAIN.workers.dev';
 
 import { getUser, updateUser } from './js/db.js';
 import { esc } from './js/util.js';
+import { isAuthed } from './js/auth.js';
+import { profileVisualForUserV2 } from './js/showroom-v2.js?v=96';
+import { installProfileSettings } from './js/profile-settings.js';
 
 const uid = new URLSearchParams(location.search).get('user') || localStorage.getItem('uid');
 if (!uid) location.href = 'index.html';
@@ -199,6 +208,7 @@ const tokenBody  = document.getElementById('tokenBody');
 const testBtn    = document.getElementById('testBtn');
 const testResult = document.getElementById('testResult');
 let syncToken = null;
+let currentUser = null, profileSettings = null;
 
 function showToast(msg, type = 'ok') {
   const t = document.getElementById('toast');
@@ -284,6 +294,11 @@ testBtn.addEventListener('click', async () => {
   try {
     const user = await getUser(uid);
     if (!user) { location.href = 'index.html'; return; }
+    if (user.passwordHash && !isAuthed(uid, user.passwordHash)) { location.href = `index.html?auth_required=${encodeURIComponent(uid)}`; return; }
+    currentUser = user;
+    document.getElementById('chipEmoji').innerHTML = profileVisualForUserV2(user,30);
+    document.getElementById('chipName').textContent = user.name || '-';
+    profileSettings ||= installProfileSettings({uid,getUser:()=>currentUser,onSaved:updated=>{currentUser=updated;document.getElementById('chipName').textContent=updated.name},notify:showToast});
     if (user.syncToken) renderToken(user.syncToken);
     else renderNoToken();
   } catch (e) {

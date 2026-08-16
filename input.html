@@ -13,6 +13,7 @@
   <meta property="og:type" content="website">
   <meta property="og:image" content="https://woojehong.github.io/myweightgraph/favicon.png">
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/profile-settings.css">
   <link rel="stylesheet" href="css/borders.css">
   <style>
     /* 신호등 */
@@ -232,7 +233,7 @@
   <div></div>
   <a href="index.html?select=1" class="mweg-header-wrap" style="justify-self:center"><span class="mweg-title">마웨그</span><span class="mweg-subtitle">My Weight Graph</span></a>
   <div style="display:flex;align-items:center;gap:8px;justify-content:flex-end">
-    <div class="user-chip" onclick="openProfileEdit()" id="userChip">
+    <div class="user-chip" id="userChip" data-profile-settings-trigger>
       <div id="chipAvatarWrap" class="avatar-frame chip-avatar">
         <div class="chip-avatar-inner"><span id="chipEmoji">⚖️</span></div>
       </div>
@@ -241,7 +242,6 @@
         <span id="chipName" class="chip-name">-</span>
         <span id="chipScore" class="chip-score"></span>
       </div>
-      <span style="font-size:10px;color:var(--muted)">✏️</span>
     </div>
     <button class="btn btn-ghost btn-sm" id="logoutBtn" onclick="doLogout()">로그아웃</button>
   </div>
@@ -255,56 +255,17 @@
 
 <nav class="bottom-nav" id="bottomNav"></nav>
 
-<!-- 프로필 수정 모달 -->
-<div class="modal-bg" id="profileModal">
-  <div class="modal" style="max-height:90vh;overflow-y:auto">
-    <h3>✏️ 프로필 수정</h3>
-    <a class="btn btn-primary btn-full" href="dressroom.html" style="margin-bottom:12px">✨ 쇼룸 입장</a>
-    <div class="input-group">
-      <label class="input-label">이모지</label>
-      <div id="pEmojiGrid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-bottom:8px"></div>
-      <input class="input-field" id="pCustomEmoji" placeholder="직접 입력 (예: 🦁)" maxlength="4">
-    </div>
-    <div class="input-group mt-8" id="pTitleGroup">
-      <label class="input-label">칭호</label><div id="pTitleSection"></div>
-    </div>
-    <div class="input-group mt-8">
-      <label class="input-label">테두리</label>
-      <div class="border-grid" id="pBorderGrid"></div>
-    </div>
-    <div class="input-group mt-8">
-      <label class="input-label">이름</label>
-      <input class="input-field" id="pName" placeholder="이름" maxlength="12">
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
-      <div class="input-group"><label class="input-label">키 (cm) *</label>
-        <input class="input-field" id="pHeight" type="number" placeholder="175" min="100" max="250"></div>
-      <div class="input-group"><label class="input-label">출생연도 *</label>
-        <input class="input-field" id="pBirthYear" type="number" placeholder="1990" min="1930" max="2010"></div>
-    </div>
-    <div class="input-group mt-8">
-      <label class="input-label" id="pPwLabel">비밀번호 변경</label>
-      <div id="pPwSection"></div>
-    </div>
-    <div class="flex-row gap-8 mt-12">
-      <button class="btn btn-ghost btn-full" onclick="closeProfileEdit()">취소</button>
-      <button class="btn btn-primary btn-full" onclick="saveProfileEdit()">저장</button>
-    </div>
-  </div>
-</div>
-
-
 <div class="toast" id="toast"></div>
 
 <script type="module">
-import { getUser, getWeights, setWeight, parseWeight, toDateStr, updateUser, setUserPassword, setDietExercise, getTierSettings, grantDailyReward, getDailyReward, getDailyRewards, settlePeriodRewards } from './js/db.js';
+import { getUser, getWeights, setWeight, parseWeight, toDateStr, updateUser, setDietExercise, getTierSettings, grantDailyReward, getDailyReward, getDailyRewards, settlePeriodRewards } from './js/db.js';
 import { activityDay, activityDayAge, rewardMaxForLedger } from './js/daily-rewards.js';
 import { getTierForScore, DEFAULT_TIERS, WATER_GOAL_CUPS } from './js/achievements.js';
 import { syncAchievements, queueAchievementPopups } from './js/achievements-engine.js';
-import { BORDER_NAMES } from './js/borders-data.js';
 import { esc } from './js/util.js';
-import { clearAuth, saveAuth, isAuthed } from './js/auth.js';
+import { clearAuth, isAuthed } from './js/auth.js';
 import { profileVisualForUserV2, titleInfoV2 } from './js/showroom-v2.js?v=96';
+import { installProfileSettings } from './js/profile-settings.js';
 import { questPanelHTML, installQuestToggle, QUEST_PANEL_CSS } from './js/quest-panel.js';
 import { buddyCompletedDates, waterGoalOf } from './js/quests.js';
 import { getUsers } from './js/db.js';
@@ -314,10 +275,8 @@ import { getUsers } from './js/db.js';
 const uid = new URLSearchParams(location.search).get('user') || localStorage.getItem('uid');
 if (!uid) location.href='index.html';
 window.doLogout = () => { clearAuth(); localStorage.removeItem('uid'); location.href='index.html'; };
-const EMOJIS=['⚖️','💪','🔥','👑','🏃','🌟','🎯','🦁','🐯','🦊','🐼','🦋','🍎','🥗','🏋️','🚴','💎','⚡','🎖️','🏆','✨'];
-let selEmoji='';
 const DAY_KO=['일','월','화','수','목','금','토'];
-let existingMap={}, allRecords=[], user=null;
+let existingMap={}, allRecords=[], user=null, profileSettings=null;
 let dailyRewardLedgers={};
 
 
@@ -678,6 +637,12 @@ async function render() {
   const _iTiers = _itd?.tiers || DEFAULT_TIERS;
   const _iTier  = getTierForScore(user?.totalScore || 0, _iTiers);
   setChipData(user, _iTier.color);
+  profileSettings ||= installProfileSettings({
+    uid,
+    getUser: () => user,
+    onSaved: updated => { user = updated; setChipData(user, _iTier.color); },
+    notify: showToast,
+  });
 
   const today = new Date(activityDay() + 'T12:00:00');
   const labels=['오늘','어제','2일 전','3일 전','4일 전','5일 전'];
@@ -846,79 +811,6 @@ function showToast(msg,type='ok'){
   t.textContent=msg; t.className=`toast show ${type}`;
   setTimeout(()=>t.className='toast',2000);
 }
-
-// ── 프로필 수정 ──────────────────────────────────────────────────────
-window.openProfileEdit = () => {
-  location.href=`dressroom.html?user=${encodeURIComponent(uid)}`;return;
-  selEmoji = user?.emoji || '⚖️';
-  document.getElementById('pEmojiGrid').innerHTML = EMOJIS.map(e =>
-    `<button style="font-size:22px;padding:4px;border-radius:7px;cursor:pointer;background:${e===selEmoji?'rgba(0,229,170,.15)':'transparent'};border:2px solid ${e===selEmoji?'var(--teal)':'transparent'}" onclick="pickPEmoji('${e}')">${e}</button>`
-  ).join('');
-  document.getElementById('pCustomEmoji').value  = '';
-  document.getElementById('pHeight').value       = user?.height    || '';
-  document.getElementById('pBirthYear').value    = user?.birthYear || '';
-  document.getElementById('pName').value = user?.name || '';
-
-
-  // 테두리 시각 그리드
-  const _unlBorders = user?.unlockedBorders || [];
-  const _curBorder = user?.selectedBorder || '';
-  window._selectedBorder = _curBorder;
-  const _bGrid = document.getElementById('pBorderGrid');
-  if (_bGrid) {
-    const _slots = ['', ..._unlBorders];
-    _bGrid.innerHTML = _slots.map(b => `
-      <button class="border-slot ${b===_curBorder?'sel':''}" data-border="${b}" onclick="pickBorder('${b}')" title="${b?BORDER_NAMES[b]||b:'없음'}">
-        <div class="avatar-frame${b?' border-'+b:''}" style="--tier-color:#00e5aa;width:36px;height:36px">
-          <div class="border-slot-inner">👤</div>
-        </div>
-      </button>`).join('');
-  }
-
-  const titles = user?.earnedTitles || [];
-  const tg = document.getElementById('pTitleGroup');
-  if(titles.length){ tg.style.display=''; document.getElementById('pTitleSection').innerHTML=`<select class="input-field" id="pTitleSelect"><option value="">칭호 없음</option>${titles.map(t=>`<option value="${esc(t)}" ${t===user?.selectedTitle?'selected':''}>${esc(t)}</option>`).join('')}</select>`; }
-  else tg.style.display='none';
-  const hasPw=!!user?.passwordHash;
-  document.getElementById('pPwLabel').textContent=hasPw?'비밀번호 변경':'비밀번호 설정 (선택)';
-  document.getElementById('pPwSection').innerHTML=`<input class="input-field" id="pNewPw" type="password" inputmode="numeric" maxlength="4" placeholder="${hasPw?'새 비밀번호 4자리':'비워두면 공개'}" style="margin-bottom:8px"><input class="input-field" id="pNewPwC" type="password" inputmode="numeric" maxlength="4" placeholder="확인">`;
-  document.getElementById('profileModal').classList.add('open');
-};
-window.closeProfileEdit = () => document.getElementById('profileModal').classList.remove('open');
-document.getElementById('profileModal').addEventListener('click',e=>{if(e.target===document.getElementById('profileModal'))closeProfileEdit();});
-window.pickPEmoji = e => {
-  selEmoji=e; document.getElementById('pCustomEmoji').value='';
-  document.querySelectorAll('#pEmojiGrid button').forEach(b=>{
-    const s=b.textContent===e; b.style.background=s?'rgba(0,229,170,.15)':'transparent'; b.style.border=`2px solid ${s?'var(--teal)':'transparent'}`;
-  });
-};
-
-window.pickBorder = b => {
-  window._selectedBorder = b;
-  document.querySelectorAll('.border-slot').forEach(s => s.classList.toggle('sel', s.dataset.border === b));
-};
-window.saveProfileEdit = async () => {
-  const custom=document.getElementById('pCustomEmoji').value.trim();
-  const emoji=custom||selEmoji;
-  const height=parseInt(document.getElementById('pHeight').value)||null;
-  const birthYear=parseInt(document.getElementById('pBirthYear').value)||null;
-  if(!height){showToast('키를 입력해주세요','err');return;}
-  if(!birthYear){showToast('출생연도를 입력해주세요','err');return;}
-  const pw=document.getElementById('pNewPw')?.value||'';
-  const pwC=document.getElementById('pNewPwC')?.value||'';
-  if(pw&&pw!==pwC){showToast('비밀번호가 일치하지 않아요','err');return;}
-  if(pw&&!/^\d{4}$/.test(pw)){showToast('숫자 4자리로 입력해주세요','err');return;}
-  const name=document.getElementById('pName')?.value.trim()||user?.name;
-  if(!name){showToast('이름을 입력해주세요','err');return;}
-  const _tSel=document.getElementById('pTitleSelect'); const selectedTitle=_tSel!=null?(_tSel.value||null):(user?.selectedTitle||null);
-  const selectedBorder=window._selectedBorder??user?.selectedBorder??null;
-  await updateUser(uid,{emoji,name,height,birthYear,selectedTitle,selectedBorder});
-  user={...user,emoji,name,height,birthYear,selectedTitle,selectedBorder};
-  setChipData(user, document.getElementById('chipName')?.style.color||'#00e5aa');
-  if(pw){const h=await setUserPassword(uid,pw);saveAuth(uid,h);user.passwordHash=h;}
-  closeProfileEdit();showToast('프로필 변경됨 ✓');
-};
-
 
 render().catch(console.error);
 </script>
