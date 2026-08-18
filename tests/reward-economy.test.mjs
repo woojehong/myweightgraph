@@ -41,7 +41,8 @@ const firstMonthTotal = 30 * 50
   + weekStarts.reduce((sum, start) => sum + cappedEarned(weeklyProgress(month, start), WEEKLY_CAP), 0)
   + cappedEarned(monthlyProgress(month, '2026-07-30'), MONTHLY_CAP)
   + calcTotalScore(calculateEarnedIds(month, {height:178,goal:70,referenceWeight:80}));
-assert.equal(firstMonthTotal, 3046, '30일 성실 기록으로 신화 그래프 스킨 하나를 구매할 수 있어야 한다');
+assert.equal(firstMonthTotal, 3131,
+  '30일 수분 기록 업적을 소급 반영해 신화 그래프 스킨 하나를 구매할 수 있어야 한다');
 
 assert.equal(showroomPriceOf('graph_skin','mythic'), 3000);
 assert.equal(showroomPriceOf('card_theme','mythic'), 2200);

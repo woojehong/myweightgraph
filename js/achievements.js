@@ -7,7 +7,6 @@ import {
 
 export const RECORD_START_DATE = '2026-06-01'; // 기록 누적 기준일 (체중/식단/운동 횟수)
 export const LOSS_START_DATE   = '2026-01-01'; // 감량/갱신 기준일
-export const WATER_GOAL_CUPS   = 10;           // 하루 물 목표 (잔)
 
 export const ACHIEVEMENT_CATEGORIES = [
   { id:'record',    label:'체중',  icon:'⚖️' },
@@ -98,13 +97,15 @@ const LEGACY_ACHIEVEMENTS = [
   { id:'steps_total_1m',    cat:'steps', name:'누적 100만 보',  desc:'기록된 걸음 수 1,000,000보 누적',        score:60, icon:'🌌', legendary:true },
 
   // ── 라이프 — 물 ──────────────────────────────────────────────────────
-  { id:'water_first',       cat:'life', name:'첫 잔',           desc:'물 마시기를 처음 기록했어요',            score:10, icon:'💧' },
-  { id:'water_goal_1',      cat:'life', name:'수분 충전',       desc:'하루 물 목표(8잔)를 처음 달성했어요',    score:10, icon:'💧' },
-  { id:'water_goal_5',      cat:'life', name:'물 목표 5일',     desc:'하루 물 목표 달성 5일 누적',             score:15, icon:'🚰' },
-  { id:'water_goal_10',     cat:'life', name:'물 목표 10일',    desc:'하루 물 목표 달성 10일 누적',            score:20, icon:'🌊' },
-  { id:'water_goal_30',     cat:'life', name:'물 목표 30일',    desc:'하루 물 목표 달성 30일 누적',            score:40, icon:'🌊', legendary:true },
-  { id:'water_total_100',   cat:'life', name:'누적 100잔',      desc:'물 100잔 누적',                          score:20, icon:'🥤' },
-  { id:'water_total_500',   cat:'life', name:'누적 500잔',      desc:'물 500잔 누적',                          score:50, icon:'🏆' },
+  // 기존 ID는 지급/보상 호환성을 위해 유지한다. 판정은 목표량이나 잔 수가
+  // 아니라, 해당 날짜에 수분을 한 번이라도 기록했는지만 사용한다.
+  { id:'water_first',       cat:'life', name:'첫 수분 기록',    desc:'수분 기록을 처음 남겼어요',              score:10, icon:'💧' },
+  { id:'water_goal_1',      cat:'life', name:'수분 기록 시작',  desc:'수분을 기록한 날 1일',                   score:10, icon:'💧' },
+  { id:'water_goal_5',      cat:'life', name:'수분 기록 5일',   desc:'수분을 기록한 날 5일 누적',              score:15, icon:'🚰' },
+  { id:'water_goal_10',     cat:'life', name:'수분 기록 10일',  desc:'수분을 기록한 날 10일 누적',             score:20, icon:'🌊' },
+  { id:'water_goal_30',     cat:'life', name:'수분 기록 30일',  desc:'수분을 기록한 날 30일 누적',             score:40, icon:'🌊', legendary:true },
+  { id:'water_total_100',   cat:'life', name:'수분 기록 100일', desc:'수분을 기록한 날 100일 누적',            score:20, icon:'🥤' },
+  { id:'water_total_500',   cat:'life', name:'수분 기록 500일', desc:'수분을 기록한 날 500일 누적',            score:50, icon:'🏆' },
 
   // ── 라이프 — 저널 (금주·야식 없음·일찍 취침) ─────────────────────────
   { id:'journal_first',     cat:'life', name:'첫 저널',         desc:'하루 저널을 처음 기록했어요',            score:10, icon:'📔' },
@@ -400,15 +401,13 @@ function extractData(records, user) {
   }
 
   // ── 걸음/물/저널/기분 (신규 항목 — 날짜 제한 없음) ──────────────────
-  let waterTotal = 0, waterGoalDays = 0, waterAnyDays = 0;
+  let waterAnyDays = 0;
   let moodDays = 0;
   let journalAnyDays = 0, journalCleanDays = 0;
   let stepsTotal = 0, stepsAnyDays = 0, steps8kDays = 0, steps10kDays = 0, steps20kDays = 0;
   allRecs.forEach(r => {
-    if (typeof r.water === 'number' && r.water > 0) {
-      waterTotal += r.water; waterAnyDays++;
-      if (r.water >= WATER_GOAL_CUPS) waterGoalDays++;
-    }
+    const water = Number(r.water);
+    if (Number.isFinite(water) && water > 0) waterAnyDays++;
     if (r.mood != null) moodDays++;
     const j = r.journal || {};
     const jvals = [j.noAlcohol, j.noSnack, j.earlySleep];
@@ -442,7 +441,7 @@ function extractData(records, user) {
     weeklyMeal18, monthlyMeal60,
     exerciseCount, maxExStreak, weeklyEx3, monthlyEx15,
     maxRecordStreak,
-    waterTotal, waterGoalDays, waterAnyDays,
+    waterAnyDays,
     moodDays, journalAnyDays, journalCleanDays,
     stepsTotal, stepsAnyDays, steps8kDays, steps10kDays, steps20kDays,
   };
@@ -458,7 +457,7 @@ export function calculateEarnedIds(records, user) {
     weeklyMeal18, monthlyMeal60,
     exerciseCount, maxExStreak, weeklyEx3, monthlyEx15,
     maxRecordStreak,
-    waterTotal, waterGoalDays, waterAnyDays,
+    waterAnyDays,
     moodDays, journalAnyDays, journalCleanDays,
     stepsTotal, stepsAnyDays, steps8kDays, steps10kDays, steps20kDays,
   } = extractData(records, user);
@@ -560,12 +559,12 @@ export function calculateEarnedIds(records, user) {
 
   // 물
   if(waterAnyDays>=1)   earned.add('water_first');
-  if(waterGoalDays>=1)  earned.add('water_goal_1');
-  if(waterGoalDays>=5)  earned.add('water_goal_5');
-  if(waterGoalDays>=10) earned.add('water_goal_10');
-  if(waterGoalDays>=30) earned.add('water_goal_30');
-  if(waterTotal>=100)   earned.add('water_total_100');
-  if(waterTotal>=500)   earned.add('water_total_500');
+  if(waterAnyDays>=1)   earned.add('water_goal_1');
+  if(waterAnyDays>=5)   earned.add('water_goal_5');
+  if(waterAnyDays>=10)  earned.add('water_goal_10');
+  if(waterAnyDays>=30)  earned.add('water_goal_30');
+  if(waterAnyDays>=100) earned.add('water_total_100');
+  if(waterAnyDays>=500) earned.add('water_total_500');
 
   // 저널
   if(journalAnyDays>=1)    earned.add('journal_first');
@@ -650,7 +649,7 @@ export function calculateProgress(records, user) {
     weeklyMeal18, monthlyMeal60,
     exerciseCount, maxExStreak, weeklyEx3, monthlyEx15,
     maxRecordStreak,
-    waterTotal, waterGoalDays, waterAnyDays,
+    waterAnyDays,
     moodDays, journalAnyDays, journalCleanDays,
     stepsTotal, stepsAnyDays, steps8kDays, steps10kDays, steps20kDays,
   } = extractData(records, user);
@@ -722,9 +721,9 @@ export function calculateProgress(records, user) {
     steps_20k_1:p(steps20kDays,1),
     steps_total_100k:p(stepsTotal,100000), steps_total_500k:p(stepsTotal,500000), steps_total_1m:p(stepsTotal,1000000),
     // 물
-    water_first:p(waterAnyDays,1), water_goal_1:p(waterGoalDays,1), water_goal_5:p(waterGoalDays,5),
-    water_goal_10:p(waterGoalDays,10), water_goal_30:p(waterGoalDays,30),
-    water_total_100:p(waterTotal,100), water_total_500:p(waterTotal,500),
+    water_first:p(waterAnyDays,1), water_goal_1:p(waterAnyDays,1), water_goal_5:p(waterAnyDays,5),
+    water_goal_10:p(waterAnyDays,10), water_goal_30:p(waterAnyDays,30),
+    water_total_100:p(waterAnyDays,100), water_total_500:p(waterAnyDays,500),
     // 저널
     journal_first:p(journalAnyDays,1), journal_clean_1:p(journalCleanDays,1), journal_clean_5:p(journalCleanDays,5),
     journal_clean_10:p(journalCleanDays,10), journal_clean_30:p(journalCleanDays,30),

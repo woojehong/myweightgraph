@@ -9,7 +9,7 @@ export const RECORD_META_TITLES = Object.freeze([
   title('title_life_recorder','생활 기록자','uncommon','몸과 식탁과 하루를 함께 기록하는 사람.'),
   title('title_body_observer','몸의 관찰자','uncommon','판단보다 관찰을 먼저 선택한 기록자.'),
   title('title_table_scribe','식탁의 서기관','uncommon','수많은 끼니를 빠짐없이 장부에 남긴 서기관.'),
-  title('title_water_quartermaster','수분 보급관','uncommon','매일의 한 잔까지 챙겨 기록하는 보급 담당자.'),
+  title('title_water_quartermaster','수분 보급관','uncommon','매일의 수분까지 챙겨 기록하는 보급 담당자.'),
   title('title_training_logkeeper','훈련일지 작성자','uncommon','운동한 날과 쉬는 날을 모두 솔직하게 남긴 사람.'),
   title('title_daily_librarian','일상의 사서','rare','평범한 하루를 보존 가치 있는 기록으로 만든 사서.'),
   title('title_versatile_recorder','다재다능한 기록가','rare','서로 다른 기록을 한 권의 생활사로 엮어 낸 기록가.'),
