@@ -1,4 +1,4 @@
-const CACHE = 'weight-v150-record-status';
+const CACHE = 'weight-v151-water-record-achievements';
 const ASSETS = [
   './index.html', './dashboard.html', './input.html', './import.html',
   './achievements.html', './compare.html', './dressroom.html', './diet.html', './shop.html', './guide.html', './visual-lab.html',
