@@ -191,6 +191,7 @@ function cleanWorkoutSet(raw = {}) {
     distanceKm: Math.max(0, Number(raw.distanceKm) || 0),
     note: String(raw.note || '').trim().slice(0, 160),
     completed: raw.completed !== false,
+    completedAt: raw.completedAt || null,
   };
 }
 

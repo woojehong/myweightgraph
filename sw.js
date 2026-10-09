@@ -1,4 +1,4 @@
-const CACHE = 'weight-v152-workout-tracker';
+const CACHE = 'weight-v153-workout-split-recorder';
 const ASSETS = [
   './index.html', './dashboard.html', './workout.html', './input.html', './import.html',
   './achievements.html', './compare.html', './dressroom.html', './diet.html', './shop.html', './guide.html', './visual-lab.html',
