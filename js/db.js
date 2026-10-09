@@ -160,8 +160,9 @@ export async function saveNutritionProfile(userId, data) {
 
 // ── Workout tracking ─────────────────────────────────────────────────
 export async function getWorkoutProfile(userId) {
-  const snap = await getDocR(doc(db, 'workoutProfiles', userId));
-  return snap.exists() ? { id:snap.id, ...snap.data() } : { id:userId, gyms:[], routines:[], favorites:[] };
+  const snap = await getDocR(doc(db, 'users', userId));
+  const profile = snap.data()?.workoutProfile;
+  return profile ? { id:userId, ...profile } : { id:userId, gyms:[], routines:[], favorites:[] };
 }
 
 export async function saveWorkoutProfile(userId, data) {
@@ -172,7 +173,7 @@ export async function saveWorkoutProfile(userId, data) {
     lastGymId: data.lastGymId || null,
     updatedAt: serverTimestamp(),
   };
-  await setDocR(doc(db, 'workoutProfiles', userId), clean, { merge:true });
+  await setDocR(doc(db, 'users', userId), { workoutProfile:clean }, { merge:true });
   return clean;
 }
 
@@ -252,27 +253,6 @@ export async function deleteWorkoutSession(userId, sessionId, day) {
   if (!hasDay) await setDietExercise(userId, day, { exercise:null });
 }
 
-export async function saveWorkoutMachineRequest(userId, raw) {
-  const id = raw.id || crypto.randomUUID();
-  const data = {
-    name: String(raw.name || '').trim().slice(0, 80),
-    gymId: raw.gymId || null,
-    targetMuscles: Array.isArray(raw.targetMuscles) ? raw.targetMuscles.slice(0, 8) : [],
-    notes: String(raw.notes || '').trim().slice(0, 500),
-    photos: (Array.isArray(raw.photos) ? raw.photos : []).slice(0, 3),
-    status: 'pending',
-    createdAt: raw.createdAt || new Date().toISOString(),
-    updatedAt: serverTimestamp(),
-  };
-  if (!data.name) throw new Error('임시 기구 이름을 입력하세요.');
-  await setDocR(doc(db, 'workoutMachineRequests', userId, 'requests', id), data, { merge:true });
-  return { id, ...data };
-}
-
-export async function getWorkoutMachineRequests(userId) {
-  const snap = await getDocsR(collection(db, 'workoutMachineRequests', userId, 'requests'));
-  return snap.docs.map(row => ({ id:row.id, ...row.data() }));
-}
 
 export async function getNutritionEntries(userId) {
   const snap = await getDocsR(query(nutritionEntriesRef(userId), orderBy('day', 'asc')));

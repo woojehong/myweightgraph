@@ -30,6 +30,7 @@ test('exercise page and data input expose the approved recording flow',async()=>
   for(const token of ['shiftSelectedDate','mainDatePicker','addBowelEvent','상세 운동 기록'])assert.ok(input.includes(token),token);
   assert.ok(db.includes("{ exercise:true }"));
   assert.ok(db.includes("{ exercise:null }"));
-  assert.ok(rules.includes('workoutProfiles'));
+  assert.ok(db.includes('workoutProfile:clean'));
+  assert.ok(!rules.includes('workoutProfiles'));
   assert.ok(sw.includes('./workout.html'));
 });
