@@ -237,7 +237,7 @@ export function validateNutritionTargets(targets) {
 
 export function nutritionDayFor(date = new Date()) {
   const shifted = new Date(date);
-  shifted.setHours(shifted.getHours() - 6);
+  shifted.setHours(shifted.getHours() - 4);
   return `${shifted.getFullYear()}-${String(shifted.getMonth() + 1).padStart(2, '0')}-${String(shifted.getDate()).padStart(2, '0')}`;
 }
 

@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { activeTodayMessage, normalizeTodayMessage, todayMessageDayKey } from '../js/today-message.js';
 
-assert.equal(todayMessageDayKey(new Date('2026-07-27T20:59:59Z')),'2026-07-27','05:59 KST belongs to the previous operational day');
-assert.equal(todayMessageDayKey(new Date('2026-07-27T21:00:00Z')),'2026-07-28','06:00 KST starts a new operational day');
+assert.equal(todayMessageDayKey(new Date('2026-07-27T18:59:59Z')),'2026-07-27','03:59 KST belongs to the previous operational day');
+assert.equal(todayMessageDayKey(new Date('2026-07-27T19:00:00Z')),'2026-07-28','04:00 KST starts a new operational day');
 assert.equal(normalizeTodayMessage('  반가워요   오늘도 파이팅  '),'반가워요 오늘도 파이팅');
 assert.equal(normalizeTodayMessage('가'.repeat(200)).length,160);
 assert.equal(normalizeTodayMessage('첫 줄  \n  둘째 줄'),'첫 줄\n둘째 줄','line breaks must survive normalization');

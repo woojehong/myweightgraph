@@ -20,9 +20,9 @@ import {
   validatePhotoDescription,
 } from '../js/nutrition.js';
 
-test('activity day changes at 06:00', () => {
-  assert.equal(nutritionDayFor(new Date(2026, 6, 31, 5, 59)), '2026-07-30');
-  assert.equal(nutritionDayFor(new Date(2026, 6, 31, 6, 0)), '2026-07-31');
+test('activity day changes at 04:00', () => {
+  assert.equal(nutritionDayFor(new Date(2026, 6, 31, 3, 59)), '2026-07-30');
+  assert.equal(nutritionDayFor(new Date(2026, 6, 31, 4, 0)), '2026-07-31');
 });
 
 test('male recomposition suggestion is internally coherent', () => {
@@ -177,11 +177,11 @@ test('diet UI keeps one-off tools secondary and defaults new records to current 
   assert.match(html, /\$\('eTime'\)\.value=editing\?\(data\?\.eatenAt\|\|''\):\(data\?\.eatenAt\|\|currentTimeValue\(\)\)/);
 });
 
-test('every user footer marks the diet tab as beta', async () => {
+test('diet beta remains implemented but is hidden from every user footer', async () => {
   const pages = ['input.html', 'dashboard.html', 'compare.html', 'achievements.html', 'import.html', 'dressroom.html', 'diet.html'];
   for (const page of pages) {
     const html = await readFile(new URL(`../${page}`, import.meta.url), 'utf8');
-    assert.match(html, /식단 <span class="nav-beta">BETA<\/span>/, `${page} must display the diet beta badge`);
+    if (page !== 'diet.html') assert.doesNotMatch(html, /식단 <span class="nav-beta">BETA<\/span>/, `${page} must hide the diet beta tab`);
   }
   const css = await readFile(new URL('../css/style.css', import.meta.url), 'utf8');
   assert.match(css, /\.bottom-nav \.nav-beta/);

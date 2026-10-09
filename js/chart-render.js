@@ -13,6 +13,50 @@ export function fitMainPlotBounds(chartArea, requestedRatio = 16 / 9) {
   return { left, top, width, height, bottom: top + height };
 }
 
+// Weekly bars are drawn by a custom Chart.js plugin, so their hit boxes must
+// use the same CSS-pixel geometry as the rectangles on the canvas. Chart.js
+// event.x/event.y and scale pixels are already normalized to CSS pixels even
+// when the backing bitmap uses devicePixelRatio > 1; applying DPR here would
+// shift the hover target on scaled canvases.
+export function weeklyBarWidth(xPositions) {
+  let width = 24;
+  if (xPositions.length > 1) {
+    const gaps = xPositions.slice(1).map((p, i) => p - xPositions[i]).filter(g => g > 2);
+    if (gaps.length) width = Math.max(10, Math.min(44, Math.min(...gaps) * 0.85));
+  }
+  return width;
+}
+
+export function weeklyBarGeometry(weeklyData, getPixelForValue, top, baseline, barMax, clipLeft = -Infinity, clipRight = Infinity) {
+  const centers = weeklyData.map(d => getPixelForValue(d.x));
+  const width = weeklyBarWidth(centers);
+  const maxBarH = Math.max(0, baseline - top - 2);
+  return weeklyData.map((d, index) => {
+    const centerX = centers[index];
+    const height = Math.max(2, Math.abs(d.y) / Math.max(barMax, 0.1) * maxBarH);
+    const left = Math.max(clipLeft, centerX - width / 2);
+    const right = Math.min(clipRight, centerX + width / 2);
+    return { index, centerX, width, height, left, right, top: baseline - height, bottom: baseline };
+  });
+}
+
+export function findWeeklyBarHit(geometry, x, y, verticalBounds = null) {
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return -1;
+  let bestIndex = -1;
+  let bestDistance = Infinity;
+  geometry.forEach(rect => {
+    const hitTop = verticalBounds?.top ?? rect.top;
+    const hitBottom = verticalBounds?.bottom ?? rect.bottom;
+    if (rect.right <= rect.left || x < rect.left || x > rect.right || y < hitTop || y > hitBottom) return;
+    const distance = Math.abs(x - rect.centerX);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      bestIndex = rect.index;
+    }
+  });
+  return bestIndex;
+}
+
 
 // ── 일간/주간/월간 집계 ────────────────────────────────────────────────
 // mode: 'day' | 'week' | 'month'
@@ -317,15 +361,13 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
     const xBottom  = x.bottom;
     const top      = xBottom + SUB_GAP;
     const baseline = top + WEEKLY_BAR_H - 8; // 바 하단 기준선
-    const maxBarH  = baseline - top - 2;
     const midY     = (top + baseline) / 2;
 
-    const xPos = weeklyData.map(d => x.getPixelForValue(d.x));
-    let barW = 24;
-    if (xPos.length > 1) {
-      const gaps = xPos.slice(1).map((p, i) => p - xPos[i]).filter(g => g > 2);
-      if (gaps.length) barW = Math.max(10, Math.min(44, Math.min(...gaps) * 0.85));
-    }
+    const _todayPx = x.getPixelForValue(_todayTs + 86400000); // 오늘 컬럼 오른쪽 끝까지 포함
+    const geometry = weeklyBarGeometry(
+      weeklyData, value => x.getPixelForValue(value), top, baseline, barMax,
+      chartArea.left, Math.min(chartArea.right, _todayPx)
+    );
 
     ctx.save();
     // 구분선
@@ -342,18 +384,17 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
 
     // 모든 막대 위로 확장 — 감량(초록), 증량(빨강), 직사각형
     // 오늘 이후 영역 클리핑 — 모든 바가 오늘 x좌표 오른쪽으로 넘어가지 않음
-    const _todayPx = x.getPixelForValue(_todayTs + 86400000); // 오늘 컬럼 오른쪽 끝까지 포함
     ctx.save();
     ctx.beginPath();
     ctx.rect(chartArea.left, top - 2, Math.max(0, _todayPx - chartArea.left), baseline - top + 6);
     ctx.clip();
     weeklyData.forEach((d, i) => {
-      const cx = xPos[i];
-      if (cx < chartArea.left - barW || cx > chartArea.right + barW) return;
-      const h      = Math.max(2, Math.abs(d.y) / barMax * maxBarH);
+      const rect = geometry[i], cx = rect.centerX;
+      if (rect.right <= rect.left || cx < chartArea.left - rect.width || cx > chartArea.right + rect.width) return;
+      const h      = rect.height;
       const isLoss = d.y >= 0;
       ctx.fillStyle = isLoss ? 'rgba(102,187,106,.82)' : 'rgba(239,83,80,.82)';
-      ctx.fillRect(cx - barW / 2, baseline - h, barW, h);
+      ctx.fillRect(cx - rect.width / 2, baseline - h, rect.width, h);
     });
     ctx.restore();
     ctx.restore();
@@ -371,6 +412,10 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
     afterEvent(chart, args) {
       if (!hasWeeklyBar) return;
       const { event } = args;
+      if (['mouseout','mouseleave'].includes(event.type)) {
+        if (_barTooltipIdx !== -1) { _barTooltipIdx = -1; args.changed = true; }
+        return;
+      }
       if (!['mousemove','touchstart','click'].includes(event.type)) return;
       const { chartArea, scales: { x } } = chart;
       const xBottom = x.bottom;
@@ -381,13 +426,14 @@ export function renderChart(records, userProfile, canvasMain, canvasBar = null, 
         if (_barTooltipIdx !== -1) { _barTooltipIdx = -1; args.changed = true; }
         return;
       }
-      const xPos = weeklyData.map(d => x.getPixelForValue(d.x));
-      let barW = 24;
-      if (xPos.length > 1) {
-        const gaps = xPos.slice(1).map((p, i) => p - xPos[i]).filter(g => g > 2);
-        if (gaps.length) barW = Math.max(10, Math.min(44, Math.min(...gaps) * 0.85));
-      }
-      const hit = weeklyData.findIndex((d, i) => Math.abs(ex - xPos[i]) <= barW + 4);
+      const _todayPx = x.getPixelForValue(_todayTs + 86400000);
+      const geometry = weeklyBarGeometry(
+        weeklyData, value => x.getPixelForValue(value), top, bot, barMax,
+        chartArea.left, Math.min(chartArea.right, _todayPx)
+      );
+      // X must match the actual rendered bar width. Y intentionally accepts
+      // the weekly lane so a near-zero (2px-high) bar remains usable.
+      const hit = findWeeklyBarHit(geometry, ex, ey, { top, bottom: bot });
       if (hit !== _barTooltipIdx) { _barTooltipIdx = hit; args.changed = true; }
     },
     afterDraw(chart) {

@@ -64,6 +64,10 @@
     /* ── 오늘 입력 카드 — 전부 가운데정렬 스택 ────────────────── */
     .tdy-card{padding:12px 10px !important;text-align:center}
     .tdy-head{display:flex;align-items:baseline;justify-content:center;gap:7px;margin-bottom:9px}
+    .date-nav-btn{width:30px;height:30px;border-radius:9px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:17px}
+    .date-picker-btn{background:transparent;color:inherit;font:inherit;font-weight:inherit;padding:3px 5px;border-radius:7px}
+    .date-picker-btn:hover{background:var(--surface2)}
+    .date-picker-hidden{position:absolute;opacity:0;pointer-events:none;width:1px;height:1px}
     .tdy-name{font-size:16px;font-weight:800;color:var(--teal)}
     .tdy-date{font-size:11px;color:var(--muted)}
     /* 체중·kg·저장만 정확히 가운데. 저장됨 뱃지는 흐름에서 빼서 오른쪽에 띄움 */
@@ -86,6 +90,9 @@
     .tdy-mlabel{font-size:10px;color:var(--muted)}
     .tdy-gap{width:10px}
     .tdy-row .tl-group{display:flex;gap:5px}
+    .workout-detail-link{display:inline-flex;align-items:center;justify-content:center;margin-top:7px;padding:5px 8px;border:1px solid rgba(0,229,170,.3);border-radius:7px;color:var(--teal);font-size:9px;font-weight:800}
+    .bowel-row{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:9px;padding-top:9px;border-top:1px dashed var(--border)}
+    .bowel-label{font-size:11px;color:var(--muted);min-width:52px}.bowel-add{padding:7px 11px;border-radius:8px;background:rgba(166,112,72,.16);border:1px solid rgba(196,143,101,.3);color:#d6aa86;font-size:11px;font-weight:800}.bowel-count{font-size:11px;color:var(--text)}.bowel-last{font-size:9px;color:var(--muted)}
     @media(max-width:520px){
       .tdy-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;gap:11px 14px;width:100%}
       .tdy-meal{min-width:0}
@@ -278,6 +285,12 @@ window.doLogout = () => { clearAuth(); localStorage.removeItem('uid'); location.
 const DAY_KO=['일','월','화','수','목','금','토'];
 let existingMap={}, allRecords=[], user=null, profileSettings=null;
 let dailyRewardLedgers={};
+let selectedDate=new URLSearchParams(location.search).get('date')||activityDay();
+
+window.shiftSelectedDate=delta=>{const d=new Date(`${selectedDate}T12:00:00`);d.setDate(d.getDate()+delta);selectedDate=toDateStr(d);render().catch(console.error)};
+window.openDatePicker=()=>document.getElementById('mainDatePicker')?.showPicker?.();
+window.pickSelectedDate=value=>{if(value){selectedDate=value;render().catch(console.error)}};
+window.goToDate=dateStr=>{selectedDate=dateStr;window.scrollTo({top:0,behavior:'smooth'});render().catch(console.error)};
 
 
 function pointBadge(dateStr){
@@ -359,9 +372,9 @@ function setChipData(u, tierColor) {
 function buildNav() {
   const links=[
     {href:`input.html?user=${uid}`,        icon:'✏️',  label:'데이터 입력', id:'input'},
-    {href:`dashboard.html?user=${uid}`,    icon:'📊', label:'내 그래프',   id:'dashboard'},
-    {href:`compare.html?user=${uid}`,      icon:'👥', label:'우리 그래프', id:'compare'},
-    {href:`diet.html?user=${uid}`,         icon:'🥗', label:'식단 <span class="nav-beta">BETA</span>', id:'diet'},
+    {href:`dashboard.html?user=${uid}`,    icon:'⚖️', label:'체중 그래프', id:'dashboard'},
+    {href:`workout.html?user=${uid}`,      icon:'🏋️', label:'운동 그래프', id:'workout'},
+    {href:`compare.html?user=${uid}`,      icon:'👥', label:'그래프 모아보기', id:'compare'},
     {href:`achievements.html?user=${uid}`, icon:'🏆', label:'업적',        id:'achievements'},
     {href:`dressroom.html?user=${uid}`,    icon:'✨', label:'쇼룸',        id:'dressroom'},
   ];
@@ -572,6 +585,12 @@ function lifeSectionHTML(dateStr){
       <input type="number" id="waterGoalInp" min="1" max="20" value="${goal}">
       <span>잔 (500ml 기준)</span>
       <button onclick="saveWaterGoal()">저장</button>
+    </div>
+    <div class="bowel-row">
+      <span class="bowel-label">🚽 배변</span>
+      <button class="bowel-add" onclick="addBowelEvent('${dateStr}')">+ 기록</button>
+      <span class="bowel-count">오늘 ${(rec.bowelEvents||[]).length}회</span>
+      ${(rec.bowelEvents||[]).length?`<button class="water-gear" onclick="undoBowelEvent('${dateStr}')">마지막 취소</button>`:''}
     </div>`;
 }
 window.toggleWaterCfg = () => {
@@ -594,6 +613,16 @@ function renderLife(dateStr){
   const el=document.getElementById(`life-${dateStr}`);
   if(el) el.innerHTML=lifeSectionHTML(dateStr);
 }
+
+window.addBowelEvent=async dateStr=>{
+  const rec=getRec(dateStr);const events=Array.isArray(rec.bowelEvents)?[...rec.bowelEvents]:[];
+  events.push(new Date().toISOString());
+  await setDietExercise(uid,dateStr,{bowelEvents:events});rec.bowelEvents=events;renderLife(dateStr);showToast('배변 기록을 추가했습니다.','ok');
+};
+window.undoBowelEvent=async dateStr=>{
+  const rec=getRec(dateStr);const events=Array.isArray(rec.bowelEvents)?[...rec.bowelEvents]:[];events.pop();
+  await setDietExercise(uid,dateStr,{bowelEvents:events});rec.bowelEvents=events;renderLife(dateStr);showToast('마지막 배변 기록을 취소했습니다.','ok');
+};
 
 // ── 입력 직후 업적 판정 (디바운스 + 직렬화) ──────────────────────────
 let _achTimer=null, _achRunning=false, _achPending=false;
@@ -644,7 +673,7 @@ async function render() {
     notify: showToast,
   });
 
-  const today = new Date(activityDay() + 'T12:00:00');
+  const today = new Date(selectedDate + 'T12:00:00');
   const labels=['오늘','어제','2일 전','3일 전','4일 전','5일 전'];
   const visibleDates=Array.from({length:7},(_,i)=>{
     const d=new Date(today); d.setDate(d.getDate()-i); return toDateStr(d);
@@ -675,9 +704,12 @@ async function render() {
     cards=`
       <div class="day-card tdy-card${allDone?' all-done':''}" id="daycard-${dateStr}">
         <div class="tdy-head">
-          <span class="tdy-name">오늘</span>
-          <span class="tdy-date">${fmtDate(d)} (${DAY_KO[d.getDay()]})</span>
+          <button class="date-nav-btn" onclick="shiftSelectedDate(-1)" aria-label="이전 날짜">‹</button>
+          <span class="tdy-name">${dateStr===activityDay()?'오늘':'선택일'}</span>
+          <button class="date-picker-btn" onclick="openDatePicker()">${fmtDate(d)} (${DAY_KO[d.getDay()]})</button>
+          <input class="date-picker-hidden" id="mainDatePicker" type="date" value="${dateStr}" onchange="pickSelectedDate(this.value)">
           ${pointBadge(dateStr)}
+          <button class="date-nav-btn" onclick="shiftSelectedDate(1)" aria-label="다음 날짜">›</button>
         </div>
         <div class="tdy-weigh">
           <input type="number" step="0.1" class="tdy-input${hasSaved?' saved':''}" id="inp-${dateStr}"
@@ -697,6 +729,7 @@ async function render() {
               <button class="tl-btn green-tl ${exercise===true?'on':''}"  aria-label="운동함" onclick="setExercise('${dateStr}',true)">✓</button>
               <button class="tl-btn red-tl ${exercise===false?'on':''}" aria-label="운동 안 함" onclick="setExercise('${dateStr}',false)">✕</button>
             </div>
+            <a class="workout-detail-link" href="workout.html?user=${encodeURIComponent(uid)}&date=${dateStr}">상세 운동 기록</a>
           </div>
         </div>
         <div class="wtr-wrap" id="life-${dateStr}">${lifeSectionHTML(dateStr)}</div>
@@ -719,7 +752,7 @@ async function render() {
       onclick="cycleMeal('${dateStr}','${m}')" aria-label="${m} 식단 ${MEAL_LABELS[meal[m]]||'미입력'} 변경"></button>`;
     pastRows += `
       <div class="past-row${done?' done':''}" id="pastrow-${dateStr}">
-        <span class="pr-date">${fmtDate(d).slice(5)} <em>${DAY_KO[d.getDay()]}</em></span>
+        <button class="pr-date" onclick="goToDate('${dateStr}')" style="background:transparent;color:inherit;text-align:left">${fmtDate(d).slice(5)} <em>${DAY_KO[d.getDay()]}</em></button>
         ${pointBadge(dateStr)}
         <input type="number" step="0.1" class="pr-w" id="inp-${dateStr}" placeholder="--.-"
           value="${val!=null?val.toFixed(1):''}"

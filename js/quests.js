@@ -9,7 +9,7 @@
 //     전부 깨도 상한까지만 받는다 → 자기 스타일대로 골라 깨는 구조.
 //     덕분에 감량 퀘스트를 넣어도 유지·증량하는 사람이 불리하지 않다.
 //  4) 배점이 큰 주간·월간은 난이도도 높게 잡았다.
-//  5) 주는 일요일 시작(그래프와 동일), 활동일 경계는 오전 6시.
+//  5) 주는 일요일 시작(그래프와 동일), 활동일 경계는 오전 4시.
 // ─────────────────────────────────────────────────────────────────────────────
 import { activityDay, isDailyComplete } from './daily-rewards.js';
 import { MEAL_TIMES, mealEntryCount, isMealQualityStatus } from './meal-status.js';

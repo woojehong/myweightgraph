@@ -3,9 +3,9 @@ import { activityDay, activityDayAge, isCurrentActivityDay, isRewardEligibleDay,
          rewardMaxForLedger, isDailyComplete, DAILY_REWARD_POINTS,
          DAILY_REWARD_MAX } from '../js/daily-rewards.js';
 
-assert.equal(activityDay(new Date(2026, 6, 17, 5, 59)), '2026-07-16');
-assert.equal(activityDay(new Date(2026, 6, 17, 6, 0)), '2026-07-17');
-assert.equal(isCurrentActivityDay('2026-07-16', new Date(2026, 6, 17, 5, 59)), true);
+assert.equal(activityDay(new Date(2026, 6, 17, 3, 59)), '2026-07-16');
+assert.equal(activityDay(new Date(2026, 6, 17, 4, 0)), '2026-07-17');
+assert.equal(isCurrentActivityDay('2026-07-16', new Date(2026, 6, 17, 3, 59)), true);
 assert.equal(activityDayAge('2026-07-15', new Date(2026, 6, 17, 12)), 2);
 assert.equal(isRewardEligibleDay('2026-07-15', new Date(2026, 6, 17, 12)), true);
 assert.equal(isRewardEligibleDay('2026-07-14', new Date(2026, 6, 17, 12)), false);

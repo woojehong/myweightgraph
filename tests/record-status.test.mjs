@@ -12,11 +12,11 @@ import {
 const at = iso => new Date(iso);
 const records = (...rows) => rows.map(([date, weight]) => ({ date, weight }));
 
-test('Seoul activity day flips exactly at 06:00 regardless of runtime timezone', () => {
-  assert.equal(seoulActivityDay(at('2026-08-15T20:59:59.999Z')), '2026-08-15'); // KST 05:59
-  assert.equal(seoulActivityDay(at('2026-08-15T21:00:00.000Z')), '2026-08-16'); // KST 06:00
-  assert.equal(millisecondsUntilNextActivityBoundary(at('2026-08-15T20:59:59.000Z')), 1000);
-  assert.equal(millisecondsUntilNextActivityBoundary(at('2026-08-15T21:00:00.000Z')), 86400000);
+test('Seoul activity day flips exactly at 04:00 regardless of runtime timezone', () => {
+  assert.equal(seoulActivityDay(at('2026-08-15T18:59:59.999Z')), '2026-08-15'); // KST 03:59
+  assert.equal(seoulActivityDay(at('2026-08-15T19:00:00.000Z')), '2026-08-16'); // KST 04:00
+  assert.equal(millisecondsUntilNextActivityBoundary(at('2026-08-15T18:59:59.000Z')), 1000);
+  assert.equal(millisecondsUntilNextActivityBoundary(at('2026-08-15T19:00:00.000Z')), 86400000);
 });
 
 test('0/1/2/3/6/7 day boundaries map to the approved four levels', () => {

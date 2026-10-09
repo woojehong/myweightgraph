@@ -1,4 +1,4 @@
-// Daily engagement rewards. The activity day changes at 06:00 local time.
+// Daily engagement rewards. The activity day changes at 04:00 local time.
 import { mealEntryCount } from './meal-status.js';
 export const DAILY_REWARD_POINTS = Object.freeze({
   ATTENDANCE: 10,
@@ -13,7 +13,7 @@ export const RETROACTIVE_REWARD_DAYS = 2;
 
 export function activityDay(now = new Date()) {
   const d = new Date(now);
-  if (d.getHours() < 6) d.setDate(d.getDate() - 1);
+  if (d.getHours() < 4) d.setDate(d.getDate() - 1);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 

@@ -1,4 +1,6 @@
-const SEOUL_OPERATION_OFFSET_MS = 3 * 60 * 60 * 1000;
+// UTC 기준 날짜를 한국 활동일(오전 4시 경계)로 이동한다.
+// KST(+9)에서 4시간을 빼므로 UTC에는 +5시간을 적용한다.
+const SEOUL_OPERATION_OFFSET_MS = 5 * 60 * 60 * 1000;
 
 export function todayMessageDayKey(now = new Date()) {
   const date = now instanceof Date ? now : new Date(now);

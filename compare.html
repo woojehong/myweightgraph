@@ -7,8 +7,8 @@
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="favicon.png">
   <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
-  <title>우리 그래프 | 마웨그</title>
-  <meta property="og:title" content="우리 그래프 | 마웨그">
+  <title>그래프 모아보기 | 마웨그</title>
+  <meta property="og:title" content="그래프 모아보기 | 마웨그">
   <meta property="og:description" content="여러 사용자의 체중 그래프를 한눈에 비교해 보세요.">
   <meta property="og:type" content="website">
   <meta property="og:image" content="https://woojehong.github.io/myweightgraph/favicon.png">
@@ -558,9 +558,9 @@ window.doLogout = () => { clearAuth(); localStorage.removeItem('uid'); location.
 function buildNav() {
   const links = [
     { href:`input.html?user=${uid}`,        icon:'✏️', label:'데이터 입력', id:'input' },
-    { href:`dashboard.html?user=${uid}`,    icon:'📊', label:'내 그래프',   id:'dashboard' },
-    { href:`compare.html?user=${uid}`,      icon:'👥', label:'우리 그래프', id:'compare' },
-    { href:`diet.html?user=${uid}`,         icon:'🥗', label:'식단 <span class="nav-beta">BETA</span>', id:'diet' },
+    { href:`dashboard.html?user=${uid}`,    icon:'⚖️', label:'체중 그래프', id:'dashboard' },
+    { href:`workout.html?user=${uid}`,      icon:'🏋️', label:'운동 그래프', id:'workout' },
+    { href:`compare.html?user=${uid}`,      icon:'👥', label:'그래프 모아보기', id:'compare' },
     { href:`achievements.html?user=${uid}`, icon:'🏆', label:'업적',         id:'achievements' },
     { href:`dressroom.html?user=${uid}`,    icon:'✨', label:'쇼룸',         id:'dressroom' },
   ];
@@ -961,7 +961,7 @@ async function init() {
     },
     notify: showToast,
   });
-  document.title = '우리 그래프 | 마웨그';
+  document.title = '그래프 모아보기 | 마웨그';
 
   // 선택 복원: 저장된 목록(존재하는 유저만) → 없으면 현재 사용자 기본 선택
   const ids = new Set(users.map(u => u.id));

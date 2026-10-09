@@ -140,6 +140,7 @@ export async function updateUser(userId, data) {
 const nutritionEntriesRef = uid => collection(db, 'nutritionEntries', uid, 'entries');
 const nutritionPresetsRef = uid => collection(db, 'nutritionPresets', uid, 'items');
 const inbodyRecordsRef = uid => collection(db, 'inbodyRecords', uid, 'records');
+const workoutSessionsRef = uid => collection(db, 'workoutSessions', uid, 'sessions');
 
 export async function getNutritionProfile(userId) {
   const snap = await getDocR(doc(db, 'nutritionProfiles', userId));
@@ -155,6 +156,122 @@ export async function saveNutritionProfile(userId, data) {
   };
   await setDocR(doc(db, 'nutritionProfiles', userId), clean, { merge: true });
   return clean;
+}
+
+// ── Workout tracking ─────────────────────────────────────────────────
+export async function getWorkoutProfile(userId) {
+  const snap = await getDocR(doc(db, 'workoutProfiles', userId));
+  return snap.exists() ? { id:snap.id, ...snap.data() } : { id:userId, gyms:[], routines:[], favorites:[] };
+}
+
+export async function saveWorkoutProfile(userId, data) {
+  const clean = {
+    gyms: Array.isArray(data.gyms) ? data.gyms.slice(0, 20) : [],
+    routines: Array.isArray(data.routines) ? data.routines.slice(0, 20) : [],
+    favorites: Array.isArray(data.favorites) ? data.favorites.slice(0, 80) : [],
+    lastGymId: data.lastGymId || null,
+    updatedAt: serverTimestamp(),
+  };
+  await setDocR(doc(db, 'workoutProfiles', userId), clean, { merge:true });
+  return clean;
+}
+
+function cleanWorkoutSet(raw = {}) {
+  const inputUnit = raw.inputUnit === 'lb' ? 'lb' : 'kg';
+  const original = Math.max(0, Number(raw.originalWeight) || 0);
+  const kg = inputUnit === 'lb' ? original * 0.45359237 : original;
+  return {
+    id: String(raw.id || crypto.randomUUID()),
+    kg: Math.round(kg * 100) / 100,
+    originalWeight: original,
+    inputUnit,
+    reps: Math.max(0, Math.min(999, Number(raw.reps) || 0)),
+    durationSec: Math.max(0, Number(raw.durationSec) || 0),
+    distanceKm: Math.max(0, Number(raw.distanceKm) || 0),
+    note: String(raw.note || '').trim().slice(0, 160),
+    completed: raw.completed !== false,
+  };
+}
+
+function cleanWorkoutSession(raw = {}) {
+  const kind = raw.kind === 'running' ? 'running' : 'strength';
+  const exercises = (Array.isArray(raw.exercises) ? raw.exercises : []).slice(0, 60).map(ex => ({
+    id: String(ex.id || crypto.randomUUID()),
+    catalogId: String(ex.catalogId || 'custom'),
+    name: String(ex.name || '사용자 운동').trim().slice(0, 80),
+    format: String(ex.format || 'weight_reps'),
+    equipment: String(ex.equipment || '').slice(0, 40),
+    gymId: ex.gymId || null,
+    primaryMuscles: Array.isArray(ex.primaryMuscles) ? ex.primaryMuscles.slice(0, 6) : [],
+    secondaryMuscles: Array.isArray(ex.secondaryMuscles) ? ex.secondaryMuscles.slice(0, 8) : [],
+    note: String(ex.note || '').trim().slice(0, 300),
+    sets: (Array.isArray(ex.sets) ? ex.sets : []).slice(0, 50).map(cleanWorkoutSet),
+  }));
+  const running = kind === 'running' ? {
+    distanceKm: Math.max(0, Number(raw.running?.distanceKm) || 0),
+    durationSec: Math.max(0, Number(raw.running?.durationSec) || 0),
+    cadence: raw.running?.cadence === '' || raw.running?.cadence == null ? null : Math.max(0, Number(raw.running.cadence) || 0),
+    environment: raw.running?.environment === 'treadmill' ? 'treadmill' : 'outdoor',
+  } : null;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(raw.day || ''))) throw new Error('운동 날짜가 올바르지 않습니다.');
+  if (kind === 'strength' && !exercises.some(ex => ex.sets.length)) throw new Error('세트를 하나 이상 입력하세요.');
+  if (kind === 'running' && (!(running.distanceKm > 0) || !(running.durationSec > 0))) throw new Error('러닝 거리와 시간을 입력하세요.');
+  return {
+    day: raw.day,
+    kind,
+    startedAt: raw.startedAt || new Date().toISOString(),
+    completedAt: raw.completedAt || null,
+    status: raw.status === 'complete' ? 'complete' : 'draft',
+    gymId: raw.gymId || null,
+    perceivedIntensity: raw.perceivedIntensity == null ? null : Math.max(1, Math.min(5, Number(raw.perceivedIntensity))),
+    exercises,
+    running,
+    note: String(raw.note || '').trim().slice(0, 500),
+    updatedAt: serverTimestamp(),
+  };
+}
+
+export async function getWorkoutSessions(userId) {
+  const snap = await getDocsR(query(workoutSessionsRef(userId), orderBy('day','asc')));
+  return snap.docs.map(row => ({ id:row.id, ...row.data() }));
+}
+
+export async function saveWorkoutSession(userId, raw) {
+  const id = raw.id || crypto.randomUUID();
+  const data = cleanWorkoutSession(raw);
+  await setDocR(doc(db, 'workoutSessions', userId, 'sessions', id), data, { merge:true });
+  // Any detailed record means exercise=true for the daily record.
+  await setDietExercise(userId, data.day, { exercise:true });
+  return { id, ...data };
+}
+
+export async function deleteWorkoutSession(userId, sessionId, day) {
+  await deleteDocR(doc(db, 'workoutSessions', userId, 'sessions', sessionId));
+  const remaining = await getDocsR(query(workoutSessionsRef(userId), orderBy('day','asc')));
+  const hasDay = remaining.docs.some(row => row.data()?.day === day);
+  if (!hasDay) await setDietExercise(userId, day, { exercise:null });
+}
+
+export async function saveWorkoutMachineRequest(userId, raw) {
+  const id = raw.id || crypto.randomUUID();
+  const data = {
+    name: String(raw.name || '').trim().slice(0, 80),
+    gymId: raw.gymId || null,
+    targetMuscles: Array.isArray(raw.targetMuscles) ? raw.targetMuscles.slice(0, 8) : [],
+    notes: String(raw.notes || '').trim().slice(0, 500),
+    photos: (Array.isArray(raw.photos) ? raw.photos : []).slice(0, 3),
+    status: 'pending',
+    createdAt: raw.createdAt || new Date().toISOString(),
+    updatedAt: serverTimestamp(),
+  };
+  if (!data.name) throw new Error('임시 기구 이름을 입력하세요.');
+  await setDocR(doc(db, 'workoutMachineRequests', userId, 'requests', id), data, { merge:true });
+  return { id, ...data };
+}
+
+export async function getWorkoutMachineRequests(userId) {
+  const snap = await getDocsR(collection(db, 'workoutMachineRequests', userId, 'requests'));
+  return snap.docs.map(row => ({ id:row.id, ...row.data() }));
 }
 
 export async function getNutritionEntries(userId) {
@@ -277,7 +394,8 @@ export async function saveInbodyRecord(userId, raw) {
   if (!date) throw new Error('측정일을 입력하세요.');
   const data = { date, updatedAt: serverTimestamp() };
   for (const key of ['weight','skeletalMuscle','bodyFatMass','bodyFatPercent','bmi','bmr','visceralFat']) {
-    data[key] = raw[key] === '' || raw[key] == null ? null : Number(raw[key]);
+    const source = key === 'skeletalMuscle' ? (raw.skeletalMuscle ?? raw.skeletalMuscleMass) : raw[key];
+    data[key] = source === '' || source == null ? null : Number(source);
   }
   await setDocR(doc(db, 'inbodyRecords', userId, 'records', date), data, { merge: true });
   return data;

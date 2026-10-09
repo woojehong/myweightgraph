@@ -34,13 +34,13 @@ export function strictDateUtcMs(dateStr) {
 export function seoulActivityDay(now = new Date()) {
   const parts = seoulParts(now);
   const civilDayMs = Date.UTC(parts.year, parts.month - 1, parts.day);
-  return dateKeyFromUtcMs(parts.hour < 6 ? civilDayMs - DAY_MS : civilDayMs);
+  return dateKeyFromUtcMs(parts.hour < 4 ? civilDayMs - DAY_MS : civilDayMs);
 }
 
 export function millisecondsUntilNextActivityBoundary(now = new Date()) {
   const nowMs = new Date(now).getTime();
   const parts = seoulParts(now);
-  let targetMs = Date.UTC(parts.year, parts.month - 1, parts.day, 6) - SEOUL_OFFSET_MS;
+  let targetMs = Date.UTC(parts.year, parts.month - 1, parts.day, 4) - SEOUL_OFFSET_MS;
   if (targetMs <= nowMs) targetMs += DAY_MS;
   return Math.max(1, targetMs - nowMs);
 }
